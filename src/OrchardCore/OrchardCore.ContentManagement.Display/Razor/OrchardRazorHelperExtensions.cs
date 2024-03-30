@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Html;
 using Microsoft.Extensions.DependencyInjection;
@@ -89,13 +90,13 @@ public static class OrchardRazorHelperExtensions
         return o;
     }
 
-    internal static JsonObject ConvertContentPart(ContentPart contentPart)
+    internal static JObject ConvertContentPart(ContentPart contentPart)
     {
-        var o = new JsonObject
+        var o = new JObject
         {
             // Write all well-known properties.
-            [nameof(ContentPart.ContentItem)] = ConvertContentItem(contentPart.ContentItem),
-            [nameof(ContentPart.Content)] = JObject.FromObject(contentPart.Content),
+            new JProperty(nameof(ContentPart.ContentItem),ConvertContentItem(contentPart.ContentItem)),
+            new JProperty(nameof(ContentPart.Content),JObject.FromObject(contentPart.Content))
         };
 
         return o;
