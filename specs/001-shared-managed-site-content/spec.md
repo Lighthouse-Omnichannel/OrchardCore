@@ -24,11 +24,12 @@ Lets start with this context, and try to create the spec"
 - Q: Which content targeting model should managed sites use? → A: Hybrid model.
 - Q: Which navigation placeholder types should Site Blueprints support? → A: Placeholder menus and placeholder menu items.
 - Q: What content can the Managed Site Admin Portal manage? → A: Managed Site content only.
-- Q: How is managed-site clearance represented? → A: Token claims and scopes.
+- Q: How is managed-site clearance represented? → A: Signed authorization claims and scopes.
 - Q: How should preview compose managed-site pages? → A: OrchardCore preview pipeline simulation.
 - Q: When a managed site has more than one customization for the same blueprint page, which composition order should determine the final page? → A: Layer items are independent of page overrides and continue rendering through the layout; if a blueprint page is overridden, the blueprint page placeholders are not rendered.
 - Q: What should happen to existing managed-site page overrides when a Site Blueprint administrator later marks the blueprint page as not overrideable? → A: Existing overrides stop rendering but remain recoverable for admin review.
 - Q: When a managed-site placeholder has no assigned managed-site content, what should render in that placeholder? → A: Render blueprint fallback content if defined; otherwise render empty.
+- Q: What is the authority for resolving the active Managed Site in public requests and administrative service requests? → A: Public requests resolve Managed Site context from the incoming URL; administrative service requests use their requested Managed Site scope authorized by signed clearance and active portal session, with any client-provided Managed Site scope metadata treated only as optional consistency metadata.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -81,7 +82,7 @@ As an end user visiting a URL, I receive content composed from site blueprint co
 
 ### User Story 4 - Manage Content Through the Managed Site Admin Portal Session (Priority: P2)
 
-As a content editor with managed-site clearance, I can log in to the Managed Site Admin Portal, select the managed site I am working on for my session, and use OrchardCore APIs to edit managed-site content and preview pages.
+As a content editor with managed-site clearance, I can log in to the Managed Site Admin Portal, select the managed site I am working on for my session, and use platform content services to edit managed-site content and preview pages.
 
 **Why this priority**: Editors need a controlled authoring entry point with clear site scope so updates and previews are always applied to the correct managed site.
 
@@ -91,11 +92,11 @@ As a content editor with managed-site clearance, I can log in to the Managed Sit
 
 1. **Given** a user has clearance to one managed site, **When** the user signs in, **Then** the session is automatically scoped to that managed site.
 2. **Given** a user has clearance to more than one managed site, **When** the user signs in, **Then** the user must select which managed site to manage for the current session before editing content.
-3. **Given** an active managed site is selected for the session, **When** the user updates content or previews a page, **Then** the portal performs those actions only within that active managed-site scope through OrchardCore APIs.
+3. **Given** an active managed site is selected for the session, **When** the user updates content or previews a page, **Then** the portal performs those actions only within that active managed-site scope through platform content services.
 
 ---
 
-### User Story 5 - Build Shared Navigation With Managed-Site Contributions (Priority: P2)
+### User Story 5 - Build Site Blueprint Navigation With Managed-Site Contributions (Priority: P2)
 
 As a site blueprint administrator, I can define navigation placeholders in the site blueprint, and as a managed-site administrator, I can populate those placeholders for my managed site so each managed site contributes its own navigation entries within a blueprint navigation structure.
 
@@ -193,39 +194,46 @@ As a managed-site administrator, I can fill managed-site placeholders on bluepri
 - **FR-011**: The system MUST ensure unauthorized users cannot create, edit, or publish content outside their granted site blueprint or managed-site scope.
 - **FR-012**: The system MUST reflect published updates to site blueprint and managed-site content in subsequent requests without requiring manual shell URL refresh actions.
 - **FR-013**: The solution MUST provide a Managed Site Admin Portal for editors to manage Managed Site content only.
-- **FR-014**: The Managed Site Admin Portal MUST be React-based.
+- **FR-014**: The Managed Site Admin Portal MUST be a web-based authoring experience.
 - **FR-015**: The Managed Site Admin Portal MUST authenticate users before allowing access to content management functions.
-- **FR-016**: The Managed Site Admin Portal MUST use OrchardCore APIs for managed-site content updates and page preview operations.
-- **FR-017**: The system MUST maintain managed-site clearances per user from token claims and scopes and expose only authorized managed sites to that user in the portal.
+- **FR-016**: The Managed Site Admin Portal MUST use platform content services for managed-site content updates and page preview operations.
+- **FR-017**: The system MUST maintain managed-site clearances per user from signed authorization claims and scopes and expose only authorized managed sites to that user in the portal.
 - **FR-018**: If a user has clearance to more than one managed site, the user MUST select one managed site as the active scope for the current session before performing content actions.
 - **FR-019**: If a user has clearance to exactly one managed site, the system MUST automatically set that managed site as the active scope for the session.
 - **FR-020**: Content edits and preview actions initiated from the Managed Site Admin Portal MUST execute only against the active managed site selected for the session.
-- **FR-021**: The Site Blueprint MUST support defining both placeholder menus and placeholder menu items in its navigation model.
-- **FR-022**: Managed-site administrators MUST be able to populate only the placeholders defined by the Site Blueprint for their own managed site scope.
-- **FR-023**: The composed navigation output for a request MUST include Site Blueprint navigation structure plus managed-site placeholder contributions from the matched managed site.
-- **FR-024**: Managed-site content targeting MUST use a hybrid model that can support both route-scoped content entries and layer-based targeting where each model is appropriate.
-- **FR-025**: The solution MUST preserve compatibility with OrchardCore URL routing behavior so managed-site URL resolution remains consistent with existing site URL handling expectations.
-- **FR-026**: Page preview from the Managed Site Admin Portal MUST use OrchardCore's existing preview capability while simulating the managed tenant pipeline needed to compose site blueprint and managed-site content.
-- **FR-027**: The system MUST allow Site Blueprint administrators to mark each blueprint page as overrideable or not overrideable.
-- **FR-028**: Managed-site administrators MUST be able to create page-level overrides only for blueprint pages that allow overrides.
-- **FR-029**: A managed-site page override MUST apply only to the managed site for which it was created.
-- **FR-030**: When a valid managed-site page override exists, the composed response for that managed site MUST use the override in place of the blueprint page content for that page.
-- **FR-031**: When no valid managed-site page override exists, the composed response MUST use the blueprint page content.
-- **FR-031a**: When a blueprint page with existing managed-site overrides is later marked as not overrideable, those existing overrides MUST stop rendering and MUST remain recoverable for authorized administrator review.
-- **FR-032**: The system MUST allow Site Blueprint administrators to define layer contribution points where managed sites can add supplemental content items.
-- **FR-033**: Managed-site administrators MUST be able to add, edit, order, and remove managed-site content items for layer contribution points within their managed-site scope.
-- **FR-034**: Managed-site layer contributions MUST render only for the managed site that owns them.
-- **FR-035**: The system MUST allow Site Blueprint administrators to define managed-site placeholders on blueprint content items.
-- **FR-036**: Managed-site administrators MUST be able to assign their own managed-site content items to blueprint placeholders within their managed-site scope.
-- **FR-037**: Managed-site placeholder content MUST render only in the matching managed-site context.
-- **FR-038**: The system MUST define deterministic precedence rules where layer contributions remain independent of page overrides and continue rendering through the layout.
-- **FR-039**: The Managed Site Admin Portal MUST let authorized managed-site administrators manage page overrides, layer contributions, and placeholder assignments for the active managed site only.
-- **FR-040**: Preview MUST show the composed page for the active managed site, including draft managed-site overrides, layer contributions, and placeholder assignments visible to the current user.
-- **FR-041**: The system MUST prevent managed-site administrators from changing blueprint-level override permissions, layer contribution point definitions, or placeholder definitions unless they also have Site Blueprint management access.
-- **FR-042**: The system MUST keep managed-site customization records administratively recoverable when related blueprint pages, placeholders, or layer contribution points are renamed, disabled, unpublished, or removed.
-- **FR-043**: When a managed-site page override is active, placeholders defined on the overridden blueprint page MUST NOT render for that request.
-- **FR-044**: Page-level content MAY contribute items to independent layout layers, and those layer items MUST NOT be treated as mutually exclusive with page rendering or page placeholders.
-- **FR-045**: When no managed-site content is assigned to a placeholder, the placeholder MUST render blueprint fallback content if defined, otherwise it MUST render empty.
+- **FR-021**: Public rendering requests MUST resolve the active Managed Site from the incoming URL and store the result in request-scoped Managed Site context.
+- **FR-022**: Public rendering requests MUST NOT trust client-provided Managed Site scope metadata for Managed Site resolution.
+- **FR-023**: Administrative service requests MUST validate that the requested Managed Site scope, active portal session scope, and signed authorization clearance all refer to the same authorized Managed Site; when client-provided Managed Site scope metadata is present, it MUST match the requested Managed Site scope.
+- **FR-024**: The Site Blueprint MUST support defining both placeholder menus and placeholder menu items in its navigation model.
+- **FR-025**: Managed-site administrators MUST be able to populate only the placeholders defined by the Site Blueprint for their own managed site scope.
+- **FR-026**: The composed navigation output for a request MUST include Site Blueprint navigation structure plus managed-site placeholder contributions from the matched managed site.
+- **FR-027**: Managed-site content targeting MUST use a hybrid model that can support both route-scoped content entries and layer-based targeting where each model is appropriate.
+- **FR-028**: The solution MUST preserve compatibility with existing platform URL routing behavior so managed-site URL resolution remains consistent with existing site URL handling expectations.
+- **FR-029**: Page preview from the Managed Site Admin Portal MUST use the platform's existing preview capability while simulating the Managed Site request composition pipeline for the active Managed Site URL context.
+- **FR-030**: The system MUST allow Site Blueprint administrators to mark each blueprint page as overrideable or not overrideable.
+- **FR-031**: Managed-site administrators MUST be able to create page-level overrides only for blueprint pages that allow overrides.
+- **FR-032**: A managed-site page override MUST apply only to the managed site for which it was created.
+- **FR-033**: When a valid managed-site page override exists, the composed response for that managed site MUST use the override in place of the blueprint page content for that page.
+- **FR-034**: When no valid managed-site page override exists, the composed response MUST use the blueprint page content.
+- **FR-035**: When a blueprint page with existing managed-site overrides is later marked as not overrideable, those existing overrides MUST stop rendering and MUST remain recoverable for authorized administrator review.
+- **FR-036**: The system MUST allow Site Blueprint administrators to define layer contribution points where managed sites can add supplemental content items.
+- **FR-037**: Managed-site administrators MUST be able to add, edit, order, and remove managed-site content items for layer contribution points within their managed-site scope.
+- **FR-038**: Managed-site layer contributions MUST render only for the managed site that owns them.
+- **FR-039**: The system MUST allow Site Blueprint administrators to define managed-site placeholders on blueprint content items.
+- **FR-040**: Managed-site administrators MUST be able to assign their own managed-site content items to blueprint placeholders within their managed-site scope.
+- **FR-041**: Managed-site placeholder content MUST render only in the matching managed-site context.
+- **FR-042**: The system MUST define deterministic precedence rules where layer contributions remain independent of page overrides and continue rendering through the layout.
+- **FR-043**: The Managed Site Admin Portal MUST let authorized managed-site administrators manage page overrides, layer contributions, and placeholder assignments for the active managed site only.
+- **FR-044**: Preview MUST show the composed page for the active managed site, including draft managed-site overrides, layer contributions, and placeholder assignments visible to the current user.
+- **FR-045**: The system MUST prevent managed-site administrators from changing blueprint-level override permissions, layer contribution point definitions, or placeholder definitions unless they also have Site Blueprint management access.
+- **FR-046**: The system MUST keep managed-site customization records administratively recoverable when related blueprint pages, placeholders, or layer contribution points are renamed, disabled, unpublished, or removed.
+- **FR-047**: When a managed-site page override is active, placeholders defined on the overridden blueprint page MUST NOT render for that request.
+- **FR-048**: Page-level content MAY contribute items to independent layout layers, and those layer items MUST NOT be treated as mutually exclusive with page rendering or page placeholders.
+- **FR-049**: When no managed-site content is assigned to a placeholder, the placeholder MUST render blueprint fallback content if defined, otherwise it MUST render empty.
+- **FR-050**: Published changes to Site Blueprint content, Managed Site content, URL registrations, page overrides, layer contributions, placeholder assignments, and navigation contributions MUST use platform cache infrastructure to invalidate affected composition state so subsequent matching requests reflect the published change according to configured cache management settings.
+- **FR-051**: Managed navigation contributions affected by renamed, disabled, unpublished, or removed Site Blueprint navigation placeholders MUST stop rendering when invalid and remain recoverable for authorized administrator review, reassignment, or cleanup.
+- **FR-052**: Managed-site layer contributions affected by renamed, disabled, unpublished, or removed layer contribution points MUST stop rendering when invalid and remain recoverable for authorized administrator review, reassignment, or cleanup.
+- **FR-053**: Placeholder assignments affected by renamed, disabled, unpublished, or removed managed-site placeholders MUST stop rendering when invalid and remain recoverable for authorized administrator review, reassignment, or cleanup.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -233,8 +241,9 @@ As a managed-site administrator, I can fill managed-site placeholders on bluepri
 - **Managed Site**: A child site context with its own URL registrations, editor access scope, and managed-site-specific content.
 - **URL Registration**: A mapping between an incoming URL and either the site blueprint context alone or a specific managed site.
 - **Content Scope Permission**: Authorization boundaries that determine who can manage site blueprint content versus a specific managed site's content.
-- **Managed Site Clearance**: Token claims and scopes that determine which managed sites a user can access in the Managed Site Admin Portal.
+- **Managed Site Clearance**: Signed authorization claims and scopes that determine which managed sites a user can access in the Managed Site Admin Portal.
 - **Active Managed Site Session Scope**: The managed site selected by the user (or auto-selected when only one is available) that constrains all editing and preview actions during the current session.
+- **Managed Site Request Context**: The request-scoped Managed Site resolved from an incoming public URL and used by rendering and composition services.
 - **Composed Response**: The final delivered content assembled from site blueprint content and optional managed-site content for a matched URL.
 - **Menu Placeholder**: A site blueprint-defined placeholder menu or placeholder menu item that can receive managed-site-specific menu contributions.
 - **Managed Navigation Contribution**: Managed-site-owned navigation entries assigned to site blueprint placeholders and rendered only within that managed site scope.
@@ -246,6 +255,7 @@ As a managed-site administrator, I can fill managed-site placeholders on bluepri
 - **Managed-Site Placeholder**: A blueprint content area intended to be filled by managed-site-specific content items.
 - **Placeholder Assignment**: A relationship between a managed site, a managed-site placeholder, and one or more managed-site content items.
 - **Composition Precedence Rule**: The ordered rule set that keeps layout layer contributions independent while determining whether blueprint page content, managed-site page override content, placeholder content, or blueprint fallback content appears in the final response.
+- **Composition Cache State**: The cache tags, signals, dependencies, and invalidation state used to ensure composed responses reflect recently published blueprint or managed-site changes according to configured cache management settings.
 
 ## Success Criteria *(mandatory)*
 
@@ -254,31 +264,35 @@ As a managed-site administrator, I can fill managed-site placeholders on bluepri
 - **SC-001**: 100% of URL requests mapped to managed sites return content that includes both site blueprint and corresponding managed-site layers.
 - **SC-002**: 100% of URL requests not mapped to managed sites return site blueprint content without managed-site leakage.
 - **SC-003**: 100% of unauthorized edit attempts on site blueprint or managed-site content are blocked with no persisted content change.
-- **SC-004**: At least 95% of published content updates (site blueprint or managed-site) are visible on subsequent matching requests within 60 seconds.
+- **SC-004**: 100% of published content updates (site blueprint or managed-site) are visible on subsequent matching requests immediately after platform cache invalidation completes according to configured cache management settings.
 - **SC-005**: Site administrators can complete site blueprint or managed-site URL mapping changes in under 3 minutes for standard update tasks.
 - **SC-006**: 100% of content edits and preview operations from the Managed Site Admin Portal are executed in the managed-site scope selected for the user's session.
-- **SC-007**: 95% of users with access to multiple managed sites can complete sign-in and active-site selection in under 60 seconds.
-- **SC-008**: 100% of managed-site navigation contributions appear only in the matched managed site's rendered navigation for placeholder-enabled menus.
-- **SC-009**: Site blueprint administrators can create or update placeholder definitions for a standard menu in under 3 minutes.
-- **SC-010**: 100% of portal preview requests display the composed page for the active managed site using the same blueprint and managed-site content rules as a published request.
-- **SC-011**: 100% of non-overrideable blueprint pages reject managed-site page override attempts.
-- **SC-012**: 100% of managed-site page overrides render only for their owning managed site.
-- **SC-013**: 100% of managed-site layer contributions render only for their owning managed site.
-- **SC-014**: 100% of managed-site placeholder assignments render only for their owning managed site.
-- **SC-015**: 95% of managed-site administrators can create and preview a page override in under 3 minutes after locating the target blueprint page.
-- **SC-016**: 95% of managed-site administrators can assign content to an existing blueprint placeholder in under 2 minutes.
-- **SC-017**: 100% of composed page previews match the same customization precedence rules used for published page rendering.
-- **SC-018**: 100% of customization records affected by blueprint changes remain visible to authorized administrators for review or cleanup.
-- **SC-019**: 100% of active managed-site page overrides suppress placeholders from the overridden blueprint page while preserving independently rendered layer contributions.
-- **SC-020**: 100% of managed-site page overrides for pages later marked not overrideable stop rendering while remaining visible to authorized administrators for recovery or cleanup.
-- **SC-021**: 100% of empty managed-site placeholders render blueprint fallback content when available and render empty when no fallback exists.
+- **SC-007**: 100% of public rendering requests derive Managed Site context from URL resolution rather than client-provided scope metadata.
+- **SC-008**: 100% of administrative service requests with mismatched requested scope, session scope, signed clearance, or optional Managed Site scope metadata are rejected without changing content.
+- **SC-009**: 95% of users with access to multiple managed sites can complete sign-in and active-site selection in under 60 seconds.
+- **SC-010**: 100% of managed-site navigation contributions appear only in the matched managed site's rendered navigation for placeholder-enabled menus.
+- **SC-011**: Site blueprint administrators can create or update placeholder definitions for a standard menu in under 3 minutes.
+- **SC-012**: 100% of portal preview requests display the composed page for the active managed site using the same blueprint and managed-site content rules as a published request.
+- **SC-013**: 100% of non-overrideable blueprint pages reject managed-site page override attempts.
+- **SC-014**: 100% of managed-site page overrides render only for their owning managed site.
+- **SC-015**: 100% of managed-site layer contributions render only for their owning managed site.
+- **SC-016**: 100% of managed-site placeholder assignments render only for their owning managed site.
+- **SC-017**: 95% of managed-site administrators can create and preview a page override in under 3 minutes after locating the target blueprint page.
+- **SC-018**: 95% of managed-site administrators can assign content to an existing blueprint placeholder in under 2 minutes.
+- **SC-019**: 100% of composed page previews match the same customization precedence rules used for published page rendering.
+- **SC-020**: 100% of customization records affected by blueprint changes remain visible to authorized administrators for review or cleanup.
+- **SC-021**: 100% of active managed-site page overrides suppress placeholders from the overridden blueprint page while preserving independently rendered layer contributions.
+- **SC-022**: 100% of managed-site page overrides for pages later marked not overrideable stop rendering while remaining visible to authorized administrators for recovery or cleanup.
+- **SC-023**: 100% of empty managed-site placeholders render blueprint fallback content when available and render empty when no fallback exists.
+- **SC-024**: 100% of invalidated navigation, layer, and placeholder customization records stop rendering when their blueprint target becomes invalid and remain visible to authorized administrators for recovery, reassignment, or cleanup.
 
 ## Assumptions
 
 - Existing OrchardCore user identities and role/permission management are reused for access control decisions.
-- The Managed Site Admin Portal is implemented as a React front end.
-- OrchardCore APIs required for content edit and page preview operations are available to the Managed Site Admin Portal under authenticated access.
-- Managed-site clearance is provided to the portal through token claims and scopes.
+- The Managed Site Admin Portal is implemented as a web-based authoring experience.
+- Platform content services required for content edit and page preview operations are available to the Managed Site Admin Portal under authenticated access.
+- Managed-site clearance is provided to the portal through signed authorization claims and scopes.
+- Public page rendering resolves Managed Site context from the incoming URL; optional Managed Site scope metadata is used only by administrative service requests as consistency metadata.
 - Site blueprint content and managed-site content use existing content lifecycle states (draft/published) and are composed from published versions.
 - URL matching uses the same canonical request URL interpretation already used by the site.
 - Initial scope covers one Site Blueprint with multiple managed sites under that blueprint context.

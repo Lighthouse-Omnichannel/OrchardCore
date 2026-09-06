@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Shared and Managed Site Content
+# Specification Quality Checklist: Site Blueprint and Managed Site Content
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-09-06
@@ -6,7 +6,7 @@
 
 ## Content Quality
 
-- [ ] No implementation details (languages, frameworks, APIs)
+- [x] No implementation details (languages, frameworks, APIs)
 - [x] Focused on user value and business needs
 - [x] Written for non-technical stakeholders
 - [x] All mandatory sections completed
@@ -27,8 +27,9 @@
 - [x] All functional requirements have clear acceptance criteria
 - [x] User scenarios cover primary flows
 - [x] Feature meets measurable outcomes defined in Success Criteria
-- [ ] No implementation details leak into specification
+- [x] No implementation details leak into specification
 
 ## Notes
 
 - Validation pass 1: All checklist items passed.
+- Validation pass 2: Technical implementation constraints are captured in plan/research/contracts; the spec uses platform-neutral wording.
