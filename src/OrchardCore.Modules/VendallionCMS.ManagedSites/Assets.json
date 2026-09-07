@@ -1,0 +1,8 @@
+[
+  {
+    "action": "vite",
+    "name": "managed-site-admin",
+    "source": "Assets/managed-site-admin/",
+    "tags": ["admin", "js"]
+  }
+]

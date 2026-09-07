@@ -18,20 +18,20 @@
 
 **Purpose**: Create the module, test, asset, and documentation structure needed by all stories.
 
-- [ ] T001 Create module directory structure in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/`
-- [ ] T002 Create test project directory structure in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/`
-- [ ] T003 Create module project file in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.csproj`
-- [ ] T004 Create test project file in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.Tests.csproj`
-- [ ] T005 Add module project to solution in `OrchardCore.slnx`
-- [ ] T006 Add test project to solution in `OrchardCore.slnx`
-- [ ] T007 Create module manifest with VendallionCMS feature IDs in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Manifest.cs`
-- [ ] T008 Create feature constants in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/ManagedSitesConstants.cs`
-- [ ] T009 Create module startup shell in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
-- [ ] T010 Create admin asset manifest in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets.json`
-- [ ] T011 Create React admin asset package in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/package.json`
-- [ ] T012 Create React admin Vite configuration in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/vite.config.ts`
-- [ ] T013 Create module README stub in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/README.md`
-- [ ] T014 Create canonical docs directory in `src/docs/reference/modules/ManagedSites/`
+- [X] T001 Create module directory structure in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/`
+- [X] T002 Create test project directory structure in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/`
+- [X] T003 Create module project file in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.csproj`
+- [X] T004 Create test project file in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.Tests.csproj`
+- [X] T005 Add module project to solution in `OrchardCore.slnx`
+- [X] T006 Add test project to solution in `OrchardCore.slnx`
+- [X] T007 Create module manifest with VendallionCMS feature IDs in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Manifest.cs`
+- [X] T008 Create feature constants in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/ManagedSitesConstants.cs`
+- [X] T009 Create module startup shell in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
+- [X] T010 Create admin asset manifest in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets.json`
+- [X] T011 Create React admin asset package in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/package.json`
+- [X] T012 Create React admin Vite configuration in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/vite.config.ts`
+- [X] T013 Create module README stub in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/README.md`
+- [X] T014 Create canonical docs directory in `src/docs/reference/modules/ManagedSites/`
 
 ---
 
@@ -39,23 +39,23 @@
 
 **Purpose**: Establish shared domain models, migrations, indexes, interfaces, authorization, and API plumbing required by every user story.
 
-- [ ] T015 Create SiteBlueprint model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/SiteBlueprint.cs`
-- [ ] T016 Create ManagedSite model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedSite.cs`
-- [ ] T017 Create UrlRegistration model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/UrlRegistration.cs`
-- [ ] T018 Create ManagedSiteClearance model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedSiteClearance.cs`
-- [ ] T019 Create ActiveManagedSiteSessionScope model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ActiveManagedSiteSessionScope.cs`
-- [ ] T020 Create page customization models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/PageCustomizationModels.cs`
-- [ ] T021 Create navigation customization models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/NavigationCustomizationModels.cs`
-- [ ] T022 Create document/index models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Indexes/ManagedSitesIndexes.cs`
-- [ ] T023 Create initial data migration in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Migrations/ManagedSitesMigrations.cs`
-- [ ] T024 Create permission definitions in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Permissions.cs`
-- [ ] T025 Create managed-site scope authorization service interface in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/IManagedSiteAuthorizationService.cs`
-- [ ] T026 Create managed-site repository/service interfaces in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteServiceInterfaces.cs`
-- [ ] T027 Create composition service interfaces in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/CompositionServiceInterfaces.cs`
-- [ ] T028 Create API base controller with common authorization helpers in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitesApiControllerBase.cs`
-- [ ] T029 Register foundational services and permissions in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
-- [ ] T030 Create shared test fixtures in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedSitesTestFixture.cs`
-- [ ] T031 Create test data builders in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedSitesTestData.cs`
+- [X] T015 Create SiteBlueprint model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/SiteBlueprint.cs`
+- [X] T016 Create ManagedSite model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedSite.cs`
+- [X] T017 Create UrlRegistration model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/UrlRegistration.cs`
+- [X] T018 Create ManagedSiteClearance model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedSiteClearance.cs`
+- [X] T019 Create ActiveManagedSiteSessionScope model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ActiveManagedSiteSessionScope.cs`
+- [X] T020 Create page customization models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/PageCustomizationModels.cs`
+- [X] T021 Create navigation customization models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/NavigationCustomizationModels.cs`
+- [X] T022 Create document/index models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Indexes/ManagedSitesIndexes.cs`
+- [X] T023 Create initial data migration in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Migrations/ManagedSitesMigrations.cs`
+- [X] T024 Create permission definitions in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Permissions.cs`
+- [X] T025 Create managed-site scope authorization service interface in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/IManagedSiteAuthorizationService.cs`
+- [X] T026 Create managed-site repository/service interfaces in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteServiceInterfaces.cs`
+- [X] T027 Create composition service interfaces in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/CompositionServiceInterfaces.cs`
+- [X] T028 Create API base controller with common authorization helpers in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitesApiControllerBase.cs`
+- [X] T029 Register foundational services and permissions in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
+- [X] T030 Create shared test fixtures in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedSitesTestFixture.cs`
+- [X] T031 Create test data builders in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedSitesTestData.cs`
 
 **Checkpoint**: Module compiles with empty service implementations and can be enabled without changing runtime behavior.
 
@@ -69,17 +69,17 @@
 
 ### Tests for User Story 1
 
-- [ ] T032 [P] [US1] Add blueprint permission tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/SiteBlueprintAuthorizationTests.cs`
-- [ ] T033 [P] [US1] Add blueprint settings migration tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/SiteBlueprint/SiteBlueprintMigrationTests.cs`
+- [X] T032 [P] [US1] Add blueprint permission tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/SiteBlueprintAuthorizationTests.cs`
+- [X] T033 [P] [US1] Add blueprint settings migration tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/SiteBlueprint/SiteBlueprintMigrationTests.cs`
 
 ### Implementation for User Story 1
 
-- [ ] T034 [US1] Implement Site Blueprint settings model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Settings/SiteBlueprintSettings.cs`
-- [ ] T035 [US1] Implement Site Blueprint settings driver in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/SiteBlueprintSettingsDisplayDriver.cs`
-- [ ] T036 [US1] Implement Site Blueprint settings editor view in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/SiteBlueprintSettings.Edit.cshtml`
-- [ ] T037 [US1] Implement Site Blueprint service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/SiteBlueprintService.cs`
-- [ ] T038 [US1] Register Site Blueprint admin menu entries in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/AdminMenu.cs`
-- [ ] T039 [US1] Wire Site Blueprint settings and admin services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
+- [X] T034 [US1] Implement Site Blueprint settings model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Settings/SiteBlueprintSettings.cs`
+- [X] T035 [US1] Implement Site Blueprint settings driver in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/SiteBlueprintSettingsDisplayDriver.cs`
+- [X] T036 [US1] Implement Site Blueprint settings editor view in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/SiteBlueprintSettings.Edit.cshtml`
+- [X] T037 [US1] Implement Site Blueprint service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/SiteBlueprintService.cs`
+- [X] T038 [US1] Register Site Blueprint admin menu entries in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/AdminMenu.cs`
+- [X] T039 [US1] Wire Site Blueprint settings and admin services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
 
 **Checkpoint**: Site Blueprint designation and blueprint-content authorization are functional and tested.
 
@@ -93,19 +93,19 @@
 
 ### Tests for User Story 2
 
-- [ ] T040 [P] [US2] Add Managed Site CRUD tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Routing/ManagedSiteDefinitionTests.cs`
-- [ ] T041 [P] [US2] Add URL uniqueness tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Routing/UrlRegistrationTests.cs`
-- [ ] T042 [P] [US2] Add scoped content authorization tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedSiteContentAuthorizationTests.cs`
+- [X] T040 [P] [US2] Add Managed Site CRUD tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Routing/ManagedSiteDefinitionTests.cs`
+- [X] T041 [P] [US2] Add URL uniqueness tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Routing/UrlRegistrationTests.cs`
+- [X] T042 [P] [US2] Add scoped content authorization tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedSiteContentAuthorizationTests.cs`
 
 ### Implementation for User Story 2
 
-- [ ] T043 [US2] Implement Managed Site service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteService.cs`
-- [ ] T044 [US2] Implement URL registration service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/UrlRegistrationService.cs`
-- [ ] T045 [US2] Implement Managed Site admin controller in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitesAdminController.cs`
-- [ ] T046 [US2] Implement Managed Site admin view models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/ViewModels/ManagedSiteViewModels.cs`
-- [ ] T047 [US2] Implement Managed Site admin views in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/ManagedSites/`
-- [ ] T048 [US2] Implement URL conflict validation in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/UrlRegistrationValidator.cs`
-- [ ] T049 [US2] Implement scoped content authorization service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteAuthorizationService.cs`
+- [X] T043 [US2] Implement Managed Site service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteService.cs`
+- [X] T044 [US2] Implement URL registration service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/UrlRegistrationService.cs`
+- [X] T045 [US2] Implement Managed Site admin controller in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitesAdminController.cs`
+- [X] T046 [US2] Implement Managed Site admin view models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/ViewModels/ManagedSiteViewModels.cs`
+- [X] T047 [US2] Implement Managed Site admin views in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/ManagedSites/`
+- [X] T048 [US2] Implement URL conflict validation in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/UrlRegistrationValidator.cs`
+- [X] T049 [US2] Implement scoped content authorization service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteAuthorizationService.cs`
 
 **Checkpoint**: Managed Site definitions, URL registrations, and scoped editor access are functional and tested.
 

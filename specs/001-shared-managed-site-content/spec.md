@@ -289,7 +289,8 @@ As a managed-site administrator, I can fill managed-site placeholders on bluepri
 ## Assumptions
 
 - Existing OrchardCore user identities and role/permission management are reused for access control decisions.
-- The Managed Site Admin Portal is implemented as a web-based authoring experience.
+- Site Blueprint content, placeholders, layer contribution points, override policies, and navigation structure are authored in the standard OrchardCore admin UI; the Managed Site Admin Portal is not used for blueprint authoring.
+- The Managed Site Admin Portal is implemented as a React-based web authoring experience used exclusively by managed-site editors and administrators.
 - Platform content services required for content edit and page preview operations are available to the Managed Site Admin Portal under authenticated access.
 - Managed-site clearance is provided to the portal through signed authorization claims and scopes.
 - Public page rendering resolves Managed Site context from the incoming URL; optional Managed Site scope metadata is used only by administrative service requests as consistency metadata.

@@ -1,0 +1,33 @@
+@using VendallionCMS.ManagedSites.ViewModels
+@model ManagedSiteIndexViewModel
+
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <h5>@T["Managed Sites"]</h5>
+        <span class="hint">@T["Managed Sites are URL-scoped content contexts under this Site Blueprint."]</span>
+    </div>
+</div>
+
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>@T["Name"]</th>
+                    <th>@T["Status"]</th>
+                    <th>@T["URLs"]</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var managedSite in Model.ManagedSites)
+            {
+                <tr>
+                    <td>@managedSite.Name</td>
+                    <td>@managedSite.Status</td>
+                    <td>@string.Join(", ", managedSite.UrlRegistrations.Select(registration => registration.Url))</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

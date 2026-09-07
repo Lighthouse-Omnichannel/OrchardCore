@@ -1,0 +1,21 @@
+@using VendallionCMS.ManagedSites.ViewModels
+@model SiteBlueprintSettingsViewModel
+
+<div class="ocat-wrapper" asp-validation-class-for="IsSiteBlueprint">
+    <div class="ocat-end-offset">
+        <div class="form-check">
+            <input asp-for="IsSiteBlueprint" type="checkbox" class="form-check-input" />
+            <label asp-for="IsSiteBlueprint" class="form-check-label">@T["Mark this site as a Site Blueprint"]</label>
+        </div>
+        <span class="hint dashed">@T["When enabled, this site provides blueprint content and structure for Managed Sites."]</span>
+    </div>
+</div>
+
+<div class="ocat-wrapper" asp-validation-class-for="Name">
+    <label asp-for="Name" class="ocat-label">@T["Blueprint name"]</label>
+    <div class="ocat-end">
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name"></span>
+        <span class="hint">@T["The display name shown to administrators when managing this Site Blueprint."]</span>
+    </div>
+</div>
