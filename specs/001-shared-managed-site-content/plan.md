@@ -90,7 +90,7 @@ src/docs/reference/modules/ManagedSites/
 └── README.md
 ```
 
-**Structure Decision**: Implement a lean v1 as a single `VendallionCMS.ManagedSites` OrchardCore module with feature toggles for admin portal, routing, permissions, composition, preview, and customization support. Split into separate projects only if module activation or deployment boundaries require it later.
+**Structure Decision**: Implement a lean v1 as a single `VendallionCMS.ManagedSites` OrchardCore module. The core ManagedSites feature includes request composition and cannot operate without it; the Admin feature exposes the React-based Managed Site Admin Portal and depends on the core, routing, and permissions features. Split into separate projects only if module activation or deployment boundaries require it later.
 
 ## Phase 0 Research Summary
 

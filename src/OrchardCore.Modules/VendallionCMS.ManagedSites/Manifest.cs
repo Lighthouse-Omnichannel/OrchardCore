@@ -19,11 +19,11 @@ using VendallionCMS.ManagedSites;
 )]
 
 [assembly: Feature(
-    Id = ManagedSitesConstants.Features.Admin,
-    Name = "Managed Sites Admin",
-    Description = "Provides the Managed Site Admin Portal and administrative screens.",
+    Id = ManagedSitesConstants.Features.AdminPortal,
+    Name = "Managed Sites Admin Portal",
+    Description = "Provides the React-based Managed Site Admin Portal and administrative screens.",
     Category = "Content Management",
-    Dependencies = [ManagedSitesConstants.Features.ManagedSites, "OrchardCore.Admin", "OrchardCore.Navigation"]
+    Dependencies = [ManagedSitesConstants.Features.ManagedSites, ManagedSitesConstants.Features.Routing, ManagedSitesConstants.Features.Permissions, "OrchardCore.Admin", "OrchardCore.Navigation"]
 )]
 
 [assembly: Feature(
@@ -40,12 +40,4 @@ using VendallionCMS.ManagedSites;
     Description = "Adds scoped permissions for Site Blueprint and Managed Site management.",
     Category = "Security",
     Dependencies = [ManagedSitesConstants.Features.ManagedSites, "OrchardCore.Roles", "OrchardCore.Users"]
-)]
-
-[assembly: Feature(
-    Id = ManagedSitesConstants.Features.Composition,
-    Name = "Managed Sites Composition",
-    Description = "Composes request content from Site Blueprint and Managed Site layers.",
-    Category = "Content Management",
-    Dependencies = [ManagedSitesConstants.Features.ManagedSites, ManagedSitesConstants.Features.Routing]
 )]
