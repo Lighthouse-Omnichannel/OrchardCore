@@ -33,3 +33,4 @@
 
 - Validation pass 1: All checklist items passed.
 - Validation pass 2: Technical implementation constraints are captured in plan/research/contracts; the spec uses platform-neutral wording.
+- Validation pass 3 (2026-09-14): Re-validated after replacing the four customization mechanisms with the single Managed Content capability. Requirements, entities, success criteria, and scenarios were rewritten; superseded clarifications are retained and marked for traceability. An explicit Out of Scope section was added to bound the additive-content limitation.

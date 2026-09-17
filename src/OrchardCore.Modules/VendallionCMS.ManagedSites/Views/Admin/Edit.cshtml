@@ -1,0 +1,47 @@
+@using VendallionCMS.ManagedSites.Models
+@using VendallionCMS.ManagedSites.ViewModels
+@model ManagedSiteEditViewModel
+
+@{
+    var title = Model.IsNew ? T["Add managed site"] : T["Edit managed site"];
+    var formAction = Model.IsNew ? "Create" : "Edit";
+}
+
+<zone Name="Title"><h1>@title</h1></zone>
+
+<form asp-action="@formAction" asp-route-id="@Model.Id" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label">@T["Name"]</label>
+        <input asp-for="Name" class="form-control" autofocus />
+        <span asp-validation-for="Name" class="text-danger"></span>
+        <span class="hint">@T["The name must be unique within this site."]</span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Status" class="form-label">@T["Status"]</label>
+        <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<ManagedSiteStatus>()"></select>
+        <span class="hint">@T["Only enabled managed sites resolve requests and accept editor changes."]</span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Hostname" class="form-label">@T["Host name"]</label>
+        <input asp-for="Hostname" class="form-control" placeholder="contoso.com, www.contoso.com" />
+        <span asp-validation-for="Hostname" class="text-danger"></span>
+        <span class="hint">@T["One or more host names, separated by a comma or a space, exactly as a tenant declares its hosts. Leave empty to answer on every host this site serves."]</span>
+        <span class="hint">@T["A host name added here is also added to this site's host names, so the site answers on it."]</span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="UrlPrefix" class="form-label">@T["URL prefix"]</label>
+        <input asp-for="UrlPrefix" class="form-control" placeholder="shop" />
+        <span asp-validation-for="UrlPrefix" class="text-danger"></span>
+        <span class="hint">@T["A single path prefix, without leading or trailing slashes. Leave empty to answer at the root."]</span>
+    </div>
+
+    <div class="mb-3">
+        <button type="submit" class="btn btn-primary save">@T["Save"]</button>
+        <a asp-action="Index" class="btn btn-secondary">@T["Cancel"]</a>
+    </div>
+</form>

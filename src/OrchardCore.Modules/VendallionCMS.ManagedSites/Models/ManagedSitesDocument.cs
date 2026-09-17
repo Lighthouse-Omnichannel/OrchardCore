@@ -1,17 +1,21 @@
 namespace VendallionCMS.ManagedSites.Models;
 
 /// <summary>
-/// Stores Managed Sites configuration for the Site Blueprint tenant.
+/// Stores Managed Sites configuration for the tenant acting as the Site Blueprint.
 /// </summary>
 public sealed class ManagedSitesDocument
 {
     /// <summary>
-    /// Gets the Managed Sites defined for the Site Blueprint.
+    /// Gets or sets the Managed Sites defined in the tenant.
     /// </summary>
-    public IList<ManagedSite> ManagedSites { get; } = [];
+    public List<ManagedSite> ManagedSites { get; set; } = [];
 
     /// <summary>
-    /// Gets URL registrations owned by the Site Blueprint and Managed Sites.
+    /// Gets or sets the host names this module last wrote into the tenant hostname setting.
     /// </summary>
-    public IList<UrlRegistration> UrlRegistrations { get; } = [];
+    /// <remarks>
+    /// Tracked so synchronization can withdraw exactly the host names it previously added, leaving host
+    /// names an operator configured on the tenant untouched.
+    /// </remarks>
+    public List<string> AppliedShellHosts { get; set; } = [];
 }

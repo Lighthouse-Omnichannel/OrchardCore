@@ -8,6 +8,8 @@
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
+**Revision 2026-09-14**: The four separate customization mechanisms (page overrides, navigation contributions, layer contributions, placeholder assignments) were replaced by a single Managed Content capability. Phases 6, 7, 9, and 10 of the previous plan collapsed into the two Managed Content phases below. Tasks T020, T021, and T027 were completed against the superseded design and are re-opened as T067 and T070.
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel with other tasks in the same phase because it touches different files and has no dependency on incomplete tasks.
@@ -44,14 +46,14 @@
 - [X] T017 Create UrlRegistration model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/UrlRegistration.cs`
 - [X] T018 Create ManagedSiteClearance model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedSiteClearance.cs`
 - [X] T019 Create ActiveManagedSiteSessionScope model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ActiveManagedSiteSessionScope.cs`
-- [X] T020 Create page customization models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/PageCustomizationModels.cs`
-- [X] T021 Create navigation customization models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/NavigationCustomizationModels.cs`
+- [X] ~~T020 Create page customization models in `Models/PageCustomizationModels.cs`~~ **Superseded by the Managed Content design; removal tracked as T067.**
+- [X] ~~T021 Create navigation customization models in `Models/NavigationCustomizationModels.cs`~~ **Superseded by the Managed Content design; removal tracked as T067.**
 - [X] T022 Create document/index models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Indexes/ManagedSitesIndexes.cs`
 - [X] T023 Create initial data migration in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Migrations/ManagedSitesMigrations.cs`
 - [X] T024 Create permission definitions in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Permissions.cs`
 - [X] T025 Create managed-site scope authorization service interface in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/IManagedSiteAuthorizationService.cs`
 - [X] T026 Create managed-site repository/service interfaces in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteServiceInterfaces.cs`
-- [X] T027 Create composition service interfaces in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/CompositionServiceInterfaces.cs`
+- [X] ~~T027 Create composition service interfaces in `Services/CompositionServiceInterfaces.cs`~~ **Superseded by the Managed Content design; rewrite tracked as T070.**
 - [X] T028 Create API base controller with common authorization helpers in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitesApiControllerBase.cs`
 - [X] T029 Register foundational services and permissions in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
 - [X] T030 Create shared test fixtures in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedSitesTestFixture.cs`
@@ -67,21 +69,30 @@
 
 **Independent Test**: Assign blueprint management access to one user, update blueprint content, and confirm unauthorized users cannot modify it.
 
+**Superseded 2026-09-17**: The explicit designation was removed. Enabling the Managed Sites feature is
+now what makes a tenant the Site Blueprint, so the toggle, the name, the blueprint identifier, the
+blueprint entity, and their settings screen no longer exist. The toggle had gated nothing: its
+identifier was hardcoded, so both branches of every caller behaved identically. The
+`ManageSiteBlueprint` permission survives, because it governs who may manage common content and, from
+User Story 5 onward, who may configure managed content scopes.
+
 ### Tests for User Story 1
 
-- [X] T032 [P] [US1] Add blueprint permission tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/SiteBlueprintAuthorizationTests.cs`
-- [X] T033 [P] [US1] Add blueprint settings migration tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/SiteBlueprint/SiteBlueprintMigrationTests.cs`
+- [X] ~~T032 [US1] Add blueprint permission tests~~ **Removed with the designation.**
+- [X] ~~T033 [US1] Add blueprint settings migration tests~~ **Removed with the designation.**
 
 ### Implementation for User Story 1
 
-- [X] T034 [US1] Implement Site Blueprint settings model in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Settings/SiteBlueprintSettings.cs`
-- [X] T035 [US1] Implement Site Blueprint settings driver in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/SiteBlueprintSettingsDisplayDriver.cs`
-- [X] T036 [US1] Implement Site Blueprint settings editor view in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/SiteBlueprintSettings.Edit.cshtml`
-- [X] T037 [US1] Implement Site Blueprint service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/SiteBlueprintService.cs`
-- [X] T038 [US1] Register Site Blueprint admin menu entries in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/AdminMenu.cs`
-- [X] T039 [US1] Wire Site Blueprint settings and admin services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
+- [X] ~~T034 [US1] Implement Site Blueprint settings model~~ **Removed with the designation.**
+- [X] ~~T035 [US1] Implement Site Blueprint settings driver~~ **Removed with the designation.**
+- [X] ~~T036 [US1] Implement Site Blueprint settings editor view~~ **Removed with the designation.**
+- [X] ~~T037 [US1] Implement Site Blueprint service~~ **Removed with the designation.**
+- [X] T038 [US1] Register admin menu entries in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/AdminMenu.cs`
+- [X] T039 [US1] Wire admin services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
+- [X] T145 [US1] Remove the Site Blueprint designation, entity, service, and settings screen across `src/OrchardCore.Modules/VendallionCMS.ManagedSites/`
+- [X] T146 [US1] Remove `BlueprintId` from `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedSite.cs` and `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Indexes/ManagedSitesIndexes.cs`
 
-**Checkpoint**: Site Blueprint designation and blueprint-content authorization are functional and tested.
+**Checkpoint**: A tenant with the feature enabled is the Site Blueprint, and common-content authorization is governed by the `ManageSiteBlueprint` permission.
 
 ---
 
@@ -101,11 +112,44 @@
 
 - [X] T043 [US2] Implement Managed Site service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteService.cs`
 - [X] T044 [US2] Implement URL registration service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/UrlRegistrationService.cs`
-- [X] T045 [US2] Implement Managed Site admin controller in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitesAdminController.cs`
+- [X] T045 [US2] Implement Managed Site admin controller in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/AdminController.cs`
 - [X] T046 [US2] Implement Managed Site admin view models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/ViewModels/ManagedSiteViewModels.cs`
-- [X] T047 [US2] Implement Managed Site admin views in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/ManagedSites/`
+- [X] T047 [US2] Implement Managed Site admin views in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/Admin/` (the original `Views/ManagedSites/` matched no controller name, so MVC could not resolve it)
 - [X] T048 [US2] Implement URL conflict validation in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/UrlRegistrationValidator.cs`
 - [X] T049 [US2] Implement scoped content authorization service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteAuthorizationService.cs`
+
+### Reopened and added for User Story 2 (2026-09-15)
+
+T040, T045, T046, and T047 were ticked while only a read-only list was delivered: the admin controller
+exposed a single `Index` action, `Views/ManagedSites/` held only `Index.cshtml`, `ManagedSiteEditViewModel`
+was unreferenced dead code, and `ManagedSiteDefinitionTests` asserted only the default status. The
+`PUT /api/managed-sites/{managedSiteId}` endpoint in the API contract had no task at all. Managed Sites
+therefore could not be created, which blocks every later story.
+
+- [X] T135 [US2] Support editing and removing definitions in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteService.cs`, including replacing a Managed Site's URL registrations and rejecting duplicates within one submission
+- [X] T136 [US2] Implement the Managed Site definitions API endpoint from the contract in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSiteDefinitionsApiController.cs`
+- [X] T137 [P] [US2] Add Managed Site definitions API contract tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Contracts/ManagedSiteDefinitionsApiContractTests.cs`
+- [X] T138 [P] [US2] Add Managed Site create and edit functional coverage in `test/OrchardCore.Tests.Functional/Tests/VendallionCMS.ManagedSites/ManagedSiteDefinitionAdminTests.cs`
+- [X] T139 [US2] Write the mutated settings document back before saving in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteService.cs`, `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/UrlRegistrationService.cs`, and `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/SiteSettingsManagedSiteSessionStore.cs`
+- [X] T140 [US2] Give every persisted collection a setter so it deserializes in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/`
+- [X] T141 [US2] Rename admin controllers and view folders to the OrchardCore convention: the module's primary admin surface is `AdminController` with `Views/Admin/`, and the portal is `PortalController` with `Views/Portal/`, matching `AdminController`/`LayerRuleController` in OrchardCore.Layers. Both admin URLs are unchanged.
+- [X] ~~T142 [US2] Let a registration address a domain as well as a path~~ **Superseded 2026-09-17: a Managed Site is now addressed like a tenant, by Hostname and URL Prefix, so the per-registration address model is replaced. Re-opened as T147.**
+- [X] T143 [US2] Synchronize registered domains into the shell request hosts on save and delete, withdrawing only previously applied hosts, in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ShellUrlSynchronizationService.cs`
+
+### Tenant-style addressing (added 2026-09-17)
+
+The spec now addresses a Managed Site the way OrchardCore addresses a tenant: one Hostname holding one
+or more host names, plus one URL Prefix. The shipped code still stores a list of `UrlRegistration`
+entries carrying a host and a path each, so **the implementation currently diverges from the spec** and
+these tasks close that gap.
+
+- [X] T147 [US2] Replace the registration list with `Hostname` and `UrlPrefix` on `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedSite.cs`, and delete `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/UrlRegistration.cs`
+- [X] T148 [US2] Expand a Managed Site to one address per host name and decide collisions on the expanded set in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/`, preferring a host-specific Managed Site over a host-agnostic one
+- [X] T149 [US2] Source tenant Hostname synchronization from Managed Site host names in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ShellUrlSynchronizationService.cs`, keeping the never-empty guard, which now applies only while the tenant URL Prefix is also empty
+- [X] T150 [US2] Replace the single URL textarea with Hostname and URL Prefix fields in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/Admin/Edit.cshtml` and the definitions API request in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSiteDefinitionsApiController.cs`
+- [X] T151 [P] [US2] Rewrite addressing tests for the tenant-style model in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Routing/`
+- [X] ~~T152 [US2] Migrate stored Managed Sites from registration lists to Hostname and URL Prefix~~ **Not needed: the feature is unreleased, so any Managed Site stored in the old shape is recreated rather than migrated.**
+- [X] ~~T144 [P] [US2] Add domain addressing tests~~ **Superseded 2026-09-17 with T142. Re-opened as T151.**
 
 **Checkpoint**: Managed Site definitions, URL registrations, and scoped editor access are functional and tested.
 
@@ -119,192 +163,166 @@
 
 ### Tests for User Story 4
 
-- [ ] T050 [P] [US4] Add authorized Managed Sites API tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedSitePortalAuthorizationTests.cs`
-- [ ] T051 [P] [US4] Add active scope selection API tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ActiveManagedSiteSessionTests.cs`
-- [ ] T052 [P] [US4] Add portal UI scope selection tests in `test/OrchardCore.Tests.Functional/Tests/VendallionCMS.ManagedSites/ManagedSiteAdminPortalTests.cs`
-- [ ] T053 [P] [US4] Add admin API scope mismatch tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedSiteApiScopeMismatchTests.cs`
+- [X] T050 [P] [US4] Add authorized Managed Sites API tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedSitePortalAuthorizationTests.cs`
+- [X] T051 [P] [US4] Add active scope selection API tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ActiveManagedSiteSessionTests.cs`
+- [X] T052 [P] [US4] Add portal UI scope selection tests in `test/OrchardCore.Tests.Functional/Tests/VendallionCMS.ManagedSites/ManagedSiteAdminPortalTests.cs`
+- [X] T053 [P] [US4] Add admin API scope mismatch tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedSiteApiScopeMismatchTests.cs`
 
 ### Implementation for User Story 4
 
-- [ ] T054 [US4] Implement authorized Managed Sites API endpoint in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitesApiController.cs`
-- [ ] T055 [US4] Implement active Managed Site session endpoint in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSiteSessionApiController.cs`
-- [ ] T056 [US4] Implement token claims/scope extraction in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteClearanceService.cs`
-- [ ] T057 [US4] Implement route/session/token/header scope consistency checks in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitesApiControllerBase.cs`
-- [ ] T058 [US4] Implement React portal entry point in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/main.tsx`
-- [ ] T059 [US4] Implement portal API client in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/services/managedSitesApi.ts`
-- [ ] T060 [US4] Implement active site selector UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/components/ManagedSiteSelector.tsx`
-- [ ] T061 [US4] Implement scoped editor shell UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/ManagedSiteAdminShell.tsx`
-- [ ] T062 [US4] Add portal host view in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/Admin/Portal.cshtml`
+- [X] T054 [US4] Implement authorized Managed Sites API endpoint in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitesApiController.cs`
+- [X] T055 [US4] Implement active Managed Site session endpoint in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSiteSessionApiController.cs`
+- [X] T056 [US4] Implement token claims/scope extraction in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteClearanceService.cs`
+- [X] T057 [US4] Implement route/session/token/header scope consistency checks in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitesApiControllerBase.cs`
+- [X] T058 [US4] Implement React portal entry point in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/main.tsx`
+- [X] T059 [US4] Implement portal API client in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/services/managedSitesApi.ts`
+- [X] T060 [US4] Implement active site selector UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/components/ManagedSiteSelector.tsx`
+- [X] T061 [US4] Implement scoped editor shell UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/ManagedSiteAdminShell.tsx`
+- [X] T062 [US4] Add portal host view in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/Portal/Index.cshtml`
+
+### Clearance issuance for User Story 4 (added 2026-09-14)
+
+Nothing issued Managed Site clearance when Phase 5 was first planned, so the portal could only ever
+reach its no-clearance state. These tasks close that gap: an administrator grants clearance on the
+user entity, and the platform claims principal factory carries it into both the admin cookie and the
+issued access token.
+
+- [X] T130 [US4] Implement Managed Site clearance user settings in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedSiteClearanceSettings.cs`
+- [X] T131 [US4] Implement the clearance claims provider in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteClaimsProvider.cs`
+- [X] T132 [US4] Implement the clearance editor in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/ManagedSiteClearanceDisplayDriver.cs` and `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/ManagedSiteClearance.Edit.cshtml`
+- [X] T133 [US4] Add the clearance permission and register the editor and claims provider in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Permissions.cs` and `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
+- [X] T134 [P] [US4] Add clearance claim generation tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedSiteClaimsProviderTests.cs`
 
 **Checkpoint**: Portal login, authorized-site listing, auto-selection, multi-site selection, and scoped API access work end to end.
 
 ---
 
-## Phase 6: User Story 5 - Blueprint Navigation With Managed-Site Contributions (Priority: P2)
+## Phase 6: User Story 5 - Scope Blueprint Content With Managed Content (Priority: P2)
 
-**Goal**: Site Blueprint administrators define placeholder menus/menu items, and Managed Site administrators fill those placeholders for their own site.
+**Goal**: Site Blueprint administrators attach the Managed Content part to any content type and configure per-item edit scope and display scope in the standard admin UI.
 
-**Independent Test**: Create placeholder menus and items, add different Managed Site contributions, and verify each site renders only its own navigation entries.
+**Independent Test**: Attach the part to a content type, confirm rendering is unchanged, set both scopes on one item, and verify only named managed sites may edit it and only named contexts render it.
 
 ### Tests for User Story 5
 
-- [ ] T063 [P] [US5] Add menu placeholder definition tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Navigation/MenuPlaceholderTests.cs`
-- [ ] T064 [P] [US5] Add managed navigation contribution tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Navigation/ManagedNavigationContributionTests.cs`
-- [ ] T065 [P] [US5] Add navigation contribution API contract tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Contracts/ManagedNavigationContributionApiContractTests.cs`
-- [ ] T066 [P] [US5] Add navigation placeholder recovery tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Navigation/NavigationPlaceholderRecoveryTests.cs`
+- [ ] T063 [P] [US5] Add attach-is-inert default tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/ManagedContentPartDefaultsTests.cs`
+- [ ] T064 [P] [US5] Add edit scope evaluation tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/EditScopeTests.cs`
+- [ ] T065 [P] [US5] Add display scope evaluation tests including blueprint context in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/DisplayScopeTests.cs`
+- [ ] T066 [P] [US5] Add scope configuration authorization tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedContentScopeAuthorizationTests.cs`
 
 ### Implementation for User Story 5
 
-- [ ] T067 [US5] Implement menu placeholder models and settings in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/MenuPlaceholderModels.cs`
-- [ ] T068 [US5] Implement menu placeholder editor driver in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/MenuPlaceholderDisplayDriver.cs`
-- [ ] T069 [US5] Implement managed navigation contribution service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedNavigationContributionService.cs`
-- [ ] T070 [US5] Implement navigation composition handler in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Handlers/ManagedNavigationCompositionHandler.cs`
-- [ ] T071 [US5] Implement portal navigation contribution UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/ManagedNavigationPage.tsx`
-- [ ] T072 [US5] Implement navigation placeholder and contribution API endpoints in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/NavigationContributionsApiController.cs`
-- [ ] T073 [US5] Implement portal navigation contribution API client methods in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/services/managedSitesApi.ts`
-- [ ] T074 [US5] Implement navigation placeholder recovery handling in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedNavigationContributionService.cs`
+- [ ] T067 [US5] Remove superseded customization models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/PageCustomizationModels.cs` and `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/NavigationCustomizationModels.cs`
+- [ ] T068 [US5] Implement ManagedContentPart in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedContentPart.cs`
+- [ ] T069 [US5] Implement edit and display scope value types in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedContentScope.cs`
+- [ ] T070 [US5] Rewrite composition service interfaces for per-item resolution in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/CompositionServiceInterfaces.cs`
+- [ ] T071 [US5] Implement managed content scope service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentScopeService.cs`
+- [ ] T072 [US5] Implement part editor display driver in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/ManagedContentPartDisplayDriver.cs`
+- [ ] T073 [US5] Implement part editor view in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/ManagedContentPart.Edit.cshtml`
+- [ ] T074 [US5] Implement scope configuration authorization handler in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentScopeAuthorizationHandler.cs`
+- [ ] T075 [US5] Add managed content indexes for edit and display scope queries in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Indexes/ManagedContentIndexes.cs`
+- [ ] T076 [US5] Add migration registering the part and its indexes in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Migrations/ManagedSitesMigrations.cs`
+- [ ] T077 [US5] Register managed content part and scope services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
 
-**Checkpoint**: Placeholder navigation renders per Managed Site and remains recoverable across placeholder changes.
+**Checkpoint**: The part attaches to any content type, both scopes are configurable by blueprint administrators only, and attaching the part changes nothing visitors see.
 
 ---
 
-## Phase 7: User Story 6 - Override an Allowed Blueprint Page (Priority: P2)
+## Phase 7: User Story 6 - Override Managed Content Per Managed Site (Priority: P2)
 
-**Goal**: Managed Site administrators can override only blueprint pages that allow overrides, and disabled override policies stop rendering existing overrides while preserving recovery.
+**Goal**: Managed-site administrators discover every item they may customize, publish their own version, and have it served only for their managed site.
 
-**Independent Test**: Mark a page overrideable, create one Managed Site override, verify scoped rendering, mark page non-overrideable, and verify override recovery without rendering.
+**Independent Test**: List editable items in the portal, override one for one managed site, and confirm only that managed site receives the override while other contexts receive the original.
 
 ### Tests for User Story 6
 
-- [ ] T075 [P] [US6] Add page override policy tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/PageOverridePolicyTests.cs`
-- [ ] T076 [P] [US6] Add page override rendering tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/ManagedSitePageOverrideTests.cs`
-- [ ] T077 [P] [US6] Add disabled override recovery tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/PageOverrideRecoveryTests.cs`
+- [ ] T078 [P] [US6] Add override authorization tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedContentOverrideAuthorizationTests.cs`
+- [ ] T079 [P] [US6] Add override rendering isolation tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/OverrideRenderingTests.cs`
+- [ ] T080 [P] [US6] Add display-scope-beats-override tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/DisplayScopePrecedenceTests.cs`
+- [ ] T081 [P] [US6] Add container override child resolution tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/ContainerOverrideTests.cs`
+- [ ] T082 [P] [US6] Add suppression reason tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/OverrideSuppressionTests.cs`
+- [ ] T083 [P] [US6] Add override recovery tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/OverrideRecoveryTests.cs`
+- [ ] T084 [P] [US6] Add managed content API contract tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Contracts/ManagedContentApiContractTests.cs`
 
 ### Implementation for User Story 6
 
-- [ ] T078 [US6] Implement page override policy part/settings in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/PageOverridePolicyPart.cs`
-- [ ] T079 [US6] Implement page override policy editor in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/PageOverridePolicyDisplayDriver.cs`
-- [ ] T080 [US6] Implement Managed-Site Page Override service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSitePageOverrideService.cs`
-- [ ] T081 [US6] Implement page override API endpoints in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/PageOverridesApiController.cs`
-- [ ] T082 [US6] Implement page override composition handler in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Handlers/PageOverrideCompositionHandler.cs`
-- [ ] T083 [US6] Implement portal page override UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/PageOverridesPage.tsx`
+- [ ] T085 [US6] Implement ManagedContentOverride model and suppression reason in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedContentOverride.cs`
+- [ ] T086 [US6] Implement override service with one-published-per-site enforcement in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentOverrideService.cs`
+- [ ] T087 [US6] Implement suppression evaluation service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentSuppressionService.cs`
+- [ ] T088 [US6] Implement render-time override resolution service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentResolutionService.cs`
+- [ ] T089 [US6] Implement part display driver render path serving override or original in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/ManagedContentPartDisplayDriver.cs`
+- [ ] T090 [US6] Implement managed content discovery and override API controller in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedContentApiController.cs`
+- [ ] T091 [US6] Implement managed content API view models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/ViewModels/ManagedContentApiModels.cs`
+- [ ] T092 [US6] Add migration for override storage and indexes in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Migrations/ManagedSitesMigrations.cs`
+- [ ] T093 [US6] Implement portal editable content list page in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/ManagedContentListPage.tsx`
+- [ ] T094 [US6] Implement portal override editor page in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/ManagedContentOverridePage.tsx`
+- [ ] T095 [US6] Implement portal suppressed override recovery page in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/SuppressedOverridesPage.tsx`
+- [ ] T096 [US6] Add managed content API client methods in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/services/managedSitesApi.ts`
+- [ ] T097 [US6] Register override and resolution services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
 
-**Checkpoint**: Page overrides are scoped, policy-controlled, recoverable, and tested.
+**Checkpoint**: Overrides are discoverable, scoped, suppressible with a recorded reason, recoverable, and render only for their owning managed site.
 
 ---
 
 ## Phase 8: User Story 3 - Request Content Composition (Priority: P3)
 
-**Goal**: Incoming requests resolve to a Managed Site by URL and compose Site Blueprint content plus Managed Site content without URL leakage.
+**Goal**: Incoming requests resolve to a Managed Site by URL and every managed content item resolves to that site's override or to the original content.
 
-**Independent Test**: Prepare blueprint and Managed Site content for registered URLs, request each URL, and confirm the composed response uses the correct layers.
+**Independent Test**: Prepare blueprint content and overrides for registered URLs, request each URL, and confirm the composed response uses the correct content per item.
 
 ### Tests for User Story 3
 
-- [ ] T084 [P] [US3] Add URL resolver tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Routing/ManagedSiteUrlResolverTests.cs`
-- [ ] T085 [P] [US3] Add composition service tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/ManagedSiteCompositionServiceTests.cs`
-- [ ] T086 [P] [US3] Add shell URL synchronization tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Routing/ShellUrlSynchronizationTests.cs`
-- [ ] T087 [P] [US3] Add public request scope metadata distrust tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Routing/PublicManagedSiteScopeMetadataTests.cs`
-- [ ] T088 [P] [US3] Add composition cache invalidation tests for published content changes in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/CompositionCacheInvalidationTests.cs`
-- [ ] T089 [P] [US3] Add OrchardCore cache dependency tests for URL, navigation, override, layer, and placeholder changes in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/CompositionCacheDependencyTests.cs`
+- [ ] T098 [P] [US3] Add URL resolver tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Routing/ManagedSiteUrlResolverTests.cs`
+- [ ] T099 [P] [US3] Add composition resolution tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/ManagedSiteCompositionServiceTests.cs`
+- [X] T100 [P] [US3] Add shell URL synchronization tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Routing/ShellUrlSynchronizationTests.cs` (delivered early with US2)
+- [ ] T101 [P] [US3] Add public request scope metadata distrust tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Routing/PublicManagedSiteScopeMetadataTests.cs`
+- [ ] T102 [P] [US3] Add composition cache invalidation tests for published content changes in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/CompositionCacheInvalidationTests.cs`
+- [ ] T103 [P] [US3] Add cache dependency tests for URL, override, and scope changes in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/CompositionCacheDependencyTests.cs`
 
 ### Implementation for User Story 3
 
-- [ ] T090 [US3] Implement Managed Site URL resolver in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteUrlResolver.cs`
-- [ ] T091 [US3] Implement request composition context accessor in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteCompositionContextAccessor.cs`
-- [ ] T092 [US3] Implement request pipeline middleware in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteRequestMiddleware.cs`
-- [ ] T093 [US3] Ensure request pipeline middleware derives Managed Site context from URL resolution and ignores client Managed Site headers in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteRequestMiddleware.cs`
-- [ ] T094 [US3] Implement shell URL synchronization service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ShellUrlSynchronizationService.cs`
-- [ ] T095 [US3] Register request middleware and synchronization services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
-- [ ] T096 [US3] Implement composition cache state service using OrchardCore cache infrastructure in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteCompositionCacheService.cs`
-- [ ] T097 [US3] Implement content and mapping change invalidation handler in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Handlers/ManagedSiteCompositionInvalidationHandler.cs`
-- [ ] T098 [US3] Register composition cache and invalidation services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
+- [ ] T104 [US3] Implement Managed Site URL resolver in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteUrlResolver.cs`
+- [ ] T105 [US3] Implement request composition context accessor in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteCompositionContextAccessor.cs`
+- [ ] T106 [US3] Implement request pipeline middleware in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteRequestMiddleware.cs`
+- [ ] T107 [US3] Ensure request pipeline middleware derives Managed Site context from URL resolution and ignores client Managed Site headers in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteRequestMiddleware.cs`
+- [X] T108 [US3] Implement shell URL synchronization service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ShellUrlSynchronizationService.cs` (delivered early with US2; hosts only, see research.md)
+- [ ] T109 [US3] Implement composition cache state service using OrchardCore cache infrastructure in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteCompositionCacheService.cs`
+- [ ] T110 [US3] Implement content, override, and scope change invalidation handler in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Handlers/ManagedSiteCompositionInvalidationHandler.cs`
+- [ ] T111 [US3] Register middleware, synchronization, cache, and invalidation services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
 
 **Checkpoint**: URL-based Managed Site resolution and composed request behavior work without treating Managed Sites as separate OrchardCore tenants.
 
 ---
 
-## Phase 9: User Story 7 - Managed-Site Items Through Blueprint Layers (Priority: P3)
-
-**Goal**: Managed Site administrators add supplemental items to blueprint-defined layer contribution points, and those items render independently through layout layers.
-
-**Independent Test**: Define a layer contribution point, add Managed Site items, render pages with and without page overrides, and confirm layer items still render only for the owning Managed Site.
-
-### Tests for User Story 7
-
-- [ ] T099 [P] [US7] Add layer contribution point tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/LayerContributionPointTests.cs`
-- [ ] T100 [P] [US7] Add layer contribution rendering tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/ManagedSiteLayerContributionTests.cs`
-- [ ] T101 [P] [US7] Add layer contribution recovery tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/LayerContributionRecoveryTests.cs`
-
-### Implementation for User Story 7
-
-- [ ] T102 [US7] Implement layer contribution point editor in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/LayerContributionPointDisplayDriver.cs`
-- [ ] T103 [US7] Implement Managed-Site Layer Contribution service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteLayerContributionService.cs`
-- [ ] T104 [US7] Implement layer contribution API endpoints in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/LayerContributionsApiController.cs`
-- [ ] T105 [US7] Implement layer contribution composition handler in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Handlers/LayerContributionCompositionHandler.cs`
-- [ ] T106 [US7] Implement portal layer contribution UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/LayerContributionsPage.tsx`
-- [ ] T107 [US7] Implement layer contribution recovery handling in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteLayerContributionService.cs`
-
-**Checkpoint**: Layout layer contributions are independent from page overrides and scoped by Managed Site.
-
----
-
-## Phase 10: User Story 8 - Blueprint Page Placeholders With Managed-Site Content (Priority: P3)
-
-**Goal**: Managed Site administrators fill blueprint page placeholders with scoped content, with fallback content or empty rendering when no managed-site content exists.
-
-**Independent Test**: Define a placeholder, assign Managed Site content, verify scoped rendering, verify fallback behavior, and verify placeholders are suppressed when the blueprint page is overridden.
-
-### Tests for User Story 8
-
-- [ ] T108 [P] [US8] Add placeholder assignment tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/PlaceholderAssignmentTests.cs`
-- [ ] T109 [P] [US8] Add placeholder fallback tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/PlaceholderFallbackTests.cs`
-- [ ] T110 [P] [US8] Add override placeholder suppression tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/OverridePlaceholderSuppressionTests.cs`
-- [ ] T111 [P] [US8] Add placeholder assignment recovery tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/PlaceholderAssignmentRecoveryTests.cs`
-
-### Implementation for User Story 8
-
-- [ ] T112 [US8] Implement Managed-Site Placeholder part/settings in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedSitePlaceholderPart.cs`
-- [ ] T113 [US8] Implement Managed-Site Placeholder editor in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/ManagedSitePlaceholderDisplayDriver.cs`
-- [ ] T114 [US8] Implement Placeholder Assignment service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/PlaceholderAssignmentService.cs`
-- [ ] T115 [US8] Implement placeholder assignment API endpoints in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/PlaceholderAssignmentsApiController.cs`
-- [ ] T116 [US8] Implement placeholder composition handler in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Handlers/PlaceholderCompositionHandler.cs`
-- [ ] T117 [US8] Implement portal placeholder assignment UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/PlaceholderAssignmentsPage.tsx`
-- [ ] T118 [US8] Implement placeholder assignment recovery handling in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/PlaceholderAssignmentService.cs`
-
-**Checkpoint**: Placeholder assignments, fallback rendering, and suppression under page overrides are scoped and tested.
-
----
-
-## Phase 11: Preview, Integration, and Cross-Story Verification
+## Phase 9: Preview, Integration, and Cross-Story Verification
 
 **Purpose**: Connect preview behavior, public API contracts, and end-to-end validation across all user stories.
 
-- [ ] T119 [P] Add preview composition tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Preview/ManagedSitePreviewTests.cs`
-- [ ] T120 [P] Add API contract tests for managed-site endpoints in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Contracts/ManagedSitesApiContractTests.cs`
-- [ ] T121 [P] Add composed rendering integration tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/ManagedSiteCompositionIntegrationTests.cs`
-- [ ] T122 Implement preview service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSitePreviewService.cs`
-- [ ] T123 Implement preview API endpoint in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitePreviewApiController.cs`
-- [ ] T124 Implement portal preview UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/PreviewPage.tsx`
-- [ ] T125 Ensure all API routes match `specs/001-shared-managed-site-content/contracts/managed-sites-api.md` in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/`
-- [ ] T126 Validate quickstart scenarios in `specs/001-shared-managed-site-content/quickstart.md`
+- [ ] T112 [P] Add preview composition tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Preview/ManagedSitePreviewTests.cs`
+- [ ] T113 [P] Add composed rendering integration tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/ManagedSiteCompositionIntegrationTests.cs`
+- [ ] T114 [P] Add backward-compatibility tests proving types without the part render unchanged in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/UnattachedContentRegressionTests.cs`
+- [ ] T115 Implement preview service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSitePreviewService.cs`
+- [ ] T116 Implement preview API endpoint in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitePreviewApiController.cs`
+- [ ] T117 Implement portal preview UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/PreviewPage.tsx`
+- [ ] T118 Ensure all API routes match `specs/001-shared-managed-site-content/contracts/managed-sites-api.md` in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/`
+- [ ] T119 Validate quickstart scenarios in `specs/001-shared-managed-site-content/quickstart.md`
 
 ---
 
-## Phase 12: Polish and Cross-Cutting Concerns
+## Phase 10: Polish and Cross-Cutting Concerns
 
 **Purpose**: Documentation, accessibility, localization, build validation, and final quality checks.
 
-- [ ] T127 [P] Add localization strings for admin UI and portal host views in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/`
-- [ ] T128 [P] Add accessibility checks for portal selection and editor flows in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/`
-- [ ] T129 [P] Update module README in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/README.md`
-- [ ] T130 [P] Write canonical documentation in `src/docs/reference/modules/ManagedSites/README.md`
-- [ ] T131 Update feature manifest descriptions after implementation in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Manifest.cs`
-- [ ] T132 Run module tests with `dotnet test test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.Tests.csproj`
-- [ ] T133 Run CMS build with `dotnet build src/OrchardCore.Cms.Web -c Debug -f net10.0`
-- [ ] T134 Run asset build with `yarn build`
-- [ ] T135 Review final implementation against `specs/001-shared-managed-site-content/spec.md`
-- [ ] T136 Review API behavior against `specs/001-shared-managed-site-content/contracts/managed-sites-api.md`
+- [ ] T120 [P] Add localization strings for admin UI and portal host views in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/`
+- [ ] T121 [P] Add accessibility checks for portal selection, content list, and override editor flows in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/`
+- [ ] T122 [P] Update module README in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/README.md`
+- [ ] T123 [P] Write canonical documentation covering the Managed Content part, both scopes, and override recovery in `src/docs/reference/modules/ManagedSites/README.md`
+- [ ] T124 Update feature manifest descriptions after implementation in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Manifest.cs`
+- [ ] T125 Run module tests with `dotnet test test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.Tests.csproj`
+- [ ] T126 Run CMS build with `dotnet build src/OrchardCore.Cms.Web -c Debug -f net10.0`
+- [ ] T127 Run asset build with `yarn build`
+- [ ] T128 Review final implementation against `specs/001-shared-managed-site-content/spec.md`
+- [ ] T129 Review API behavior against `specs/001-shared-managed-site-content/contracts/managed-sites-api.md`
 
 ---
 
@@ -315,29 +333,24 @@
 - **Phase 1: Setup** has no dependencies.
 - **Phase 2: Foundational** depends on Phase 1.
 - **User Story phases** depend on Phase 2.
-- **Phase 11: Preview, Integration, and Cross-Story Verification** depends on User Stories 2, 3, 4, 6, 7, and 8.
-- **Phase 12: Polish and Cross-Cutting Concerns** depends on all user stories and Phase 11.
+- **Phase 9: Preview, Integration, and Cross-Story Verification** depends on User Stories 3, 4, 5, and 6.
+- **Phase 10: Polish and Cross-Cutting Concerns** depends on all user stories and Phase 9.
 
 ### User Story Dependencies
 
 - **US1** depends on Phase 2 only and is the MVP slice.
 - **US2** depends on Phase 2 and can proceed after US1 establishes blueprint settings.
 - **US4** depends on US2 for Managed Site definitions and clearance targets.
-- **US5** depends on US2 for Managed Site scope and can run in parallel with US6 after that.
-- **US6** depends on US2 for Managed Site scope and can run in parallel with US5 after that.
-- **US3** depends on US2 and should integrate after URL registrations exist.
-- **US7** depends on US2 and can run in parallel with US8 after composition interfaces exist.
-- **US8** depends on US2 and US6 for page override suppression behavior.
+- **US5** depends on US2 because both scopes reference Managed Site identifiers.
+- **US6** depends on US5 for the part and both scopes, and on US4 for the portal shell that hosts its screens.
+- **US3** depends on US2 for URL registrations and on US6 for the resolution service it invokes per request.
 
 ### Dependency Graph
 
 ```text
-Phase 1 -> Phase 2 -> US1 -> US2 -> US4
-                              -> US5
-                              -> US6 -> US8
-                              -> US3
-                              -> US7
-US3 + US4 + US5 + US6 + US7 + US8 -> Phase 11 -> Phase 12
+Phase 1 -> Phase 2 -> US1 -> US2 -> US4 -> US6 -> US3
+                              -> US5 -> US6
+US3 + US4 + US5 + US6 -> Phase 9 -> Phase 10
 ```
 
 ---
@@ -362,43 +375,31 @@ T045, T046, and T047 can be split by controller, view model, and view files.
 ### User Story 4
 
 ```text
-T050, T051, and T052 can run in parallel.
+T050, T051, T052, and T053 can run in parallel.
 T058, T059, T060, and T061 can run in parallel after the portal package is created.
 ```
 
 ### User Story 5
 
 ```text
-T063 and T064 can run in parallel.
-T067, T068, T069, and T070 touch separate model, driver, service, and handler files.
+T063, T064, T065, and T066 can run in parallel.
+T068, T069, T071, and T075 touch separate model, service, and index files.
+T072 and T073 can run in parallel once the part model exists.
 ```
 
 ### User Story 6
 
 ```text
-T075, T076, and T077 can run in parallel.
-T078, T079, T080, T081, and T082 can run in parallel after page override contracts are agreed.
+T078 through T084 can run in parallel.
+T085, T086, T087, and T088 can run in parallel after the part model is stable.
+T093, T094, and T095 are separate portal pages and can run in parallel.
 ```
 
 ### User Story 3
 
 ```text
-T084, T085, and T086 can run in parallel.
-T090, T091, T092, and T094 can run in parallel once service interfaces are available.
-```
-
-### User Story 7
-
-```text
-T099 and T100 can run in parallel.
-T102, T103, T104, and T105 touch different implementation surfaces.
-```
-
-### User Story 8
-
-```text
-T108, T109, and T110 can run in parallel.
-T112, T113, T114, T115, and T116 can run in parallel after placeholder model contracts are stable.
+T098, T099, T100, and T101 can run in parallel.
+T104, T105, T106, and T108 can run in parallel once service interfaces are available.
 ```
 
 ---
@@ -414,18 +415,21 @@ Complete Phase 1, Phase 2, and User Story 1 first. This establishes the module, 
 1. Deliver US1 to establish Site Blueprint governance.
 2. Deliver US2 to create Managed Sites, URL registrations, and scoped authorization.
 3. Deliver US4 to expose the Managed Site Admin Portal and active scope selection.
-4. Deliver US5 and US6 for navigation placeholders and page overrides.
-5. Deliver US3 to connect URL-based request composition.
-6. Deliver US7 and US8 for layer contributions and page placeholders.
-7. Complete Phase 11 preview and contract validation.
-8. Complete Phase 12 documentation, accessibility, localization, build, and test validation.
+4. Deliver US5 to add the Managed Content part and its two scopes.
+5. Deliver US6 to add override discovery, authoring, rendering, and recovery.
+6. Deliver US3 to connect URL-based request composition.
+7. Complete Phase 9 preview and contract validation.
+8. Complete Phase 10 documentation, accessibility, localization, build, and test validation.
 
 ### Quality Gates
 
 - No Managed Site mutation may rely only on client-side filtering.
 - No Managed Site may be treated as a separate OrchardCore tenant.
 - URL conflicts must be rejected before shell URL synchronization.
-- Page override behavior must suppress blueprint page placeholders but preserve independent layout layer rendering.
+- Attaching the Managed Content part must not change rendering until a blueprint administrator configures a scope.
+- Content types without the part attached must render identically to before the feature existed.
+- Display scope must be evaluated before override resolution.
+- Every suppressed override must record why it stopped rendering and must stay readable by authorized administrators.
 - All new schema/content-definition changes must be implemented through migrations.
 - Canonical documentation must be updated before implementation is considered complete.
 
@@ -433,16 +437,16 @@ Complete Phase 1, Phase 2, and User Story 1 first. This establishes the module, 
 
 ## Task Summary
 
-- **Total tasks**: 136
+- **Total tasks**: 152
 - **Setup tasks**: 14
-- **Foundational tasks**: 17
-- **US1 tasks**: 8
-- **US2 tasks**: 10
-- **US3 tasks**: 15
-- **US4 tasks**: 13
-- **US5 tasks**: 12
-- **US6 tasks**: 9
-- **US7 tasks**: 9
-- **US8 tasks**: 11
+- **Foundational tasks**: 17 (two superseded, one re-opened)
+- **US1 tasks**: 10 (six superseded by the implicit blueprint)
+- **US2 tasks**: 26 (two superseded by tenant-style addressing)
+- **US3 tasks**: 14 (two delivered early with US2)
+- **US4 tasks**: 18
+- **US5 tasks**: 15
+- **US6 tasks**: 20
 - **Preview/integration tasks**: 8
 - **Polish tasks**: 10
+- **Completed**: 87 of 152 (Phases 1-5, plus shell host synchronization from Phase 8)
+- **Phase 4 is complete.** Managed Sites are defined, addressed, and synchronized to the tenant hostname.

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Localization;
 using OrchardCore.Navigation;
-using VendallionCMS.ManagedSites.Drivers;
 
 namespace VendallionCMS.ManagedSites;
 
@@ -10,10 +9,9 @@ namespace VendallionCMS.ManagedSites;
 /// </summary>
 public sealed class AdminMenu : AdminNavigationProvider
 {
-    private static readonly RouteValueDictionary s_routeValues = new()
+    private static readonly RouteValueDictionary s_definitionsRouteValues = new()
     {
-        { "area", "OrchardCore.Settings" },
-        { "groupId", SiteBlueprintSettingsDisplayDriver.GroupId },
+        { "area", ManagedSitesConstants.Features.ManagedSites },
     };
 
     internal readonly IStringLocalizer S;
@@ -30,10 +28,10 @@ public sealed class AdminMenu : AdminNavigationProvider
     protected override ValueTask BuildAsync(NavigationBuilder builder)
     {
         builder
-            .Add(S["Settings"], settings => settings
-                .Add(S["Managed Sites"], S["Managed Sites"].PrefixPosition(), managedSites => managedSites
-                    .Permission(Permissions.ManageSiteBlueprint)
-                    .Action("Index", "Admin", s_routeValues)
+            .Add(S["Managed Sites"], managedSites => managedSites
+                .Add(S["Sites"], S["Sites"].PrefixPosition(), sites => sites
+                    .Permission(Permissions.ManageManagedSites)
+                    .Action("Index", "Admin", s_definitionsRouteValues)
                     .LocalNav()
                 )
             );

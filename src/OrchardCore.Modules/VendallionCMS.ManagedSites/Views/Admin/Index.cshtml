@@ -1,0 +1,69 @@
+@using VendallionCMS.ManagedSites.ViewModels
+@model ManagedSiteIndexViewModel
+
+<zone Name="Title"><h1>@T["Managed Sites"]</h1></zone>
+
+<div class="mb-3">
+    <p class="text-muted">@T["Managed Sites are address-scoped content contexts inside this site, addressed by host name and URL prefix the way a tenant is."]</p>
+    <a asp-action="Create" class="btn btn-primary create">@T["Add managed site"]</a>
+</div>
+
+@if (Model.ManagedSites.Count == 0)
+{
+    <div class="alert alert-info" role="alert">
+        @T["No managed sites have been defined yet."]
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">@T["Name"]</th>
+                    <th scope="col">@T["Status"]</th>
+                    <th scope="col">@T["Host name"]</th>
+                    <th scope="col">@T["URL prefix"]</th>
+                    <th scope="col" class="text-end">@T["Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var managedSite in Model.ManagedSites)
+            {
+                <tr>
+                    <td>@managedSite.Name</td>
+                    <td>@managedSite.Status</td>
+                    <td>
+                        @if (string.IsNullOrEmpty(managedSite.Hostname))
+                        {
+                            <span class="text-muted">@T["Every host"]</span>
+                        }
+                        else
+                        {
+                            @managedSite.Hostname
+                        }
+                    </td>
+                    <td>
+                        @if (string.IsNullOrEmpty(managedSite.UrlPrefix))
+                        {
+                            <span class="text-muted">@T["Root"]</span>
+                        }
+                        else
+                        {
+                            @managedSite.UrlPrefix
+                        }
+                    </td>
+                    <td class="text-end">
+                        <a asp-action="Edit" asp-route-id="@managedSite.Id" class="btn btn-sm btn-secondary">@T["Edit"]</a>
+                        @* RemoveUrl raises the admin confirmation modal; UnsafeUrl posts it with an antiforgery token. *@
+                        <a asp-action="Delete" asp-route-id="@managedSite.Id" class="btn btn-sm btn-danger"
+                           data-url-af="RemoveUrl UnsafeUrl"
+                           data-title="@T["Delete managed site"]"
+                           data-message="@T["Are you sure you want to delete this managed site? Its host names are withdrawn from this site."]">@T["Delete"]</a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,14 +1,18 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using OrchardCore.Data.Migration;
 using OrchardCore.DisplayManagement.Handlers;
 using OrchardCore.Modules;
 using OrchardCore.Navigation;
 using OrchardCore.Security.Permissions;
 using OrchardCore.Settings;
+using OrchardCore.Users.Models;
+using OrchardCore.Users.Services;
 using VendallionCMS.ManagedSites.Drivers;
 using VendallionCMS.ManagedSites.Migrations;
 using VendallionCMS.ManagedSites.Services;
-using VendallionCMS.ManagedSites.Settings;
 
 namespace VendallionCMS.ManagedSites;
 
@@ -19,10 +23,42 @@ public sealed class Startup : StartupBase
 		services.AddDataMigration<ManagedSitesMigrations>();
 		services.AddPermissionProvider<Permissions>();
 		services.AddNavigationProvider<AdminMenu>();
-		services.AddSiteDisplayDriver<SiteBlueprintSettingsDisplayDriver>();
 		services.AddScoped<IManagedSiteAuthorizationService, ManagedSiteAuthorizationService>();
 		services.AddScoped<IManagedSiteService, ManagedSiteService>();
-		services.AddScoped<IUrlRegistrationService, UrlRegistrationService>();
-		services.AddScoped<ISiteBlueprintService, SiteBlueprintService>();
+		services.AddScoped<IShellUrlSynchronizationService, ShellUrlSynchronizationService>();
+	}
+}
+
+/// <summary>
+/// Registers the Managed Site Admin Portal, its API surface, and the session scope services.
+/// </summary>
+[Feature(ManagedSitesConstants.Features.AdminPortal)]
+public sealed class AdminPortalStartup : StartupBase
+{
+	public override void ConfigureServices(IServiceCollection services)
+	{
+		services.TryAddSingleton(TimeProvider.System);
+
+		services.AddScoped<IManagedSiteClearanceService, ManagedSiteClearanceService>();
+		services.AddScoped<IManagedSiteSessionStore, SiteSettingsManagedSiteSessionStore>();
+		services.AddScoped<IManagedSiteSessionService, ManagedSiteSessionService>();
+
+		services.AddNavigationProvider<AdminPortalMenu>();
+
+		services.AddTransient<IConfigureOptions<AuthorizationOptions>, ManagedSitesApiAuthorizationOptionsConfiguration>();
+	}
+}
+
+/// <summary>
+/// Registers Managed Site clearance: the user editor that grants it and the claims provider that
+/// carries it into the signed principal.
+/// </summary>
+[Feature(ManagedSitesConstants.Features.Permissions)]
+public sealed class PermissionsStartup : StartupBase
+{
+	public override void ConfigureServices(IServiceCollection services)
+	{
+		services.AddDisplayDriver<User, ManagedSiteClearanceDisplayDriver>();
+		services.AddScoped<IUserClaimsProvider, ManagedSiteClaimsProvider>();
 	}
 }

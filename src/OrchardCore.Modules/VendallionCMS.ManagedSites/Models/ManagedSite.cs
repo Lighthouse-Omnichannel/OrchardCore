@@ -1,8 +1,13 @@
 namespace VendallionCMS.ManagedSites.Models;
 
 /// <summary>
-/// Represents a URL-scoped managed site within a Site Blueprint.
+/// Represents a URL-scoped managed site within the tenant acting as the Site Blueprint.
 /// </summary>
+/// <remarks>
+/// Addressed the way an OrchardCore tenant is: a <see cref="Hostname" /> holding one or more host names
+/// and a single <see cref="UrlPrefix" />. A Managed Site expands to one address per host name, so the
+/// matching and precedence rules an administrator already knows from tenants carry over unchanged.
+/// </remarks>
 public sealed class ManagedSite
 {
     /// <summary>
@@ -11,24 +16,28 @@ public sealed class ManagedSite
     public string Id { get; set; }
 
     /// <summary>
-    /// Gets or sets the parent Site Blueprint identifier.
-    /// </summary>
-    public string BlueprintId { get; set; }
-
-    /// <summary>
     /// Gets or sets the display name.
     /// </summary>
     public string Name { get; set; }
 
     /// <summary>
+    /// Gets or sets the host names this Managed Site answers on, separated the same way a tenant
+    /// separates its request hosts.
+    /// </summary>
+    /// <remarks>
+    /// Empty answers on every host the tenant serves.
+    /// </remarks>
+    public string Hostname { get; set; }
+
+    /// <summary>
+    /// Gets or sets the URL path prefix this Managed Site answers under, empty for the root.
+    /// </summary>
+    public string UrlPrefix { get; set; }
+
+    /// <summary>
     /// Gets or sets the managed-site lifecycle status.
     /// </summary>
     public ManagedSiteStatus Status { get; set; } = ManagedSiteStatus.Draft;
-
-    /// <summary>
-    /// Gets the URLs mapped to this Managed Site.
-    /// </summary>
-    public IList<UrlRegistration> UrlRegistrations { get; } = [];
 }
 
 /// <summary>
@@ -42,7 +51,7 @@ public enum ManagedSiteStatus
     Draft,
 
     /// <summary>
-    /// The Managed Site is active and can resolve matching URLs.
+    /// The Managed Site is active and can resolve matching requests.
     /// </summary>
     Enabled,
 

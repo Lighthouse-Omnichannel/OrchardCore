@@ -3,26 +3,7 @@ using VendallionCMS.ManagedSites.Models;
 namespace VendallionCMS.ManagedSites.Services;
 
 /// <summary>
-/// Manages Site Blueprint state.
-/// </summary>
-public interface ISiteBlueprintService
-{
-    /// <summary>
-    /// Gets the active Site Blueprint.
-    /// </summary>
-    /// <returns>The active Site Blueprint, or <see langword="null" /> when one has not been configured.</returns>
-    ValueTask<SiteBlueprint> GetAsync();
-
-    /// <summary>
-    /// Saves the active Site Blueprint.
-    /// </summary>
-    /// <param name="blueprint">The Site Blueprint to save.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    ValueTask SaveAsync(SiteBlueprint blueprint);
-}
-
-/// <summary>
-/// Manages Managed Site definitions and URL registrations.
+/// Manages Managed Site definitions and the addresses they answer on.
 /// </summary>
 public interface IManagedSiteService
 {
@@ -34,35 +15,35 @@ public interface IManagedSiteService
     ValueTask<ManagedSite> GetAsync(string managedSiteId);
 
     /// <summary>
-    /// Lists Managed Sites for the active Site Blueprint.
+    /// Lists the Managed Sites defined in the tenant.
     /// </summary>
-    /// <returns>The Managed Sites for the active Site Blueprint.</returns>
+    /// <returns>The Managed Sites.</returns>
     ValueTask<IReadOnlyList<ManagedSite>> ListAsync();
 
     /// <summary>
-    /// Saves a Managed Site.
+    /// Finds the enabled Managed Site answering a request host and path.
     /// </summary>
-    /// <param name="managedSite">The Managed Site to save.</param>
+    /// <remarks>
+    /// A Managed Site naming the request host wins over one answering on every host, and a longer prefix
+    /// wins over a shorter one.
+    /// </remarks>
+    /// <param name="host">The request host.</param>
+    /// <param name="path">The request path.</param>
+    /// <returns>The matching Managed Site, or <see langword="null" /> when none answers.</returns>
+    ValueTask<ManagedSite> FindByAddressAsync(string host, string path);
+
+    /// <summary>
+    /// Creates or replaces a Managed Site.
+    /// </summary>
+    /// <param name="managedSite">The Managed Site to save, normalized in place.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <exception cref="ManagedSiteValidationException">Thrown when the definition or address is invalid or collides.</exception>
     ValueTask SaveAsync(ManagedSite managedSite);
-}
-
-/// <summary>
-/// Manages URL registrations for Site Blueprints and Managed Sites.
-/// </summary>
-public interface IUrlRegistrationService
-{
-    /// <summary>
-    /// Finds the active registration matching a URL.
-    /// </summary>
-    /// <param name="url">The URL to resolve.</param>
-    /// <returns>The active URL registration, or <see langword="null" /> when no match exists.</returns>
-    ValueTask<UrlRegistration> FindByUrlAsync(string url);
 
     /// <summary>
-    /// Saves a URL registration after validation.
+    /// Deletes a Managed Site.
     /// </summary>
-    /// <param name="registration">The URL registration to save.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    ValueTask SaveAsync(UrlRegistration registration);
+    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <returns><see langword="true" /> when a Managed Site was removed; otherwise, <see langword="false" />.</returns>
+    ValueTask<bool> DeleteAsync(string managedSiteId);
 }

@@ -1,0 +1,78 @@
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSiteClearanceViewModel
+
+<fieldset class="mb-3">
+    <legend>@T["Managed Sites"]</legend>
+
+    @if (!Model.HasManagedSites)
+    {
+        <p class="text-muted">@T["No managed sites have been defined yet."]</p>
+    }
+    else
+    {
+        <p class="text-muted">@T["Select the managed sites this user can manage, and what they may do in each."]</p>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col">@T["Managed site"]</th>
+                        <th scope="col">@T["Status"]</th>
+                        <th scope="col" class="text-center">@T["View"]</th>
+                        <th scope="col" class="text-center">@T["Edit"]</th>
+                        <th scope="col" class="text-center">@T["Publish"]</th>
+                        <th scope="col" class="text-center">@T["Preview"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < Model.ManagedSites.Length; i++)
+                    {
+                        var entry = Model.ManagedSites[i];
+                        var grantedId = Html.IdFor(m => m.ManagedSites[i].IsGranted);
+
+                        <tr>
+                            <td>
+                                <input type="hidden" asp-for="ManagedSites[i].ManagedSiteId" />
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="ManagedSites[i].IsGranted" />
+                                    <label class="form-check-label" for="@grantedId">@entry.Name</label>
+                                </div>
+                            </td>
+                            <td><span class="text-muted">@entry.Status</span></td>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input" asp-for="ManagedSites[i].View"
+                                       aria-label="@T["Allow viewing {0}", entry.Name]" />
+                            </td>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input" asp-for="ManagedSites[i].Edit"
+                                       aria-label="@T["Allow editing {0}", entry.Name]" />
+                            </td>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input" asp-for="ManagedSites[i].Publish"
+                                       aria-label="@T["Allow publishing {0}", entry.Name]" />
+                            </td>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input" asp-for="ManagedSites[i].Preview"
+                                       aria-label="@T["Allow previewing {0}", entry.Name]" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <p class="text-muted small">@T["A managed site that is selected with no action ticked is granted view access only."]</p>
+    }
+
+    @if (Model.OrphanedManagedSiteIds.Length > 0)
+    {
+        <div class="alert alert-warning" role="alert">
+            <p class="mb-1">@T["This user holds clearance for managed sites that no longer exist. The grants are kept so they are restored if the managed site returns."]</p>
+            <ul class="mb-0">
+                @foreach (var managedSiteId in Model.OrphanedManagedSiteIds)
+                {
+                    <li>@managedSiteId</li>
+                }
+            </ul>
+        </div>
+    }
+</fieldset>

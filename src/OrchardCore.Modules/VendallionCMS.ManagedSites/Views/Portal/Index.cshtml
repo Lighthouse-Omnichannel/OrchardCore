@@ -1,0 +1,23 @@
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSitePortalViewModel
+@{
+    ViewLayout = "Layout__Admin";
+    var title = T["Managed Site Admin Portal"];
+}
+
+<zone Name="Title"><h1>@title</h1></zone>
+
+@* The client application resolves the active Managed Site through the API on mount. *@
+<script type="application/json" id="managed-site-portal-bootstrap">
+    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new
+    {
+        apiBaseUrl = Model.ApiBaseUrl,
+        antiforgeryToken = Model.AntiforgeryToken,
+    }))
+</script>
+
+<div id="managed-site-admin-root" class="managed-site-admin">
+    <p class="text-muted">@T["Loading the Managed Site Admin Portal..."]</p>
+</div>
+
+<script asp-src="~/VendallionCMS.ManagedSites/Scripts/managed-site-admin/managed-site-admin.js" type="module" at="Foot"></script>
+<style asp-src="~/VendallionCMS.ManagedSites/Scripts/managed-site-admin/managed-site-admin.css"></style>
