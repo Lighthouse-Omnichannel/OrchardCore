@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using OrchardCore.ContentManagement;
+using OrchardCore.ContentManagement.Display.ContentDisplay;
+using OrchardCore.Data;
 using OrchardCore.Data.Migration;
 using OrchardCore.DisplayManagement.Handlers;
 using OrchardCore.Modules;
@@ -11,7 +14,9 @@ using OrchardCore.Settings;
 using OrchardCore.Users.Models;
 using OrchardCore.Users.Services;
 using VendallionCMS.ManagedSites.Drivers;
+using VendallionCMS.ManagedSites.Indexes;
 using VendallionCMS.ManagedSites.Migrations;
+using VendallionCMS.ManagedSites.Models;
 using VendallionCMS.ManagedSites.Services;
 
 namespace VendallionCMS.ManagedSites;
@@ -26,6 +31,13 @@ public sealed class Startup : StartupBase
 		services.AddScoped<IManagedSiteAuthorizationService, ManagedSiteAuthorizationService>();
 		services.AddScoped<IManagedSiteService, ManagedSiteService>();
 		services.AddScoped<IShellUrlSynchronizationService, ShellUrlSynchronizationService>();
+		services.AddScoped<IManagedContentScopeService, ManagedContentScopeService>();
+		services.AddScoped<IManagedContentScopeAuthorizationHandler, ManagedContentScopeAuthorizationHandler>();
+
+		services.AddContentPart<ManagedContentPart>()
+			.UseDisplayDriver<ManagedContentPartDisplayDriver>();
+
+		services.AddIndexProvider<ManagedContentEditScopeIndexProvider>();
 	}
 }
 

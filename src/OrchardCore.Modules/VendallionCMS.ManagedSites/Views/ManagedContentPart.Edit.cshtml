@@ -1,0 +1,157 @@
+@using VendallionCMS.ManagedSites.Models
+@model VendallionCMS.ManagedSites.ViewModels.ManagedContentPartViewModel
+@{
+    var scopesId = Html.IdFor(m => m.EditScopeMode) + "_Scopes";
+
+    // Each column is in play only while its own choice above names managed sites one by one.
+    var editNamesSites = Model.EditScopeMode == ManagedContentScopeMode.Selected;
+    var displayNamesSites = Model.DisplayScopeMode == ManagedContentScopeMode.Selected;
+}
+
+<fieldset class="mb-3" id="@scopesId"
+          data-scope-mode-none="@((int)ManagedContentScopeMode.None)"
+          data-scope-mode-selected="@((int)ManagedContentScopeMode.Selected)"
+          data-scope-mode-all="@((int)ManagedContentScopeMode.All)">
+    <legend>@T["Managed content"]</legend>
+
+    @if (!Model.HasManagedSites)
+    {
+        <p class="text-muted">@T["No managed sites have been defined yet, so nothing can be scoped to one."]</p>
+    }
+
+    <div class="mb-3">
+        <label asp-for="EditScopeMode" class="form-label">@T["Who can override this"]</label>
+        <select asp-for="EditScopeMode" class="form-select" data-edit-scope-mode asp-items="Html.GetEnumSelectList<ManagedContentScopeMode>()"></select>
+        <span class="hint">@T["Choose Selected to name the managed sites below. None keeps this item under blueprint control only."]</span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="DisplayScopeMode" class="form-label">@T["Who sees this"]</label>
+        <select asp-for="DisplayScopeMode" class="form-select" data-display-scope-mode asp-items="Html.GetEnumSelectList<ManagedContentScopeMode>()"></select>
+        <span class="hint">@T["Choose Selected to name the managed sites below. A managed site that can override this item always sees it, so it is added here on its own."]</span>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="DisplayInBlueprintContext" class="form-check-input" type="checkbox" />
+        <label asp-for="DisplayInBlueprintContext" class="form-check-label">@T["Show when no managed site matches the request"]</label>
+    </div>
+
+    @if (Model.HasManagedSites)
+    {
+        <div data-managed-sites-table class="@(editNamesSites || displayNamesSites ? null : "d-none")">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="col">@T["Managed site"]</th>
+                            <th scope="col" class="text-center @(editNamesSites ? null : "text-muted")" data-can-edit-header>@T["Can override"]</th>
+                            <th scope="col" class="text-center @(displayNamesSites ? null : "text-muted")" data-can-display-header>@T["Sees it"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.ManagedSites.Length; i++)
+                        {
+                            var entry = Model.ManagedSites[i];
+
+                            <tr data-managed-site-row>
+                                <td>
+                                    <input type="hidden" asp-for="ManagedSites[i].ManagedSiteId" />
+                                    @entry.Name
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input" data-can-edit asp-for="ManagedSites[i].CanEdit"
+                                           asp-is-disabled="@(!editNamesSites)"
+                                           aria-label="@T["Allow {0} to override this item", entry.Name]" />
+                                </td>
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input" data-can-display asp-for="ManagedSites[i].CanDisplay"
+                                           asp-is-disabled="@(!displayNamesSites || (editNamesSites && entry.CanEdit))"
+                                           aria-label="@T["Show this item to {0}", entry.Name]" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="text-muted small">@T["A managed site that can override this item always sees it, so its visibility is settled here. A dimmed column is not in play, because the choice above it does not name managed sites one by one."]</p>
+        </div>
+    }
+</fieldset>
+
+<script at="Foot">
+    (function () {
+        var scopes = document.getElementById('@scopesId');
+
+        if (!scopes) {
+            return;
+        }
+
+        var modes = {
+            none: scopes.getAttribute('data-scope-mode-none'),
+            selected: scopes.getAttribute('data-scope-mode-selected'),
+            all: scopes.getAttribute('data-scope-mode-all')
+        };
+
+        var editScopeMode = scopes.querySelector('[data-edit-scope-mode]');
+        var displayScopeMode = scopes.querySelector('[data-display-scope-mode]');
+        var table = scopes.querySelector('[data-managed-sites-table]');
+        var editHeader = scopes.querySelector('[data-can-edit-header]');
+        var displayHeader = scopes.querySelector('[data-can-display-header]');
+        var rows = scopes.querySelectorAll('[data-managed-site-row]');
+
+        function setInactive(element, inactive) {
+            if (element) {
+                element.classList.toggle('text-muted', inactive);
+            }
+        }
+
+        // A managed site that may override an item has to see it, otherwise it edits content that never
+        // reaches its visitors. A disabled control posts nothing, so the update applies the same rule
+        // server side and the form still saves what is shown here.
+        function apply() {
+            var editsEverySite = editScopeMode.value === modes.all;
+            var editsNamedSites = editScopeMode.value === modes.selected;
+            var anyNamedSite = false;
+            var i;
+
+            for (i = 0; i < rows.length; i++) {
+                var canEdit = rows[i].querySelector('[data-can-edit]');
+
+                canEdit.disabled = !editsNamedSites;
+
+                if (editsNamedSites && canEdit.checked) {
+                    rows[i].querySelector('[data-can-display]').checked = true;
+                    anyNamedSite = true;
+                }
+            }
+
+            // Granting the override decides visibility, so the choice above follows it as well.
+            if (editsEverySite) {
+                displayScopeMode.value = modes.all;
+            } else if (anyNamedSite && displayScopeMode.value === modes.none) {
+                displayScopeMode.value = modes.selected;
+            }
+
+            displayScopeMode.disabled = editsEverySite;
+
+            var displaysNamedSites = displayScopeMode.value === modes.selected;
+
+            for (i = 0; i < rows.length; i++) {
+                var settled = editsNamedSites && rows[i].querySelector('[data-can-edit]').checked;
+
+                rows[i].querySelector('[data-can-display]').disabled = !displaysNamedSites || settled;
+            }
+
+            setInactive(editHeader, !editsNamedSites);
+            setInactive(displayHeader, !displaysNamedSites);
+
+            if (table) {
+                table.classList.toggle('d-none', !editsNamedSites && !displaysNamedSites);
+            }
+        }
+
+        scopes.addEventListener('change', apply);
+        apply();
+    })();
+</script>

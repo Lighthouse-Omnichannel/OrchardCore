@@ -145,7 +145,8 @@ The capability attached to a content item that declares the item customizable pe
 - Only users with Site Blueprint management access may change either scope.
 - Default on attach is `DisplayScopeMode` All with `DisplayInBlueprintContext` true, so attaching alone does not change rendering.
 - Default on attach is `EditScopeMode` None, so no Managed Site gains edit rights implicitly.
-- Edit Scope and Display Scope are independent; a Managed Site may edit an item it does not display, and the override remains recoverable while suppressed.
+- Display Scope must cover Edit Scope. Saving a Managed Content item widens the Display Scope to reach every Managed Site its Edit Scope allows to override, so no Managed Site edits content its own visitors never see. The editor shows that coverage as fixed, and the widening is applied on persist whether or not the display control was submitted.
+- Display Scope may still reach wider than Edit Scope; an item can be visible everywhere while no Managed Site may override it. A Managed Site leaves the Display Scope by leaving the Edit Scope, and its override remains recoverable while suppressed.
 - Referenced Managed Site identifiers must exist in the tenant.
 
 ## Managed Content Override

@@ -34,7 +34,7 @@ Lets start with this context, and try to create the spec"
 ### Session 2026-09-14
 
 - Q: Should managed-site customization keep four separate mechanisms (page overrides, navigation contributions, layer contributions, placeholder assignments)? → A: No. Replace all four with a single reusable Managed Content capability attached to content items.
-- Q: What determines whether a managed site may customize a given content item? → A: Two independent scopes configured per content item by the Site Blueprint administrator: an edit scope listing which managed sites may override the item, and a display scope listing which request contexts render the item.
+- Q: What determines whether a managed site may customize a given content item? → A: Two independent scopes configured per content item by the Site Blueprint administrator: an edit scope listing which managed sites may override the item, and a display scope listing which request contexts render the item. **(Qualified by Session 2026-09-20.)**
 - Q: How is managed-site override content stored? → A: As a separate content item of the same content type, owned by the managed site and linked to the source content item, so the existing draft and publish lifecycle applies per managed site.
 - Q: How can a managed site add content where the Site Blueprint placed none? → A: By overriding a container content item and supplying its own child items inside that override. Standalone managed-site items outside any blueprint-placed container are out of scope for this version.
 - Q: What renders when no managed site is resolved for the request? → A: The original content, subject to the item's display scope, which can include or exclude the Site Blueprint context explicitly.
@@ -43,6 +43,10 @@ Lets start with this context, and try to create the spec"
 
 - Q: How is a Managed Site addressed? → A: The same way an OrchardCore tenant is, by a Hostname holding one or more host names and a single URL Prefix. A Managed Site no longer keeps a list of arbitrary address entries.
 - Q: Should a site be explicitly designated as a Site Blueprint, with its own identifier and name? → A: No. Enabling the Managed Sites feature is the designation. The tenant holds the common content and the Managed Sites together, so there is nothing to toggle and nothing for a Managed Site to point at. The designation setting, the blueprint identifier, and the blueprint entity are removed; "Site Blueprint" remains only as the name of the tenant's common-content context.
+
+### Session 2026-09-20
+
+- Q: May a managed site be given the right to override an item it is not shown? → A: No. The display scope must cover the edit scope. Granting the override marks the managed site as seeing the item and fixes that control, and the rule is reapplied when the change is persisted. The display scope may still reach wider than the edit scope, and a managed site leaves the display scope by leaving the edit scope.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -155,7 +159,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - A user's token contains no managed-site clearance claims; the Managed Site Admin Portal must deny managed-site editing access.
 - A user's managed-site clearance changes during an active session; subsequent privileged actions must honor the updated clearance before content changes are accepted.
 - A managed site is removed from an item's edit scope after it published an override; the override must stop rendering but remain administratively reviewable and recoverable.
-- A managed site is removed from an item's display scope while an override exists; the item must not render for that managed site and the override must remain recoverable.
+- A managed site that holds an override is removed from an item's display scope, which per FR-028a means it also leaves the edit scope; the item must not render for that managed site and the override must remain recoverable.
 - The source content item for an existing override is unpublished or deleted; the override must stop rendering and must remain recoverable without being served in an invalid context.
 - Managed content is detached from a content type while overrides exist; existing overrides must stop rendering and remain recoverable.
 - A container item is overridden and the original container's children carry their own overrides; only content reachable through the active override may render.
@@ -201,7 +205,8 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - **FR-025**: The Managed Content capability MUST be the only mechanism for defining managed-site-specific variations of blueprint content.
 - **FR-026**: For each content item carrying Managed Content, the system MUST allow Site Blueprint administrators to define an edit scope naming which managed sites may override that item.
 - **FR-027**: For each content item carrying Managed Content, the system MUST allow Site Blueprint administrators to define a display scope naming which request contexts render that item, where the available contexts are the Site Blueprint context and each managed site.
-- **FR-028**: Edit scope and display scope MUST each support all managed sites, an explicitly named subset, or none, and MUST be configurable independently of each other.
+- **FR-028**: Edit scope and display scope MUST each support all managed sites, an explicitly named subset, or none, and MUST be separately configurable, subject to FR-028a.
+- **FR-028a**: The display scope MUST cover the edit scope. When a Site Blueprint administrator grants a managed site the right to override an item, the system MUST also include that managed site in the display scope, MUST present that inclusion as already made and not changeable on its own, and MUST apply it when the change is persisted even if the display control was never submitted. The display scope MAY still reach wider than the edit scope. A managed site leaves the display scope by leaving the edit scope.
 - **FR-029**: The default display scope for a newly attached Managed Content item MUST include every context, so attaching the capability alone does not change rendering behavior.
 - **FR-030**: The system MUST prevent managed-site administrators from changing edit scope, display scope, or content type attachment unless they also have Site Blueprint management access.
 - **FR-031**: Content items that do not carry Managed Content MUST render and behave exactly as they did before the feature was enabled.

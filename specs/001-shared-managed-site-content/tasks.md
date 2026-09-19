@@ -205,24 +205,26 @@ issued access token.
 
 ### Tests for User Story 5
 
-- [ ] T063 [P] [US5] Add attach-is-inert default tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/ManagedContentPartDefaultsTests.cs`
-- [ ] T064 [P] [US5] Add edit scope evaluation tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/EditScopeTests.cs`
-- [ ] T065 [P] [US5] Add display scope evaluation tests including blueprint context in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/DisplayScopeTests.cs`
-- [ ] T066 [P] [US5] Add scope configuration authorization tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedContentScopeAuthorizationTests.cs`
+- [X] T063 [P] [US5] Add attach-is-inert default tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/ManagedContentPartDefaultsTests.cs`
+- [X] T064 [P] [US5] Add edit scope evaluation tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/EditScopeTests.cs`
+- [X] T065 [P] [US5] Add display scope evaluation tests including blueprint context in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/DisplayScopeTests.cs`
+- [X] T066 [P] [US5] Add scope configuration authorization tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedContentScopeAuthorizationTests.cs`
+- [X] T066a [P] [US5] Add display-covers-edit coherence tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/ManagedContentScopeCoherenceTests.cs`
 
 ### Implementation for User Story 5
 
-- [ ] T067 [US5] Remove superseded customization models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/PageCustomizationModels.cs` and `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/NavigationCustomizationModels.cs`
-- [ ] T068 [US5] Implement ManagedContentPart in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedContentPart.cs`
-- [ ] T069 [US5] Implement edit and display scope value types in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedContentScope.cs`
-- [ ] T070 [US5] Rewrite composition service interfaces for per-item resolution in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/CompositionServiceInterfaces.cs`
-- [ ] T071 [US5] Implement managed content scope service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentScopeService.cs`
-- [ ] T072 [US5] Implement part editor display driver in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/ManagedContentPartDisplayDriver.cs`
-- [ ] T073 [US5] Implement part editor view in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/ManagedContentPart.Edit.cshtml`
-- [ ] T074 [US5] Implement scope configuration authorization handler in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentScopeAuthorizationHandler.cs`
-- [ ] T075 [US5] Add managed content indexes for edit and display scope queries in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Indexes/ManagedContentIndexes.cs`
-- [ ] T076 [US5] Add migration registering the part and its indexes in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Migrations/ManagedSitesMigrations.cs`
-- [ ] T077 [US5] Register managed content part and scope services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
+- [X] T067 [US5] Remove superseded customization models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/PageCustomizationModels.cs` and `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/NavigationCustomizationModels.cs`
+- [X] T068 [US5] Implement ManagedContentPart in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedContentPart.cs`
+- [X] T069 [US5] Implement edit and display scope value types in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedContentScope.cs`
+- [X] T070 [US5] Rewrite composition service interfaces for per-item resolution in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/CompositionServiceInterfaces.cs`
+- [X] T071 [US5] Implement managed content scope service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentScopeService.cs`
+- [X] T072 [US5] Implement part editor display driver in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/ManagedContentPartDisplayDriver.cs`
+- [X] T073 [US5] Implement part editor view in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/ManagedContentPart.Edit.cshtml`
+- [X] T074 [US5] Implement scope configuration authorization handler in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentScopeAuthorizationHandler.cs`
+- [X] T075 [US5] Add managed content indexes for edit and display scope queries in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Indexes/ManagedContentIndexes.cs`
+- [X] T076 [US5] Add migration registering the part and its indexes in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Migrations/ManagedSitesMigrations.cs`
+- [X] T077 [US5] Register managed content part and scope services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
+- [X] T077a [US5] Enforce FR-028a so the display scope covers the edit scope, fixed in the editor and reapplied on persist, and activate each per-site column only while its own scope mode is Selected, in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedContentPart.cs`, `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/ManagedContentPart.Edit.cshtml`, and `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/ManagedContentPartDisplayDriver.cs`
 
 **Checkpoint**: The part attaches to any content type, both scopes are configurable by blueprint administrators only, and attaching the part changes nothing visitors see.
 
@@ -437,16 +439,17 @@ Complete Phase 1, Phase 2, and User Story 1 first. This establishes the module, 
 
 ## Task Summary
 
-- **Total tasks**: 152
+- **Total tasks**: 154
 - **Setup tasks**: 14
 - **Foundational tasks**: 17 (two superseded, one re-opened)
 - **US1 tasks**: 10 (six superseded by the implicit blueprint)
 - **US2 tasks**: 26 (two superseded by tenant-style addressing)
 - **US3 tasks**: 14 (two delivered early with US2)
 - **US4 tasks**: 18
-- **US5 tasks**: 15
+- **US5 tasks**: 17
 - **US6 tasks**: 20
 - **Preview/integration tasks**: 8
 - **Polish tasks**: 10
-- **Completed**: 87 of 152 (Phases 1-5, plus shell host synchronization from Phase 8)
+- **Completed**: 104 of 154 (Phases 1-6, plus shell host synchronization from Phase 8)
 - **Phase 4 is complete.** Managed Sites are defined, addressed, and synchronized to the tenant hostname.
+- **Phase 6 is complete.** Managed Content attaches to any content type, both scopes are configurable by blueprint administrators only, and the display scope covers the edit scope.
