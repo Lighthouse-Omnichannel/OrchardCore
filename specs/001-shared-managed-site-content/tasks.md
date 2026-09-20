@@ -238,29 +238,29 @@ issued access token.
 
 ### Tests for User Story 6
 
-- [ ] T078 [P] [US6] Add override authorization tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedContentOverrideAuthorizationTests.cs`
-- [ ] T079 [P] [US6] Add override rendering isolation tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/OverrideRenderingTests.cs`
-- [ ] T080 [P] [US6] Add display-scope-beats-override tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/DisplayScopePrecedenceTests.cs`
-- [ ] T081 [P] [US6] Add container override child resolution tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/ContainerOverrideTests.cs`
-- [ ] T082 [P] [US6] Add suppression reason tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/OverrideSuppressionTests.cs`
-- [ ] T083 [P] [US6] Add override recovery tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/OverrideRecoveryTests.cs`
-- [ ] T084 [P] [US6] Add managed content API contract tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Contracts/ManagedContentApiContractTests.cs`
+- [X] T078 [P] [US6] Add override authorization tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedContentOverrideAuthorizationTests.cs`
+- [X] T079 [P] [US6] Add override rendering isolation tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/OverrideRenderingTests.cs`
+- [X] T080 [P] [US6] Add display-scope-beats-override tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/DisplayScopePrecedenceTests.cs`
+- [X] T081 [P] [US6] Add container override child resolution tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/ContainerOverrideTests.cs`
+- [X] T082 [P] [US6] Add suppression reason tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/OverrideSuppressionTests.cs`
+- [X] T083 [P] [US6] Add override recovery tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/OverrideRecoveryTests.cs`
+- [X] T084 [P] [US6] Add managed content API contract tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Contracts/ManagedContentApiContractTests.cs`
 
 ### Implementation for User Story 6
 
-- [ ] T085 [US6] Implement ManagedContentOverride model and suppression reason in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedContentOverride.cs`
-- [ ] T086 [US6] Implement override service with one-published-per-site enforcement in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentOverrideService.cs`
-- [ ] T087 [US6] Implement suppression evaluation service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentSuppressionService.cs`
-- [ ] T088 [US6] Implement render-time override resolution service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentResolutionService.cs`
-- [ ] T089 [US6] Implement part display driver render path serving override or original in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Drivers/ManagedContentPartDisplayDriver.cs`
-- [ ] T090 [US6] Implement managed content discovery and override API controller in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedContentApiController.cs`
-- [ ] T091 [US6] Implement managed content API view models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/ViewModels/ManagedContentApiModels.cs`
-- [ ] T092 [US6] Add migration for override storage and indexes in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Migrations/ManagedSitesMigrations.cs`
-- [ ] T093 [US6] Implement portal editable content list page in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/ManagedContentListPage.tsx`
-- [ ] T094 [US6] Implement portal override editor page in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/ManagedContentOverridePage.tsx`
-- [ ] T095 [US6] Implement portal suppressed override recovery page in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/SuppressedOverridesPage.tsx`
-- [ ] T096 [US6] Add managed content API client methods in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/services/managedSitesApi.ts`
-- [ ] T097 [US6] Register override and resolution services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
+- [X] T085 [US6] Implement ManagedContentOverride model and suppression reason in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedContentOverride.cs`
+- [X] T086 [US6] Implement override service with one-published-per-site enforcement in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentOverrideService.cs`
+- [X] T087 [US6] Implement suppression evaluation service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentSuppressionService.cs`
+- [X] T088 [US6] Implement render-time override resolution service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentResolutionService.cs`
+- [X] T089 [US6] Implement the render path serving override or original in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentItemDisplayManager.cs` **Moved from the part display driver: a part driver contributes its own shapes and cannot withdraw its siblings', so the swap wraps `IContentItemDisplayManager`, the one place a content item becomes a shape.**
+- [X] T090 [US6] Implement managed content discovery and override API controller in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedContentApiController.cs`
+- [X] T091 [US6] Implement managed content API view models in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/ViewModels/ManagedContentApiModels.cs`
+- [X] T092 [US6] Add migration for override storage and indexes in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Migrations/ManagedSitesMigrations.cs`
+- [X] T093 [US6] Implement portal editable content list page in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/ManagedContentListPage.tsx`
+- [X] T094 [US6] Implement portal override editor page in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/ManagedContentOverridePage.tsx`
+- [X] T095 [US6] Implement portal suppressed override recovery page in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/SuppressedOverridesPage.tsx`
+- [X] T096 [US6] Add managed content API client methods in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/services/managedSitesApi.ts`
+- [X] T097 [US6] Register override and resolution services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
 
 **Checkpoint**: Overrides are discoverable, scoped, suppressible with a recorded reason, recoverable, and render only for their owning managed site.
 
@@ -284,7 +284,7 @@ issued access token.
 ### Implementation for User Story 3
 
 - [ ] T104 [US3] Implement Managed Site URL resolver in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteUrlResolver.cs`
-- [ ] T105 [US3] Implement request composition context accessor in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteCompositionContextAccessor.cs`
+- [X] T105 [US3] Implement request composition context accessor in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentResolutionService.cs` (delivered early with US6; the render path needs somewhere to read the resolved Managed Site from, and the middleware that fills it is T106)
 - [ ] T106 [US3] Implement request pipeline middleware in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteRequestMiddleware.cs`
 - [ ] T107 [US3] Ensure request pipeline middleware derives Managed Site context from URL resolution and ignores client Managed Site headers in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteRequestMiddleware.cs`
 - [X] T108 [US3] Implement shell URL synchronization service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ShellUrlSynchronizationService.cs` (delivered early with US2; hosts only, see research.md)
@@ -450,6 +450,7 @@ Complete Phase 1, Phase 2, and User Story 1 first. This establishes the module, 
 - **US6 tasks**: 20
 - **Preview/integration tasks**: 8
 - **Polish tasks**: 10
-- **Completed**: 104 of 154 (Phases 1-6, plus shell host synchronization from Phase 8)
+- **Completed**: 125 of 154 (Phases 1-7, plus shell host synchronization and the composition context accessor from Phase 8)
 - **Phase 4 is complete.** Managed Sites are defined, addressed, and synchronized to the tenant hostname.
 - **Phase 6 is complete.** Managed Content attaches to any content type, both scopes are configurable by blueprint administrators only, and the display scope covers the edit scope.
+- **Phase 7 is complete.** A Managed Site discovers what it may override, holds its own version as a content item of the same type, and that version is what renders for it. Overrides stop rendering when their cause is withdrawn, keep the reason, and recover on their own when it is restored. What is not yet wired is the step that tells a public request which Managed Site it belongs to, which is Phase 8: until that middleware exists, every request resolves to the Site Blueprint context and receives original content.

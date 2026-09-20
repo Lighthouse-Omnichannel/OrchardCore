@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ManagedSiteSelector } from '../components/ManagedSiteSelector';
+import { ManagedContentListPage } from './ManagedContentListPage';
+import { ManagedContentOverridePage } from './ManagedContentOverridePage';
+import { SuppressedOverridesPage } from './SuppressedOverridesPage';
 import {
     ManagedSitesApi,
     ManagedSitesApiError,
@@ -10,6 +13,9 @@ import {
 export interface ManagedSiteAdminShellProps {
     api: ManagedSitesApi;
 }
+
+/** Which scoped screen is open once a managed site is active. */
+type ScopedView = { kind: 'content' } | { kind: 'suppressed' } | { kind: 'override'; sourceContentItemId: string };
 
 type ShellState =
     | { kind: 'loading' }
@@ -27,6 +33,7 @@ type ShellState =
 export function ManagedSiteAdminShell({ api }: ManagedSiteAdminShellProps) {
     const [state, setState] = useState<ShellState>({ kind: 'loading' });
     const [isBusy, setIsBusy] = useState(false);
+    const [view, setView] = useState<ScopedView>({ kind: 'content' });
 
     const applySession = useCallback((session: ManagedSiteSessionResponse): ShellState => {
         const managedSites = session.authorizedManagedSites ?? [];
@@ -127,6 +134,8 @@ export function ManagedSiteAdminShell({ api }: ManagedSiteAdminShellProps) {
         );
     }
 
+    const managedSiteId = state.activeManagedSite.id;
+
     return (
         <div className="managed-site-admin__shell">
             <header className="managed-site-admin__header">
@@ -145,6 +154,44 @@ export function ManagedSiteAdminShell({ api }: ManagedSiteAdminShellProps) {
             <p className="managed-site-admin__scope-note">
                 Every edit and preview in this session applies to {state.activeManagedSite.name} only.
             </p>
+
+            <nav className="managed-site-admin__nav" aria-label="Managed site content">
+                <button
+                    type="button"
+                    aria-current={view.kind === 'suppressed' ? undefined : 'page'}
+                    onClick={() => setView({ kind: 'content' })}
+                >
+                    Content
+                </button>
+                <button
+                    type="button"
+                    aria-current={view.kind === 'suppressed' ? 'page' : undefined}
+                    onClick={() => setView({ kind: 'suppressed' })}
+                >
+                    Not rendering
+                </button>
+            </nav>
+
+            {view.kind === 'override' ? (
+                <ManagedContentOverridePage
+                    api={api}
+                    managedSiteId={managedSiteId}
+                    sourceContentItemId={view.sourceContentItemId}
+                    onClose={() => setView({ kind: 'content' })}
+                />
+            ) : view.kind === 'suppressed' ? (
+                <SuppressedOverridesPage
+                    api={api}
+                    managedSiteId={managedSiteId}
+                    onOpen={(sourceContentItemId) => setView({ kind: 'override', sourceContentItemId })}
+                />
+            ) : (
+                <ManagedContentListPage
+                    api={api}
+                    managedSiteId={managedSiteId}
+                    onOpen={(item) => setView({ kind: 'override', sourceContentItemId: item.sourceContentItemId })}
+                />
+            )}
         </div>
     );
 }

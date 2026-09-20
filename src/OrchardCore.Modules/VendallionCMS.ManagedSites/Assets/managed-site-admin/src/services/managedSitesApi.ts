@@ -12,7 +12,68 @@ export interface ManagedSiteSummary {
     id: string;
     name: string;
     status: ManagedSiteStatus;
-    urls: string[];
+    /** Host names the managed site answers on, empty for every host the tenant serves. */
+    hostname: string;
+    /** Path prefix the managed site answers under, empty for the root. */
+    urlPrefix: string;
+}
+
+export type ManagedContentOverrideStatus = 'None' | 'Draft' | 'Published' | 'Suppressed';
+
+export type ManagedContentSuppressionReason =
+    | 'EditScopeRemoved'
+    | 'SourceUnpublished'
+    | 'SourceDeleted'
+    | 'CapabilityDetached'
+    | 'ManagedSiteDisabled';
+
+export interface ManagedContentOverrideSummary {
+    overrideContentItemId: string;
+    status: ManagedContentOverrideStatus;
+    /** Null while the override renders. */
+    suppressionReason: ManagedContentSuppressionReason | null;
+}
+
+export interface ManagedContentListItem {
+    sourceContentItemId: string;
+    contentType: string;
+    displayText: string;
+    /** Overriding a container replaces the children the blueprint placed inside it. */
+    isContainer: boolean;
+    displayScopeIncludesManagedSite: boolean;
+    override: ManagedContentOverrideSummary | null;
+}
+
+export interface ManagedContentListResponse {
+    items: ManagedContentListItem[];
+    totalCount: number;
+}
+
+export interface ManagedContentDetail {
+    sourceContentItemId: string;
+    contentType: string;
+    displayText: string;
+    editScopeIncludesManagedSite: boolean;
+    displayScopeIncludesManagedSite: boolean;
+    override: ManagedContentOverrideSummary | null;
+}
+
+export interface SuppressedOverride {
+    sourceContentItemId: string;
+    overrideContentItemId: string;
+    status: ManagedContentOverrideStatus;
+    suppressionReason: ManagedContentSuppressionReason;
+}
+
+export interface SuppressedOverridesResponse {
+    items: SuppressedOverride[];
+}
+
+export interface ManagedContentQuery {
+    contentType?: string;
+    overrideStatus?: ManagedContentOverrideStatus;
+    page?: number;
+    pageSize?: number;
 }
 
 export interface AuthorizedManagedSitesResponse {
@@ -94,6 +155,77 @@ export class ManagedSitesApi {
             body: { managedSiteId },
             managedSiteId,
         });
+    }
+
+    /** Lists the content items the managed site may override, with each item's override status. */
+    listManagedContent(managedSiteId: string, query: ManagedContentQuery = {}): Promise<ManagedContentListResponse> {
+        const search = new URLSearchParams();
+
+        if (query.contentType) {
+            search.set('contentType', query.contentType);
+        }
+
+        if (query.overrideStatus) {
+            search.set('overrideStatus', query.overrideStatus);
+        }
+
+        if (query.page !== undefined) {
+            search.set('page', String(query.page));
+        }
+
+        if (query.pageSize !== undefined) {
+            search.set('pageSize', String(query.pageSize));
+        }
+
+        const suffix = search.size === 0 ? '' : `?${search.toString()}`;
+
+        return this.send<ManagedContentListResponse>('GET', `/${managedSiteId}/managed-content${suffix}`, {
+            managedSiteId,
+        });
+    }
+
+    /** Gets one content item as the managed site sees it. */
+    getManagedContent(managedSiteId: string, sourceContentItemId: string): Promise<ManagedContentDetail> {
+        return this.send<ManagedContentDetail>('GET', `/${managedSiteId}/managed-content/${sourceContentItemId}`, {
+            managedSiteId,
+        });
+    }
+
+    /**
+     * Registers a content item as this managed site's override of a blueprint item.
+     *
+     * The override content item is authored through the platform content services first; this call
+     * links it to the item it stands in for and decides whether it is published.
+     */
+    saveOverride(
+        managedSiteId: string,
+        sourceContentItemId: string,
+        overrideContentItemId: string,
+        status: 'Draft' | 'Published',
+    ): Promise<ManagedContentOverrideSummary> {
+        return this.send<ManagedContentOverrideSummary>(
+            'PUT',
+            `/${managedSiteId}/managed-content/${sourceContentItemId}/override`,
+            { body: { overrideContentItemId, status }, managedSiteId },
+        );
+    }
+
+    /** Removes this managed site's override, restoring the original content for it. */
+    removeOverride(managedSiteId: string, sourceContentItemId: string): Promise<void> {
+        return this.send<void>('DELETE', `/${managedSiteId}/managed-content/${sourceContentItemId}/override`, {
+            managedSiteId,
+        });
+    }
+
+    /** Lists the overrides that exist but do not render, each with the reason. */
+    async listSuppressedOverrides(managedSiteId: string): Promise<SuppressedOverride[]> {
+        const response = await this.send<SuppressedOverridesResponse>(
+            'GET',
+            `/${managedSiteId}/managed-content/suppressed`,
+            { managedSiteId },
+        );
+
+        return response.items ?? [];
     }
 
     private async send<T>(

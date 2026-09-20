@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using OrchardCore.ContentManagement;
+using OrchardCore.ContentManagement.Display;
 using OrchardCore.ContentManagement.Display.ContentDisplay;
 using OrchardCore.Data;
 using OrchardCore.Data.Migration;
+using OrchardCore.DisplayManagement;
 using OrchardCore.DisplayManagement.Handlers;
 using OrchardCore.Modules;
 using OrchardCore.Navigation;
@@ -33,11 +36,32 @@ public sealed class Startup : StartupBase
 		services.AddScoped<IShellUrlSynchronizationService, ShellUrlSynchronizationService>();
 		services.AddScoped<IManagedContentScopeService, ManagedContentScopeService>();
 		services.AddScoped<IManagedContentScopeAuthorizationHandler, ManagedContentScopeAuthorizationHandler>();
+		services.AddScoped<IManagedContentSuppressionService, ManagedContentSuppressionService>();
+		services.AddScoped<IManagedContentOverrideService, ManagedContentOverrideService>();
+		services.AddScoped<IManagedContentResolutionService, ManagedContentResolutionService>();
+		services.AddScoped<IManagedSiteCompositionContextAccessor, ManagedSiteCompositionContextAccessor>();
 
 		services.AddContentPart<ManagedContentPart>()
 			.UseDisplayDriver<ManagedContentPartDisplayDriver>();
 
+		// An override is written by the override service, never attached in the content type editor, so
+		// the type is registered for deserialization without a display driver.
+		services.AddContentPart<ManagedContentOverridePart>();
+
 		services.AddIndexProvider<ManagedContentEditScopeIndexProvider>();
+		services.AddIndexProvider<ManagedContentOverrideIndexProvider>();
+
+		// Serving a Managed Site its own version of an item means replacing what the item renders, which
+		// no part driver can do. The platform display manager is wrapped rather than replaced, and hands
+		// every item that carries no Managed Content straight through.
+		services.AddTransient<ContentItemDisplayManager>();
+		services.Replace(ServiceDescriptor.Transient<IContentItemDisplayManager>(serviceProvider =>
+			new ManagedContentItemDisplayManager(
+				serviceProvider.GetRequiredService<ContentItemDisplayManager>(),
+				serviceProvider.GetRequiredService<IManagedContentResolutionService>(),
+				serviceProvider.GetRequiredService<IManagedSiteCompositionContextAccessor>(),
+				serviceProvider.GetRequiredService<IHttpContextAccessor>(),
+				serviceProvider.GetRequiredService<IShapeFactory>())));
 	}
 }
 

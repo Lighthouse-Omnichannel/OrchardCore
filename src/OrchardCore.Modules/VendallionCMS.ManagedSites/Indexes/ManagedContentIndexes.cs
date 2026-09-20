@@ -63,7 +63,7 @@ public sealed class ManagedContentEditScopeIndexProvider : IndexProvider<Content
                     return [];
                 }
 
-                var part = contentItem.As<ManagedContentPart>();
+                contentItem.TryGet<ManagedContentPart>(out var part);
                 var scope = part?.EditScope;
 
                 if (scope is null || scope.Mode == ManagedContentScopeMode.None)
@@ -100,5 +100,80 @@ public sealed class ManagedContentEditScopeIndexProvider : IndexProvider<Content
                         Published = contentItem.Published,
                     })
                     .ToArray();
+            });
+}
+
+/// <summary>
+/// Indexes the content items that stand in for a Managed Content item on one Managed Site.
+/// </summary>
+/// <remarks>
+/// Rendering asks one question very often: does this Managed Site hold a published override for this
+/// item? Indexing the owning Managed Site and the source item together answers it with a single lookup
+/// instead of loading candidates and filtering them.
+/// </remarks>
+public sealed class ManagedContentOverrideIndex : MapIndex
+{
+    /// <summary>
+    /// Gets or sets the content item holding the override content.
+    /// </summary>
+    public string OverrideContentItemId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Managed Site that owns the override.
+    /// </summary>
+    public string ManagedSiteId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Managed Content item the override replaces.
+    /// </summary>
+    public string SourceContentItemId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the content type shared by the override and its source.
+    /// </summary>
+    public string ContentType { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the row maps the latest version.
+    /// </summary>
+    public bool Latest { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the row maps the published version.
+    /// </summary>
+    public bool Published { get; set; }
+}
+
+/// <summary>
+/// Maps override content items to the Managed Site and source item they belong to.
+/// </summary>
+public sealed class ManagedContentOverrideIndexProvider : IndexProvider<ContentItem>
+{
+    /// <inheritdoc />
+    public override void Describe(DescribeContext<ContentItem> context)
+        => context.For<ManagedContentOverrideIndex>()
+            .Map(contentItem =>
+            {
+                if (!contentItem.Latest && !contentItem.Published)
+                {
+                    return null;
+                }
+
+                if (!contentItem.TryGet<ManagedContentOverridePart>(out var part)
+                    || string.IsNullOrEmpty(part.ManagedSiteId)
+                    || string.IsNullOrEmpty(part.SourceContentItemId))
+                {
+                    return null;
+                }
+
+                return new ManagedContentOverrideIndex
+                {
+                    OverrideContentItemId = contentItem.ContentItemId,
+                    ManagedSiteId = part.ManagedSiteId,
+                    SourceContentItemId = part.SourceContentItemId,
+                    ContentType = contentItem.ContentType,
+                    Latest = contentItem.Latest,
+                    Published = contentItem.Published,
+                };
             });
 }

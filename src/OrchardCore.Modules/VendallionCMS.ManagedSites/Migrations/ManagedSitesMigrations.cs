@@ -30,8 +30,9 @@ public sealed class ManagedSitesMigrations : DataMigration
     public async Task<int> CreateAsync()
     {
         await AddManagedContentPartAsync();
+        await AddManagedContentOverridesAsync();
 
-        return 2;
+        return 3;
     }
 
     /// <summary>
@@ -48,6 +49,17 @@ public sealed class ManagedSitesMigrations : DataMigration
         await AddManagedContentPartAsync();
 
         return 2;
+    }
+
+    /// <summary>
+    /// Adds Managed Content override storage.
+    /// </summary>
+    /// <returns>The current schema version.</returns>
+    public async Task<int> UpdateFrom2Async()
+    {
+        await AddManagedContentOverridesAsync();
+
+        return 3;
     }
 
     private async Task AddManagedContentPartAsync()
@@ -72,5 +84,31 @@ public sealed class ManagedSitesMigrations : DataMigration
                 "AllManagedSites",
                 "Latest",
                 "Published"));
+    }
+
+    private async Task AddManagedContentOverridesAsync()
+    {
+        // Not attachable. An override carries this part because the override service put it there, so
+        // offering it in the content type editor would only invite an item to claim it is an override
+        // of something nobody granted.
+        await _contentDefinitionManager.AlterPartDefinitionAsync(nameof(ManagedContentOverridePart), builder => builder
+            .WithDescription("Marks a content item as one managed site's replacement for a managed content item."));
+
+        await SchemaBuilder.CreateMapIndexTableAsync<ManagedContentOverrideIndex>(table => table
+            .Column<string>("OverrideContentItemId", column => column.WithLength(26))
+            .Column<string>("ManagedSiteId", column => column.WithLength(26))
+            .Column<string>("SourceContentItemId", column => column.WithLength(26))
+            .Column<string>("ContentType", column => column.WithLength(255))
+            .Column<bool>("Latest", column => column.WithDefault(false))
+            .Column<bool>("Published", column => column.WithDefault(false)));
+
+        await SchemaBuilder.AlterIndexTableAsync<ManagedContentOverrideIndex>(table => table
+            .CreateIndex(
+                "IDX_ManagedContentOverrideIndex_Source",
+                "DocumentId",
+                "ManagedSiteId",
+                "SourceContentItemId",
+                "Published",
+                "Latest"));
     }
 }

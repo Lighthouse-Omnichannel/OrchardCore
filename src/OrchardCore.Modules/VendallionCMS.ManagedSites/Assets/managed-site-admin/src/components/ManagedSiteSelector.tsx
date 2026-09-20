@@ -48,9 +48,7 @@ export function ManagedSiteSelector({
                                 onClick={() => onSelect(managedSite.id)}
                             >
                                 <span className="managed-site-selector__name">{managedSite.name}</span>
-                                {managedSite.urls.length > 0 && (
-                                    <span className="managed-site-selector__urls">{managedSite.urls.join(', ')}</span>
-                                )}
+                                <span className="managed-site-selector__address">{describeAddress(managedSite)}</span>
                             </button>
                         </li>
                     );
@@ -58,4 +56,17 @@ export function ManagedSiteSelector({
             </ul>
         </div>
     );
+}
+
+/**
+ * Describes where a managed site answers, the way a tenant's own address reads.
+ *
+ * An empty hostname answers on every host the tenant serves, and an empty prefix answers at the root,
+ * so both halves are spelled out rather than left blank.
+ */
+function describeAddress(managedSite: ManagedSiteSummary): string {
+    const host = managedSite.hostname?.trim() || 'every host';
+    const prefix = managedSite.urlPrefix?.trim();
+
+    return prefix ? `${host} /${prefix}` : `${host} /`;
 }

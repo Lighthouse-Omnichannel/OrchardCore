@@ -73,5 +73,12 @@ public static class ManagedSitesConstants
         public const string UrlConflict = "managed-sites.url-conflict";
         public const string NameConflict = "managed-sites.name-conflict";
         public const string ManagedSiteNotFound = "managed-sites.not-found";
+        public const string SourceNotFound = "managed-sites.source-not-found";
+        public const string SourceNotManagedContent = "managed-sites.not-managed-content";
+        public const string EditScopeExcluded = "managed-sites.edit-scope-excluded";
+        public const string OverrideNotFound = "managed-sites.override-not-found";
+        public const string OverrideAlreadyExists = "managed-sites.override-exists";
+        public const string ContentTypeMismatch = "managed-sites.content-type-mismatch";
+        public const string InvalidOverrideStatus = "managed-sites.invalid-override-status";
     }
 }

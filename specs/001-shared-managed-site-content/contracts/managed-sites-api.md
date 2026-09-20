@@ -200,7 +200,7 @@ Returns every content item carrying Managed Content whose edit scope includes th
 **Behavior**:
 
 - Items whose edit scope excludes the route Managed Site are never listed.
-- `displayScopeIncludesManagedSite` is false when the Managed Site may edit an item it cannot display, so the portal can warn that the override will not render.
+- `displayScopeIncludesManagedSite` is true for every item saved since FR-028a required the display scope to cover the edit scope. It stays on the contract because data written before that rule, or imported by a recipe, can still carry an override that would never render, and the portal warns when it does.
 - `override` is null when the Managed Site has not created one.
 
 **Responses**:
@@ -251,17 +251,20 @@ Returns every content item carrying Managed Content whose edit scope includes th
 
 **Behavior**:
 
+- The override content item is authored through platform content services and named here; this call links it to the item it stands in for.
 - The override content item must use the same content type as the source content item.
-- At most one active published override exists per Managed Site and source content item.
-- Overrides use the platform draft and publish lifecycle, so a draft override does not change rendered output.
+- At most one active published override exists per Managed Site and source content item. Pointing an item at a different override content item is refused rather than swapped, so the previous one is never orphaned silently; remove it first.
+- `status` is `Draft` or `Published`, and defaults to `Draft`. Overrides use the platform draft and publish lifecycle, so a draft override does not change rendered output.
+- `Published` requires publish clearance for the Managed Site; `Draft` requires edit clearance.
 - The override renders only for the route Managed Site, and only when display scope includes it.
 
 **Responses**:
 
 - `200 OK`: Override saved.
-- `400 Bad Request`: Override content type does not match the source content type.
-- `403 Forbidden`: Edit scope excludes the route Managed Site, or the user lacks clearance.
-- `409 Conflict`: The source item no longer carries Managed Content, or the Managed Site is disabled.
+- `400 Bad Request`: No override content item was named, the status is not one an override can be saved with, or the override content type does not match the source content type.
+- `403 Forbidden`: Edit scope excludes the route Managed Site, or the user lacks clearance for the requested action.
+- `404 Not Found`: The source item is not published, or no content item exists with the named override identifier.
+- `409 Conflict`: The source item no longer carries Managed Content, the Managed Site is disabled, or a different content item already overrides this item for this Managed Site.
 
 ### Remove an override
 
@@ -270,6 +273,7 @@ Returns every content item carrying Managed Content whose edit scope includes th
 **Behavior**:
 
 - Removing an override restores the original content for that Managed Site on subsequent requests.
+- The override content item exists only to stand in for the source item, so it is removed with the override rather than left behind unreachable.
 
 **Responses**:
 

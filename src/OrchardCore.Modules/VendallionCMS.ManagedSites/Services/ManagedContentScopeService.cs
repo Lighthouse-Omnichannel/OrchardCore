@@ -73,5 +73,13 @@ public sealed class ManagedContentScopeService : IManagedContentScopeService
 
     /// <inheritdoc />
     public bool CanDisplay(ContentItem contentItem, string managedSiteId)
-        => CanDisplay(contentItem?.As<ManagedContentPart>(), managedSiteId);
+    {
+        if (contentItem is null || !contentItem.TryGet<ManagedContentPart>(out var part))
+        {
+            // An item that carries no Managed Content is never restricted by it.
+            return true;
+        }
+
+        return CanDisplay(part, managedSiteId);
+    }
 }
