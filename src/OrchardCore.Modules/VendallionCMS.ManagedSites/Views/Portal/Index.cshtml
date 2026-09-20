@@ -19,5 +19,11 @@
     <p class="text-muted">@T["Loading the Managed Site Admin Portal..."]</p>
 </div>
 
-<script asp-src="~/VendallionCMS.ManagedSites/Scripts/managed-site-admin/managed-site-admin.js" type="module" at="Foot"></script>
-<style asp-src="~/VendallionCMS.ManagedSites/Scripts/managed-site-admin/managed-site-admin.css"></style>
+@* The minified bundle is what ships; the readable one is served in debug mode, the way every other
+   module pairs asp-src with debug-src. Both come from `yarn build -n managed-site-admin`. *@
+<script asp-src="~/VendallionCMS.ManagedSites/Scripts/managed-site-admin/managed-site-admin.min.js"
+        debug-src="~/VendallionCMS.ManagedSites/Scripts/managed-site-admin/managed-site-admin.js"
+        type="module" at="Foot"></script>
+<style asp-src="~/VendallionCMS.ManagedSites/Scripts/managed-site-admin/managed-site-admin.min.css"
+       debug-src="~/VendallionCMS.ManagedSites/Scripts/managed-site-admin/managed-site-admin.css"
+       at="Head"></style>
