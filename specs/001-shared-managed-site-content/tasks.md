@@ -245,6 +245,7 @@ issued access token.
 - [X] T082 [P] [US6] Add suppression reason tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/OverrideSuppressionTests.cs`
 - [X] T083 [P] [US6] Add override recovery tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/OverrideRecoveryTests.cs`
 - [X] T084 [P] [US6] Add managed content API contract tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Contracts/ManagedContentApiContractTests.cs`
+- [ ] T084a [P] [US6] Add scoped content authorization tests proving managed-site clearance authorizes its own override content and nothing else in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Authorization/ManagedSiteContentPermissionTests.cs`
 
 ### Implementation for User Story 6
 
@@ -261,6 +262,9 @@ issued access token.
 - [X] T095 [US6] Implement portal suppressed override recovery page in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/SuppressedOverridesPage.tsx`
 - [X] T096 [US6] Add managed content API client methods in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/services/managedSitesApi.ts`
 - [X] T097 [US6] Register override and resolution services in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Startup.cs`
+- [ ] T097a [US6] Implement FR-011a content authorization handler granting managed-site clearance authority over its own override content only in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSiteContentAuthorizationHandler.cs`
+- [ ] T097b [US6] Implement scoped override content creation so an editor authors an override without tenant-wide content permissions in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedContentApiController.cs`
+- [ ] T097c [US6] Make override resolution deterministic when duplicates exist per FR-035a in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedContentOverrideService.cs`
 
 **Checkpoint**: Overrides are discoverable, scoped, suppressible with a recorded reason, recoverable, and render only for their owning managed site.
 
@@ -323,6 +327,7 @@ issued access token.
 - [ ] T125 Run module tests with `dotnet test test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.Tests.csproj`
 - [ ] T126 Run CMS build with `dotnet build src/OrchardCore.Cms.Web -c Debug -f net10.0`
 - [ ] T127 Run asset build with `yarn build`
+- [ ] T127a Record a usability walkthrough timing SC-005, SC-009, and SC-020 against the built portal
 - [ ] T128 Review final implementation against `specs/001-shared-managed-site-content/spec.md`
 - [ ] T129 Review API behavior against `specs/001-shared-managed-site-content/contracts/managed-sites-api.md`
 
@@ -439,7 +444,7 @@ Complete Phase 1, Phase 2, and User Story 1 first. This establishes the module, 
 
 ## Task Summary
 
-- **Total tasks**: 154
+- **Total tasks**: 159
 - **Setup tasks**: 14
 - **Foundational tasks**: 17 (two superseded, one re-opened)
 - **US1 tasks**: 10 (six superseded by the implicit blueprint)
@@ -447,10 +452,11 @@ Complete Phase 1, Phase 2, and User Story 1 first. This establishes the module, 
 - **US3 tasks**: 14 (two delivered early with US2)
 - **US4 tasks**: 18
 - **US5 tasks**: 17
-- **US6 tasks**: 20
+- **US6 tasks**: 24 (four reopened by the 2026-09-20 requirements review)
 - **Preview/integration tasks**: 8
-- **Polish tasks**: 10
-- **Completed**: 125 of 154 (Phases 1-7, plus shell host synchronization and the composition context accessor from Phase 8)
+- **Polish tasks**: 11
+- **Completed**: 125 of 159 (Phases 1-6, most of Phase 7, plus shell host synchronization and the composition context accessor from Phase 8)
 - **Phase 4 is complete.** Managed Sites are defined, addressed, and synchronized to the tenant hostname.
 - **Phase 6 is complete.** Managed Content attaches to any content type, both scopes are configurable by blueprint administrators only, and the display scope covers the edit scope.
-- **Phase 7 is complete.** A Managed Site discovers what it may override, holds its own version as a content item of the same type, and that version is what renders for it. Overrides stop rendering when their cause is withdrawn, keep the reason, and recover on their own when it is restored. What is not yet wired is the step that tells a public request which Managed Site it belongs to, which is Phase 8: until that middleware exists, every request resolves to the Site Blueprint context and receives original content.
+- **Phase 7 is reopened** (T084a, T097a, T097b, T097c). A Managed Site discovers what it may override, holds its own version as a content item of the same type, and that version is what renders for it. Overrides stop rendering when their cause is withdrawn, keep the reason, and recover on their own when it is restored. Two gaps remain, both found by the 2026-09-20 requirements review: authoring the override content item still asks for tenant-wide content permissions, which FR-011 forbids and FR-011a now decomposes; and duplicate published overrides created outside the API resolve arbitrarily, which FR-035a now forbids.
+- **Phase 8 blocks everything being visible.** Nothing tells a public request which Managed Site it belongs to yet, so every request resolves to the Site Blueprint context and receives original content.

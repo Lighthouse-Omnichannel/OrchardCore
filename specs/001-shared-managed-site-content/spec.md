@@ -47,6 +47,8 @@ Lets start with this context, and try to create the spec"
 ### Session 2026-09-20
 
 - Q: May a managed site be given the right to override an item it is not shown? → A: No. The display scope must cover the edit scope. Granting the override marks the managed site as seeing the item and fixes that control, and the rule is reapplied when the change is persisted. The display scope may still reach wider than the edit scope, and a managed site leaves the display scope by leaving the edit scope.
+- Q: What authorizes a managed-site editor to author the content item that holds their override? → A: Their managed-site clearance, evaluated as a content authorization decision on items owned by that managed site. Requiring tenant-wide content permissions instead would hand every managed-site editor the ability to change Site Blueprint content, which FR-011 forbids. The rule is enforced wherever content authorization is asked, not only on the portal endpoints.
+- Q: How are the time-to-complete success criteria verified? → A: By a usability walkthrough recorded during polish. They stay measurable targets rather than becoming aspirational notes.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -137,7 +139,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 
 **Why this priority**: This delivers the end-user visible customization and validates that one override mechanism serves all content types.
 
-**Independent Test**: Can be fully tested by listing editable items in the portal, overriding one item for one managed site, and confirming that only that managed site receives the overridden content while all other contexts receive the original.
+**Independent Test**: Can be fully tested by listing editable items in the portal, overriding one item for one managed site using an account with managed-site clearance only, and confirming that only that managed site receives the overridden content while all other contexts receive the original.
 
 **Acceptance Scenarios**:
 
@@ -146,6 +148,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 3. **Given** two managed sites can both edit an item and only one has published an override, **When** the item renders in each managed-site context, **Then** only the managed site with the override receives the overridden content.
 4. **Given** a published override exists, **When** the blueprint administrator removes that managed site from the item's edit scope, **Then** the override stops rendering and remains visible to authorized administrators for recovery.
 5. **Given** a container item is overridden, **When** the page renders for the owning managed site, **Then** the container's child items come from the override and the original children do not render.
+6. **Given** a managed-site administrator holding clearance for their managed site and no tenant-wide content permissions, **When** they create, edit, and publish the content item that holds their override, **Then** the actions are allowed for that item and denied for the blueprint item it replaces and for any other managed site's override.
 
 ---
 
@@ -186,6 +189,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - **FR-010**: The system MUST prevent two managed sites from claiming the same address, where addresses collide when their URL Prefixes are equal and their host names overlap. An empty Hostname overlaps every host, so it collides with that prefix on any host.
 - **FR-010a**: When more than one managed site could answer a request, the system MUST prefer the managed site whose Hostname names the request host over one that answers on every host.
 - **FR-011**: The system MUST ensure unauthorized users cannot create, edit, or publish content outside their granted site blueprint or managed-site scope.
+- **FR-011a**: Managed-site clearance MUST itself authorize content actions on that managed site's own override content, so a managed-site editor can author an override without holding tenant-wide content permissions. That clearance MUST NOT authorize any action on Site Blueprint content or on another managed site's override content, whether the request arrives through the Managed Site Admin Portal or through any other content interface.
 - **FR-012**: The system MUST reflect published updates to site blueprint and managed-site content in subsequent requests without requiring manual shell URL refresh actions.
 - **FR-013**: The solution MUST provide a Managed Site Admin Portal for editors to manage Managed Site content only.
 - **FR-014**: The Managed Site Admin Portal MUST be a web-based authoring experience.
@@ -216,7 +220,8 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - **FR-032**: The Managed Site Admin Portal MUST list every content item whose edit scope includes the active managed site, together with that item's current override status.
 - **FR-033**: Managed-site administrators MUST be able to create, update, and publish an override only for items whose edit scope includes their active managed site.
 - **FR-034**: A managed-content override MUST apply only to the managed site that owns it.
-- **FR-035**: At most one active published override MUST exist per managed site and source content item.
+- **FR-035**: At most one active published override MUST exist per managed site and source content item. The system MUST refuse a request that would create a second one.
+- **FR-035a**: If more than one published override nonetheless exists for a managed site and source content item, because content was imported or recipe-deployed rather than created through the API, rendering MUST resolve to one of them deterministically rather than arbitrarily, and the surplus MUST be visible to administrators for cleanup.
 - **FR-036**: Overrides MUST use the existing content draft and publish lifecycle so each managed site can hold unpublished work without affecting rendered output.
 - **FR-037**: When a request resolves to a managed site excluded by an item's display scope, the item MUST NOT render, regardless of whether an override exists.
 - **FR-038**: When a request resolves to a managed site included by the display scope and a valid published override exists, the system MUST render the override content in place of the original content.
@@ -231,7 +236,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - **FR-044**: When a source content item is unpublished or deleted, overrides targeting it MUST stop rendering and MUST remain recoverable.
 - **FR-045**: When Managed Content is detached from a content type, existing overrides MUST stop rendering and MUST remain recoverable.
 - **FR-046**: Overrides that stop rendering for any reason MUST remain visible to authorized administrators for review, reassignment, or cleanup.
-- **FR-047**: The system MUST record why an override is not rendering so administrators can distinguish scope removal, source removal, and capability detachment.
+- **FR-047**: The system MUST report why an override is not rendering, whenever an administrator reads it, so they can distinguish scope removal, source removal, and capability detachment. The reason MUST reflect the current state rather than the state when the override was last written.
 
 #### Preview and Cache
 
@@ -288,7 +293,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - Existing OrchardCore user identities and role/permission management are reused for access control decisions.
 - Common content, content structure, and managed content configuration are authored in the standard OrchardCore admin UI; the Managed Site Admin Portal is not used for authoring them.
 - A tenant is a Site Blueprint precisely when the Managed Sites feature is enabled on it, so there is no stored blueprint record and a Managed Site carries no blueprint identifier.
-- The Managed Site Admin Portal is implemented as a React-based web authoring experience used exclusively by managed-site editors and administrators.
+- The Managed Site Admin Portal is a browser-based authoring experience used exclusively by managed-site editors and administrators.
 - Platform content services required for content edit and page preview operations are available to the Managed Site Admin Portal under authenticated access.
 - Managed-site clearance is provided to the portal through signed authorization claims and scopes.
 - Public page rendering resolves Managed Site context from the incoming URL; optional Managed Site scope metadata is used only by administrative service requests as consistency metadata.

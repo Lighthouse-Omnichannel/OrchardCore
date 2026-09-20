@@ -172,7 +172,9 @@ Managed-site-owned content that replaces the original content of one Managed Con
 **Validation Rules**:
 
 - The owning Managed Site must be in the source item's Edit Scope when the override is created or updated.
-- Exactly one active published override per Managed Site and source content item.
+- Authoring the override content item is authorized by the owning Managed Site's clearance, which grants no authority over the source item or over another Managed Site's override.
+- Exactly one active published override per Managed Site and source content item. A request that would create a second one is refused.
+- If duplicates nonetheless exist, because content arrived by import or recipe rather than through the API, resolution picks one deterministically and the surplus stays visible for cleanup.
 - The override content item must use the same content type as the source content item.
 - A suppressed override never renders but remains readable by authorized administrators.
 - Display Scope is evaluated before override resolution; an item outside Display Scope renders nothing even when a published override exists.
