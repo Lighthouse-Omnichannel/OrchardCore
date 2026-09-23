@@ -34,6 +34,7 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
 
     private readonly ISession _session;
     private readonly IContentManager _contentManager;
+    private readonly IManagedContentLocator _locator;
     private readonly IContentDefinitionManager _contentDefinitionManager;
     private readonly IManagedContentScopeService _scopeService;
     private readonly IManagedContentOverrideService _overrideService;
@@ -43,6 +44,7 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
     /// </summary>
     /// <param name="session">The document session.</param>
     /// <param name="contentManager">The content manager.</param>
+    /// <param name="locator">The Managed Content locator.</param>
     /// <param name="contentDefinitionManager">The content definition manager.</param>
     /// <param name="scopeService">The Managed Content scope service.</param>
     /// <param name="overrideService">The Managed Content override service.</param>
@@ -51,6 +53,7 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
     public ManagedContentApiController(
         ISession session,
         IContentManager contentManager,
+        IManagedContentLocator locator,
         IContentDefinitionManager contentDefinitionManager,
         IManagedContentScopeService scopeService,
         IManagedContentOverrideService overrideService,
@@ -60,6 +63,7 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
     {
         _session = session;
         _contentManager = contentManager;
+        _locator = locator;
         _contentDefinitionManager = contentDefinitionManager;
         _scopeService = scopeService;
         _overrideService = overrideService;
@@ -172,7 +176,8 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
             return validation.Failure;
         }
 
-        var source = await _contentManager.GetAsync(sourceContentItemId, VersionOptions.Published);
+        var location = await _locator.FindAsync(sourceContentItemId, options: VersionOptions.Published);
+        var source = location?.ContentItem;
 
         if (source is null || !source.TryGet<ManagedContentPart>(out var part))
         {
@@ -199,6 +204,38 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
             DisplayScopeIncludesManagedSite = _scopeService.CanDisplay(part, managedSiteId),
             Override = Describe(managedContentOverride),
         });
+    }
+
+    /// <summary>
+    /// Creates the content item the Managed Site will use to override a Managed Content item.
+    /// </summary>
+    /// <remarks>
+    /// Creating the item here rather than through the platform content API is what lets a Managed Site
+    /// editor author an override with their clearance alone. Asking them to create it themselves first
+    /// would require tenant-wide permission for its content type, which FR-011 forbids.
+    /// </remarks>
+    /// <param name="managedSiteId">The Managed Site identifier from the route.</param>
+    /// <param name="sourceContentItemId">The source content item identifier.</param>
+    /// <returns>The new override, or a problem describing why it was rejected.</returns>
+    [HttpPost("{sourceContentItemId}/override")]
+    [ProducesResponseType(typeof(ManagedContentOverrideSummary), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ManagedSitesApiProblem), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ManagedSitesApiProblem), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ManagedSitesApiProblem), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateOverride(string managedSiteId, string sourceContentItemId)
+    {
+        var validation = await ValidateManagedSiteScopeAsync(managedSiteId, ManagedSitesConstants.Scopes.Edit);
+
+        if (!validation.Succeeded)
+        {
+            return validation.Failure;
+        }
+
+        var result = await _overrideService.CreateAsync(managedSiteId, sourceContentItemId);
+
+        return result.Succeeded
+            ? StatusCode(StatusCodes.Status201Created, Describe(result.Override))
+            : Problem(result.Error);
     }
 
     /// <summary>
@@ -302,28 +339,47 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
                 (index.ManagedSiteId == managedSiteId || index.AllManagedSites) && index.Published)
             .ListAsync();
 
-        var sourceIds = rows
+        var matching = rows
             .Where(row => string.IsNullOrEmpty(contentType)
                 || string.Equals(row.ContentType, contentType, StringComparison.OrdinalIgnoreCase))
-            .Select(row => row.ContentItemId)
-            .Distinct(StringComparer.Ordinal)
+            .GroupBy(row => row.ContentItemId, StringComparer.Ordinal)
+            .Select(group => group.First())
             .ToArray();
 
-        if (sourceIds.Length == 0)
+        if (matching.Length == 0)
         {
             return [];
         }
 
-        var sources = await _contentManager.GetAsync(sourceIds, VersionOptions.Published);
+        // Several sections can live in one page, so each container is loaded once and then searched,
+        // rather than loaded again for every item it holds.
+        var containerIds = matching
+            .Select(row => row.ContainerContentItemId ?? row.ContentItemId)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        var containers = (await _contentManager.GetAsync(containerIds, VersionOptions.Published))
+            .ToDictionary(container => container.ContentItemId, StringComparer.Ordinal);
 
         var overrides = (await _overrideService.ListAsync(managedSiteId))
             .ToDictionary(item => item.SourceContentItemId, StringComparer.Ordinal);
 
         var items = new List<ManagedContentListItem>();
 
-        foreach (var source in sources)
+        foreach (var row in matching)
         {
-            if (!source.TryGet<ManagedContentPart>(out var part) || !_scopeService.CanEdit(part, managedSiteId))
+            if (!containers.TryGetValue(row.ContainerContentItemId ?? row.ContentItemId, out var container))
+            {
+                continue;
+            }
+
+            var source = await ManagedContentContainment.FindAsync(_contentManager, container, row.ContentItemId);
+
+            // The edit scope is checked against the item as it stands now, never trusted from the index
+            // row, because a blueprint administrator can narrow it at any moment.
+            if (source is null
+                || !source.TryGet<ManagedContentPart>(out var part)
+                || !_scopeService.CanEdit(part, managedSiteId))
             {
                 continue;
             }
@@ -334,7 +390,7 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
             {
                 SourceContentItemId = source.ContentItemId,
                 ContentType = source.ContentType,
-                DisplayText = source.DisplayText,
+                DisplayText = DescribeItem(source, container),
                 IsContainer = await IsContainerAsync(source.ContentType),
                 DisplayScopeIncludesManagedSite = _scopeService.CanDisplay(part, managedSiteId),
                 Override = Describe(managedContentOverride),
@@ -342,6 +398,22 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
         }
 
         return [.. items.OrderBy(item => item.DisplayText, StringComparer.OrdinalIgnoreCase)];
+    }
+
+    private static string DescribeItem(ContentItem source, ContentItem container)
+    {
+        var text = source.DisplayText;
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            // A section often carries no display text of its own. The identifier alone would give an
+            // editor nothing to recognise, so the type name stands in.
+            text = source.ContentType;
+        }
+
+        return string.Equals(source.ContentItemId, container.ContentItemId, StringComparison.Ordinal)
+            ? text
+            : $"{text} ({container.DisplayText ?? container.ContentType})";
     }
 
     private async Task<bool> IsContainerAsync(string contentType)
@@ -421,5 +493,6 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
                     managedContentOverride.SuppressionReason == ManagedContentOverrideSuppressionReason.None
                         ? null
                         : managedContentOverride.SuppressionReason.ToString(),
+                SupersededOverrideContentItemIds = [.. managedContentOverride.SupersededOverrideContentItemIds],
             };
 }

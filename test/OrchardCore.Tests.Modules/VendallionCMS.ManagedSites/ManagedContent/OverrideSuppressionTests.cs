@@ -57,12 +57,10 @@ public class OverrideSuppressionTests
         Assert.Equal(ManagedContentOverrideSuppressionReason.EditScopeRemoved, reason);
     }
 
-    [Theory]
-    [InlineData(ManagedSiteStatus.Disabled)]
-    [InlineData(ManagedSiteStatus.Archived)]
-    public void WithdrawnManagedSite_ReportsManagedSiteDisabled(ManagedSiteStatus status)
+    [Fact]
+    public void SwitchedOffManagedSite_ReportsManagedSiteDisabled()
     {
-        var managedSite = ManagedSitesTestData.ManagedSite("site-a", status);
+        var managedSite = ManagedSitesTestData.ManagedSite("site-a", ManagedSiteStatus.Disabled);
 
         var reason = Evaluate(managedSite, Source(ManagedContentScope.Selected("site-a")), sourceExists: true);
 
@@ -78,23 +76,11 @@ public class OverrideSuppressionTests
     }
 
     [Fact]
-    public void ManagedSiteStillBeingPrepared_IsNotSuppressed()
-    {
-        // Draft means not live yet, not withdrawn. The override waits for the Managed Site to open
-        // rather than being reported as broken.
-        var managedSite = ManagedSitesTestData.ManagedSite("site-a", ManagedSiteStatus.Draft);
-
-        var reason = Evaluate(managedSite, Source(ManagedContentScope.Selected("site-a")), sourceExists: true);
-
-        Assert.Equal(ManagedContentOverrideSuppressionReason.None, reason);
-    }
-
-    [Fact]
     public void SeveralCausesAtOnce_ReportTheOneClosestToTheItem()
     {
         // A withdrawn Managed Site and a deleted source both apply; the source is what an administrator
         // looks at first, and nothing about the Managed Site would explain a missing item.
-        var managedSite = ManagedSitesTestData.ManagedSite("site-a", ManagedSiteStatus.Archived);
+        var managedSite = ManagedSitesTestData.ManagedSite("site-a", ManagedSiteStatus.Disabled);
 
         var reason = Evaluate(managedSite, publishedSource: null, sourceExists: false);
 
@@ -104,17 +90,8 @@ public class OverrideSuppressionTests
     [Fact]
     public async Task EvaluateAsync_LoadsTheCurrentStateOfTheSource()
     {
-        var source = Source(ManagedContentScope.Selected("site-a"));
-        var contentManager = new Mock<IContentManager>(MockBehavior.Strict);
-
-        contentManager
-            .Setup(manager => manager.GetAsync("source-item", VersionOptions.Published))
-            .ReturnsAsync(source);
-
-        var service = new ManagedContentSuppressionService(
-            contentManager.Object,
-            new FakeManagedSiteService(Enabled()),
-            new ManagedContentScopeService());
+        var service = Service(new FakeManagedContentLocator()
+            .WithPublished(Source(ManagedContentScope.Selected("site-a"))));
 
         Assert.Equal(
             ManagedContentOverrideSuppressionReason.None,
@@ -122,41 +99,42 @@ public class OverrideSuppressionTests
     }
 
     [Fact]
-    public async Task EvaluateAsync_AsksForTheDraftOnlyWhenNothingIsPublished()
+    public async Task EvaluateAsync_ReportsAnUnpublishedSourceThatStillExists()
     {
-        // Telling a deleted item from an unpublished one costs a second load, so it is only paid when
-        // the first load came back empty.
-        var contentManager = new Mock<IContentManager>(MockBehavior.Strict);
-
-        contentManager
-            .Setup(manager => manager.GetAsync("source-item", VersionOptions.Published))
-            .ReturnsAsync((ContentItem)null);
-
-        contentManager
-            .Setup(manager => manager.GetAsync("source-item", VersionOptions.Latest))
-            .ReturnsAsync(Source(ManagedContentScope.Selected("site-a")));
-
-        var service = new ManagedContentSuppressionService(
-            contentManager.Object,
-            new FakeManagedSiteService(Enabled()),
-            new ManagedContentScopeService());
+        var service = Service(new FakeManagedContentLocator()
+            .WithDraftOnly(Source(ManagedContentScope.Selected("site-a"))));
 
         Assert.Equal(
             ManagedContentOverrideSuppressionReason.SourceUnpublished,
             await service.EvaluateAsync("site-a", "source-item"));
-
-        contentManager.Verify(manager => manager.GetAsync("source-item", VersionOptions.Latest), Times.Once);
     }
+
+    [Fact]
+    public async Task EvaluateAsync_ResolvesASectionThroughThePageStoringIt()
+    {
+        // A section is a content item but not a document, so it is reachable only through its page.
+        var page = ManagedContentTestContent.Item("page", "LandingPage");
+        var section = ManagedContentTestContent.Source("section", ManagedContentScope.Selected("site-a"));
+
+        var service = Service(new FakeManagedContentLocator().WithPublished(section, page));
+
+        Assert.Equal(
+            ManagedContentOverrideSuppressionReason.None,
+            await service.EvaluateAsync("site-a", "section", "page"));
+    }
+
+    private static ManagedContentSuppressionService Service(FakeManagedContentLocator locator)
+        => new(locator, new FakeManagedSiteService(Enabled()), new ManagedContentScopeService());
 
     private static ManagedContentOverrideSuppressionReason Evaluate(
         ManagedSite managedSite,
         ContentItem publishedSource,
         bool sourceExists)
     {
-        // The content manager and the Managed Site service are strict and unconfigured on purpose: this
-        // overload answers from state the caller already holds and must load nothing.
+        // The locator and the Managed Site service are strict and unconfigured on purpose: this overload
+        // answers from state the caller already holds and must load nothing.
         var service = new ManagedContentSuppressionService(
-            new Mock<IContentManager>(MockBehavior.Strict).Object,
+            new Mock<IManagedContentLocator>(MockBehavior.Strict).Object,
             new Mock<IManagedSiteService>(MockBehavior.Strict).Object,
             new ManagedContentScopeService());
 

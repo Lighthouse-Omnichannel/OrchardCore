@@ -13,8 +13,12 @@ public interface IManagedContentSuppressionService
     /// </summary>
     /// <param name="managedSiteId">The Managed Site that owns the override.</param>
     /// <param name="sourceContentItemId">The Managed Content item the override replaces.</param>
+    /// <param name="sourceContainerContentItemId">The stored item the source lives in, when known.</param>
     /// <returns>The suppression reason, or <see cref="ManagedContentOverrideSuppressionReason.None" />.</returns>
-    ValueTask<ManagedContentOverrideSuppressionReason> EvaluateAsync(string managedSiteId, string sourceContentItemId);
+    ValueTask<ManagedContentOverrideSuppressionReason> EvaluateAsync(
+        string managedSiteId,
+        string sourceContentItemId,
+        string sourceContainerContentItemId = null);
 
     /// <summary>
     /// Evaluates an override from state the caller already holds.
@@ -45,22 +49,22 @@ public interface IManagedContentSuppressionService
 /// </remarks>
 public sealed class ManagedContentSuppressionService : IManagedContentSuppressionService
 {
-    private readonly IContentManager _contentManager;
+    private readonly IManagedContentLocator _locator;
     private readonly IManagedSiteService _managedSiteService;
     private readonly IManagedContentScopeService _scopeService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedContentSuppressionService" /> class.
     /// </summary>
-    /// <param name="contentManager">The content manager.</param>
+    /// <param name="locator">The Managed Content locator.</param>
     /// <param name="managedSiteService">The Managed Site service.</param>
     /// <param name="scopeService">The Managed Content scope service.</param>
     public ManagedContentSuppressionService(
-        IContentManager contentManager,
+        IManagedContentLocator locator,
         IManagedSiteService managedSiteService,
         IManagedContentScopeService scopeService)
     {
-        _contentManager = contentManager;
+        _locator = locator;
         _managedSiteService = managedSiteService;
         _scopeService = scopeService;
     }
@@ -68,17 +72,24 @@ public sealed class ManagedContentSuppressionService : IManagedContentSuppressio
     /// <inheritdoc />
     public async ValueTask<ManagedContentOverrideSuppressionReason> EvaluateAsync(
         string managedSiteId,
-        string sourceContentItemId)
+        string sourceContentItemId,
+        string sourceContainerContentItemId = null)
     {
         var managedSite = await _managedSiteService.GetAsync(managedSiteId);
-        var publishedSource = await _contentManager.GetAsync(sourceContentItemId, VersionOptions.Published);
 
-        // Only ask for the draft when there is no published version, to tell a deleted item from an
-        // unpublished one without a second load in the common case.
-        var sourceExists = publishedSource is not null
-            || await _contentManager.GetAsync(sourceContentItemId, VersionOptions.Latest) is not null;
+        var published = await _locator.FindAsync(
+            sourceContentItemId,
+            sourceContainerContentItemId,
+            VersionOptions.Published);
 
-        return Evaluate(managedSiteId, managedSite, publishedSource, sourceExists);
+        // Only look for the draft when there is no published version, to tell a deleted item from an
+        // unpublished one without a second load in the common case. A contained item is published
+        // exactly when the item storing it is, because it has no version of its own.
+        var sourceExists = published is not null
+            || await _locator.FindAsync(sourceContentItemId, sourceContainerContentItemId, VersionOptions.Latest)
+                is not null;
+
+        return Evaluate(managedSiteId, managedSite, published?.ContentItem, sourceExists);
     }
 
     /// <inheritdoc />
@@ -108,11 +119,7 @@ public sealed class ManagedContentSuppressionService : IManagedContentSuppressio
             return ManagedContentOverrideSuppressionReason.EditScopeRemoved;
         }
 
-        // A Managed Site still being prepared is not broken, it is simply not live yet, so its overrides
-        // wait rather than suppress. Only withdrawal from service suppresses them.
-        if (managedSite is null
-            || managedSite.Status == ManagedSiteStatus.Disabled
-            || managedSite.Status == ManagedSiteStatus.Archived)
+        if (managedSite is null || managedSite.Status != ManagedSiteStatus.Enabled)
         {
             return ManagedContentOverrideSuppressionReason.ManagedSiteDisabled;
         }

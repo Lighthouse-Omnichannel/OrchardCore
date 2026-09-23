@@ -238,19 +238,16 @@ public class ManagedContentApiContractTests
 
     private sealed class ManagedContentApiTestContext
     {
-        private readonly Mock<IContentManager> _contentManager = new(MockBehavior.Strict);
+        private readonly FakeManagedContentLocator _locator = new();
 
         public ManagedContentApiTestContext(string clearance = "site-a:view,edit,publish")
         {
-            _contentManager
-                .Setup(manager => manager.GetAsync("source-item", VersionOptions.Published))
-                .ReturnsAsync((ContentItem)null);
-
             var portal = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
 
             Controller = new ManagedContentApiController(
                 new Mock<ISession>(MockBehavior.Strict).Object,
-                _contentManager.Object,
+                new Mock<IContentManager>(MockBehavior.Strict).Object,
+                _locator,
                 new Mock<IContentDefinitionManager>(MockBehavior.Strict).Object,
                 new ManagedContentScopeService(),
                 Overrides,
@@ -269,8 +266,6 @@ public class ManagedContentApiContractTests
         public ManagedContentApiController Controller { get; }
 
         public void WithSource(ManagedContentScope editScope)
-            => _contentManager
-                .Setup(manager => manager.GetAsync("source-item", VersionOptions.Published))
-                .ReturnsAsync(ManagedContentTestContent.Source("source-item", editScope));
+            => _locator.WithPublished(ManagedContentTestContent.Source("source-item", editScope));
     }
 }

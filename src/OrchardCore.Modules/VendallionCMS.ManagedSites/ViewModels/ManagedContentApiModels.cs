@@ -63,6 +63,11 @@ public sealed class ManagedContentOverrideSummary
     /// Gets or sets why the override does not render, or <see langword="null" /> when it does.
     /// </summary>
     public string SuppressionReason { get; set; }
+
+    /// <summary>
+    /// Gets or sets the other content items claiming to override the same item, which are not served.
+    /// </summary>
+    public List<string> SupersededOverrideContentItemIds { get; set; } = [];
 }
 
 /// <summary>

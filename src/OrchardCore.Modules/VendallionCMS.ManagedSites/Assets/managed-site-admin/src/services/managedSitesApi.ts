@@ -6,7 +6,7 @@
  * always comes from the caller's signed claims.
  */
 
-export type ManagedSiteStatus = 'Draft' | 'Enabled' | 'Disabled' | 'Archived';
+export type ManagedSiteStatus = 'Enabled' | 'Disabled';
 
 export interface ManagedSiteSummary {
     id: string;
@@ -32,6 +32,13 @@ export interface ManagedContentOverrideSummary {
     status: ManagedContentOverrideStatus;
     /** Null while the override renders. */
     suppressionReason: ManagedContentSuppressionReason | null;
+    /**
+     * Other content items claiming to override the same item, which are not served.
+     *
+     * Empty in normal operation. Content arriving by import or recipe can still produce one, and it has
+     * to be visible or an editor would wonder why their changes have no effect.
+     */
+    supersededOverrideContentItemIds: string[];
 }
 
 export interface ManagedContentListItem {
@@ -192,10 +199,21 @@ export class ManagedSitesApi {
     }
 
     /**
-     * Registers a content item as this managed site's override of a blueprint item.
+     * Creates this managed site's version of a blueprint item.
      *
-     * The override content item is authored through the platform content services first; this call
-     * links it to the item it stands in for and decides whether it is published.
+     * The server creates the content item, starting from the blueprint content and owned by this
+     * managed site from the moment it exists, which is what lets clearance alone authorize editing it.
+     */
+    createOverride(managedSiteId: string, sourceContentItemId: string): Promise<ManagedContentOverrideSummary> {
+        return this.send<ManagedContentOverrideSummary>(
+            'POST',
+            `/${managedSiteId}/managed-content/${sourceContentItemId}/override`,
+            { managedSiteId },
+        );
+    }
+
+    /**
+     * Sets whether this managed site's version is published, or points the item at a different one.
      */
     saveOverride(
         managedSiteId: string,

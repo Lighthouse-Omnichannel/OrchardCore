@@ -30,12 +30,10 @@ public class ManagedContentOverrideAuthorizationTests
         Assert.Equal(ManagedContentOverrideError.ManagedSiteUnavailable, await context.SaveAsync());
     }
 
-    [Theory]
-    [InlineData(ManagedSiteStatus.Disabled)]
-    [InlineData(ManagedSiteStatus.Archived)]
-    public async Task WithdrawnManagedSite_IsRejected(ManagedSiteStatus status)
+    [Fact]
+    public async Task SwitchedOffManagedSite_IsRejected()
     {
-        var context = Context(ManagedSitesTestData.ManagedSite("site-a", status));
+        var context = Context(ManagedSitesTestData.ManagedSite("site-a", ManagedSiteStatus.Disabled));
 
         Assert.Equal(ManagedContentOverrideError.ManagedSiteUnavailable, await context.SaveAsync());
     }
@@ -129,14 +127,11 @@ public class ManagedContentOverrideAuthorizationTests
     private sealed class OverrideAuthorizationContext
     {
         private readonly Mock<IContentManager> _contentManager = new(MockBehavior.Strict);
+        private readonly FakeManagedContentLocator _locator = new();
         private readonly ManagedContentOverrideService _service;
 
         public OverrideAuthorizationContext(ManagedSite managedSite)
         {
-            _contentManager
-                .Setup(manager => manager.GetAsync("source-item", VersionOptions.Published))
-                .ReturnsAsync((ContentItem)null);
-
             _contentManager
                 .Setup(manager => manager.GetAsync("override-item", VersionOptions.Latest))
                 .ReturnsAsync((ContentItem)null);
@@ -144,20 +139,17 @@ public class ManagedContentOverrideAuthorizationTests
             _service = new ManagedContentOverrideService(
                 new Mock<ISession>(MockBehavior.Strict).Object,
                 _contentManager.Object,
+                _locator,
                 managedSite is null ? new FakeManagedSiteService() : new FakeManagedSiteService(managedSite),
                 new ManagedContentScopeService(),
                 new Mock<IManagedContentSuppressionService>(MockBehavior.Strict).Object);
         }
 
         public void WithSource(ManagedContentScope editScope)
-            => _contentManager
-                .Setup(manager => manager.GetAsync("source-item", VersionOptions.Published))
-                .ReturnsAsync(ManagedContentTestContent.Source("source-item", editScope));
+            => _locator.WithPublished(ManagedContentTestContent.Source("source-item", editScope));
 
         public void WithPlainSource()
-            => _contentManager
-                .Setup(manager => manager.GetAsync("source-item", VersionOptions.Published))
-                .ReturnsAsync(ManagedContentTestContent.Item("source-item"));
+            => _locator.WithPublished(ManagedContentTestContent.Item("source-item"));
 
         public void WithOverrideContentItem(string contentType = ManagedContentTestContent.ContentType)
             => _contentManager

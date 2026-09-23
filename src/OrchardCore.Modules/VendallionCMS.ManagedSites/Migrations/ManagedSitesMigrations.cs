@@ -32,7 +32,7 @@ public sealed class ManagedSitesMigrations : DataMigration
         await AddManagedContentPartAsync();
         await AddManagedContentOverridesAsync();
 
-        return 3;
+        return 4;
     }
 
     /// <summary>
@@ -62,6 +62,26 @@ public sealed class ManagedSitesMigrations : DataMigration
         return 3;
     }
 
+    /// <summary>
+    /// Records where a Managed Content item lives, so contained items can be reached.
+    /// </summary>
+    /// <remarks>
+    /// A page section is a content item but not a document: it is stored inside its page. Until the
+    /// index carried the container and the path, only items stored in their own right could be found,
+    /// so a page whose sections carried Managed Content listed nothing at all.
+    /// </remarks>
+    /// <returns>The current schema version.</returns>
+    public async Task<int> UpdateFrom3Async()
+    {
+        await SchemaBuilder.AlterIndexTableAsync<ManagedContentEditScopeIndex>(table => table
+            .AddColumn<string>("ContainerContentItemId", column => column.WithLength(26)));
+
+        await SchemaBuilder.AlterIndexTableAsync<ManagedContentEditScopeIndex>(table => table
+            .AddColumn<string>("JsonPath", column => column.Unlimited()));
+
+        return 4;
+    }
+
     private async Task AddManagedContentPartAsync()
     {
         await _contentDefinitionManager.AlterPartDefinitionAsync(nameof(ManagedContentPart), builder => builder
@@ -70,6 +90,8 @@ public sealed class ManagedSitesMigrations : DataMigration
 
         await SchemaBuilder.CreateMapIndexTableAsync<ManagedContentEditScopeIndex>(table => table
             .Column<string>("ContentItemId", column => column.WithLength(26))
+            .Column<string>("ContainerContentItemId", column => column.WithLength(26))
+            .Column<string>("JsonPath", column => column.Unlimited())
             .Column<string>("ContentType", column => column.WithLength(255))
             .Column<string>("ManagedSiteId", column => column.WithLength(26))
             .Column<bool>("AllManagedSites", column => column.WithDefault(false))

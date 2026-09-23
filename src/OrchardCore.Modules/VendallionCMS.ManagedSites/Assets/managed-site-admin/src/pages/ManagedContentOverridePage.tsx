@@ -19,11 +19,12 @@ type PageState =
     | { kind: 'error'; message: string };
 
 /**
- * Registers and publishes the active managed site's version of one blueprint item.
+ * Creates and publishes the active managed site's version of one blueprint item.
  *
- * The override content itself is authored in the platform content editor, as a content item of the
- * same type as the item it replaces. This page owns only the link between the two and whether that
- * link is published, which is why it asks for a content item identifier rather than offering fields.
+ * The server creates the version, as a content item of the same type as the item it replaces and owned
+ * by this managed site from the start, so an editor needs no permission over the tenant's content to
+ * author it. Its fields are edited in the platform content editor; this page owns whether it exists and
+ * whether it is published.
  */
 export function ManagedContentOverridePage({
     api,
@@ -32,7 +33,6 @@ export function ManagedContentOverridePage({
     onClose,
 }: ManagedContentOverridePageProps) {
     const [state, setState] = useState<PageState>({ kind: 'loading' });
-    const [overrideContentItemId, setOverrideContentItemId] = useState('');
     const [isBusy, setIsBusy] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
     const [failure, setFailure] = useState<string | null>(null);
@@ -41,9 +41,7 @@ export function ManagedContentOverridePage({
         setState({ kind: 'loading' });
 
         try {
-            const detail = await api.getManagedContent(managedSiteId, sourceContentItemId);
-            setOverrideContentItemId(detail.override?.overrideContentItemId ?? '');
-            setState({ kind: 'ready', detail });
+            setState({ kind: 'ready', detail: await api.getManagedContent(managedSiteId, sourceContentItemId) });
         } catch (error) {
             setState({ kind: 'error', message: toMessage(error) });
         }
@@ -53,15 +51,15 @@ export function ManagedContentOverridePage({
         void load();
     }, [load]);
 
-    const save = useCallback(
-        async (status: 'Draft' | 'Published') => {
+    const run = useCallback(
+        async (action: () => Promise<unknown>, success: string) => {
             setIsBusy(true);
             setNotice(null);
             setFailure(null);
 
             try {
-                await api.saveOverride(managedSiteId, sourceContentItemId, overrideContentItemId.trim(), status);
-                setNotice(status === 'Published' ? 'Your version is live on this site.' : 'Draft saved.');
+                await action();
+                setNotice(success);
                 await load();
             } catch (error) {
                 setFailure(toMessage(error));
@@ -69,24 +67,35 @@ export function ManagedContentOverridePage({
                 setIsBusy(false);
             }
         },
-        [api, load, managedSiteId, overrideContentItemId, sourceContentItemId],
+        [load],
     );
 
-    const remove = useCallback(async () => {
-        setIsBusy(true);
-        setNotice(null);
-        setFailure(null);
+    const create = useCallback(
+        () =>
+            run(
+                () => api.createOverride(managedSiteId, sourceContentItemId),
+                'Your version was created as a draft, starting from the blueprint content.',
+            ),
+        [api, managedSiteId, run, sourceContentItemId],
+    );
 
-        try {
-            await api.removeOverride(managedSiteId, sourceContentItemId);
-            setNotice('Your version was removed. This site shows the blueprint content again.');
-            await load();
-        } catch (error) {
-            setFailure(toMessage(error));
-        } finally {
-            setIsBusy(false);
-        }
-    }, [api, load, managedSiteId, sourceContentItemId]);
+    const publish = useCallback(
+        (overrideContentItemId: string) =>
+            run(
+                () => api.saveOverride(managedSiteId, sourceContentItemId, overrideContentItemId, 'Published'),
+                'Your version is live on this site.',
+            ),
+        [api, managedSiteId, run, sourceContentItemId],
+    );
+
+    const remove = useCallback(
+        () =>
+            run(
+                () => api.removeOverride(managedSiteId, sourceContentItemId),
+                'Your version was removed. This site shows the blueprint content again.',
+            ),
+        [api, managedSiteId, run, sourceContentItemId],
+    );
 
     if (state.kind === 'loading') {
         return (
@@ -108,7 +117,7 @@ export function ManagedContentOverridePage({
     }
 
     const { detail } = state;
-    const canSave = overrideContentItemId.trim().length > 0 && !isBusy;
+    const existing = detail.override;
 
     return (
         <section className="managed-content-override">
@@ -133,33 +142,45 @@ export function ManagedContentOverridePage({
                 </p>
             )}
 
-            <label className="managed-content-override__field">
-                Content item holding your version
-                <input
-                    type="text"
-                    value={overrideContentItemId}
-                    disabled={isBusy}
-                    onChange={(event) => setOverrideContentItemId(event.target.value)}
-                />
-                <span className="managed-content-override__hint">
-                    Create a {detail.contentType} item in the content editor, then name it here. It must be the same
-                    content type as the item it replaces.
-                </span>
-            </label>
+            {existing && existing.supersededOverrideContentItemIds.length > 0 && (
+                <p className="managed-content-override__warning" role="alert">
+                    {existing.supersededOverrideContentItemIds.length} other content item(s) also claim to override
+                    this item. Only {existing.overrideContentItemId} is served. The rest should be removed.
+                </p>
+            )}
 
-            <div className="managed-content-override__actions">
-                <button type="button" disabled={!canSave} onClick={() => void save('Draft')}>
-                    Save as draft
-                </button>
-                <button type="button" disabled={!canSave} onClick={() => void save('Published')}>
-                    Publish to this site
-                </button>
-                {detail.override && (
-                    <button type="button" disabled={isBusy} onClick={() => void remove()}>
-                        Remove my version
+            {existing ? (
+                <>
+                    <p className="managed-content-override__existing">
+                        Your version is content item <code>{existing.overrideContentItemId}</code>, currently{' '}
+                        {existing.status === 'Published' ? 'published to this site' : 'a draft'}. Edit its content in
+                        the content editor, then publish it here.
+                    </p>
+
+                    <div className="managed-content-override__actions">
+                        <button
+                            type="button"
+                            disabled={isBusy || existing.status === 'Published'}
+                            onClick={() => void publish(existing.overrideContentItemId)}
+                        >
+                            Publish to this site
+                        </button>
+                        <button type="button" disabled={isBusy} onClick={() => void remove()}>
+                            Remove my version
+                        </button>
+                    </div>
+                </>
+            ) : (
+                <div className="managed-content-override__actions">
+                    <p className="managed-content-override__hint">
+                        Creating your version copies the current blueprint content, so you change what differs rather
+                        than starting from an empty {detail.contentType}.
+                    </p>
+                    <button type="button" disabled={isBusy} onClick={() => void create()}>
+                        Create my version
                     </button>
-                )}
-            </div>
+                </div>
+            )}
 
             {notice && (
                 <p className="managed-content-override__notice" role="status">

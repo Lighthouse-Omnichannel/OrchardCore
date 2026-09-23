@@ -21,6 +21,17 @@ public class ManagedContentOverridePart : ContentPart
     /// Gets or sets the Managed Content item this override replaces.
     /// </summary>
     public string SourceContentItemId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the stored content item the source lives in, equal to the source itself when it is
+    /// stored in its own right.
+    /// </summary>
+    /// <remarks>
+    /// Recorded when the override is saved rather than looked up later. The edit scope index is the
+    /// other way to find a source's container, and its row disappears exactly when the edit scope is
+    /// withdrawn, which is the moment suppression most needs to explain itself.
+    /// </remarks>
+    public string SourceContainerContentItemId { get; set; }
 }
 
 /// <summary>
@@ -129,6 +140,17 @@ public sealed class ManagedContentOverride
     /// Gets or sets why the override does not render, when it is suppressed.
     /// </summary>
     public ManagedContentOverrideSuppressionReason SuppressionReason { get; set; }
+
+    /// <summary>
+    /// Gets or sets the other content items claiming to override the same item for the same Managed
+    /// Site, which the system does not serve.
+    /// </summary>
+    /// <remarks>
+    /// Empty in normal operation, because the API refuses to create a second override. Content arriving
+    /// by import or recipe can still produce one, and an administrator has to be able to see it in
+    /// order to clean it up rather than wonder why their edits change nothing.
+    /// </remarks>
+    public IReadOnlyList<string> SupersededOverrideContentItemIds { get; set; } = [];
 
     /// <summary>
     /// Gets a value indicating whether this override is what renders for its Managed Site.

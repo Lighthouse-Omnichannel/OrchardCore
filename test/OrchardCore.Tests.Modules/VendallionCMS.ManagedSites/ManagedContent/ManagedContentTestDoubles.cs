@@ -158,6 +158,28 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
         => ValueTask.FromResult<IReadOnlyList<ManagedContentOverride>>([.. _suppressed]);
 
     /// <inheritdoc />
+    public ValueTask<ManagedContentOverrideResult> CreateAsync(string managedSiteId, string sourceContentItemId)
+    {
+        if (_error != ManagedContentOverrideError.None)
+        {
+            return ValueTask.FromResult(ManagedContentOverrideResult.Failed(_error));
+        }
+
+        var overrideContentItemId = $"{sourceContentItemId}-override";
+        _published[Key(managedSiteId, sourceContentItemId)] =
+            ManagedContentTestContent.Item(overrideContentItemId);
+
+        return ValueTask.FromResult(ManagedContentOverrideResult.Success(new ManagedContentOverride
+        {
+            ManagedSiteId = managedSiteId,
+            SourceContentItemId = sourceContentItemId,
+            OverrideContentItemId = overrideContentItemId,
+            ContentType = ManagedContentTestContent.ContentType,
+            Status = ManagedContentOverrideStatus.Draft,
+        }));
+    }
+
+    /// <inheritdoc />
     public ValueTask<ManagedContentOverrideResult> SaveAsync(
         string managedSiteId,
         string sourceContentItemId,
@@ -233,4 +255,58 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
 
     private static string Key(string managedSiteId, string sourceContentItemId)
         => $"{managedSiteId}|{sourceContentItemId}";
+}
+
+/// <summary>
+/// Resolves Managed Content items from an in-memory set, contained or not.
+/// </summary>
+/// <remarks>
+/// A contained item is registered with the item that stores it, so a test can express the difference
+/// between an item stored in its own right and a page section without building a real page.
+/// </remarks>
+public sealed class FakeManagedContentLocator : IManagedContentLocator
+{
+    private readonly Dictionary<string, ManagedContentLocation> _published = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ManagedContentLocation> _latest = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Registers an item that is published, and therefore also the latest version.
+    /// </summary>
+    /// <param name="contentItem">The item carrying Managed Content.</param>
+    /// <param name="container">The item storing it, or null when it is stored in its own right.</param>
+    /// <returns>This instance, for chaining.</returns>
+    public FakeManagedContentLocator WithPublished(ContentItem contentItem, ContentItem container = null)
+    {
+        var location = new ManagedContentLocation { ContentItem = contentItem, Container = container ?? contentItem };
+        _published[contentItem.ContentItemId] = location;
+        _latest[contentItem.ContentItemId] = location;
+
+        return this;
+    }
+
+    /// <summary>
+    /// Registers an item that exists but is not published.
+    /// </summary>
+    /// <param name="contentItem">The item carrying Managed Content.</param>
+    /// <param name="container">The item storing it, or null when it is stored in its own right.</param>
+    /// <returns>This instance, for chaining.</returns>
+    public FakeManagedContentLocator WithDraftOnly(ContentItem contentItem, ContentItem container = null)
+    {
+        _latest[contentItem.ContentItemId] =
+            new ManagedContentLocation { ContentItem = contentItem, Container = container ?? contentItem };
+
+        return this;
+    }
+
+    /// <inheritdoc />
+    public ValueTask<ManagedContentLocation> FindAsync(
+        string contentItemId,
+        string containerContentItemId = null,
+        VersionOptions options = null)
+    {
+        var source = options == VersionOptions.Latest ? _latest : _published;
+        source.TryGetValue(contentItemId ?? string.Empty, out var location);
+
+        return ValueTask.FromResult(location);
+    }
 }

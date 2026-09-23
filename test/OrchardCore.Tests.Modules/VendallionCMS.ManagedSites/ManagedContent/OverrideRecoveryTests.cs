@@ -108,7 +108,7 @@ public class OverrideRecoveryTests
         bool sourceExists = true)
     {
         var service = new ManagedContentSuppressionService(
-            new Mock<IContentManager>(MockBehavior.Strict).Object,
+            new Mock<IManagedContentLocator>(MockBehavior.Strict).Object,
             new Mock<IManagedSiteService>(MockBehavior.Strict).Object,
             new ManagedContentScopeService());
 
