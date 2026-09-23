@@ -37,7 +37,12 @@ public sealed class ManagedSite
     /// <summary>
     /// Gets or sets the managed-site lifecycle status.
     /// </summary>
-    public ManagedSiteStatus Status { get; set; } = ManagedSiteStatus.Draft;
+    /// <remarks>
+    /// A Managed Site is created ready to serve. With only two states, the other one reads as
+    /// deliberately switched off, so defaulting to it would mean every new Managed Site had to be
+    /// turned on before anything about it worked.
+    /// </remarks>
+    public ManagedSiteStatus Status { get; set; } = ManagedSiteStatus.Enabled;
 }
 
 /// <summary>
@@ -46,22 +51,13 @@ public sealed class ManagedSite
 public enum ManagedSiteStatus
 {
     /// <summary>
-    /// The Managed Site is being prepared and should not receive public traffic.
-    /// </summary>
-    Draft,
-
-    /// <summary>
-    /// The Managed Site is active and can resolve matching requests.
+    /// The Managed Site is active: it resolves matching requests and its editors may change its content.
     /// </summary>
     Enabled,
 
     /// <summary>
-    /// The Managed Site is temporarily disabled and should reject editor mutations.
+    /// The Managed Site is switched off: it resolves no request, its overrides do not render, and its
+    /// editors may not change its content. Everything it owns is kept and returns when it is enabled.
     /// </summary>
     Disabled,
-
-    /// <summary>
-    /// The Managed Site is retained for audit or recovery but no longer participates in rendering.
-    /// </summary>
-    Archived,
 }

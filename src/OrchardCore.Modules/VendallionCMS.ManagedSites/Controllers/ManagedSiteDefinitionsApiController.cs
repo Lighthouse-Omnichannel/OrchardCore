@@ -70,7 +70,7 @@ public sealed class ManagedSiteDefinitionsApiController : ManagedSitesApiControl
                 ManagedSitesConstants.ErrorCodes.ManagedSiteNotFound);
         }
 
-        var status = ManagedSiteStatus.Draft;
+        var status = ManagedSiteStatus.Enabled;
         if (!string.IsNullOrWhiteSpace(request?.Status)
             && !Enum.TryParse(request.Status, ignoreCase: true, out status))
         {

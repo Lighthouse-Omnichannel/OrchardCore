@@ -30,10 +30,10 @@ public sealed class FakeManagedSiteService : IManagedSiteService
     public ValueTask<IReadOnlyList<ManagedSite>> ListAsync()
         => ValueTask.FromResult<IReadOnlyList<ManagedSite>>(_managedSites.ToArray());
 
+    // Defers to the real rule rather than re-stating it. A double that picked the first match would
+    // let precedence tests pass against behaviour production does not have.
     public ValueTask<ManagedSite> FindByAddressAsync(string host, string path)
-        => ValueTask.FromResult(_managedSites.FirstOrDefault(managedSite =>
-            managedSite.Status == ManagedSiteStatus.Enabled
-            && ManagedSiteAddressValidator.Matches(managedSite, host, path)));
+        => ValueTask.FromResult(ManagedSiteAddressValidator.FindBestMatch(_managedSites, host, path));
 
     public ValueTask SaveAsync(ManagedSite managedSite)
     {

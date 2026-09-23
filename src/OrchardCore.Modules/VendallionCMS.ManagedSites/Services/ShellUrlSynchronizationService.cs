@@ -71,8 +71,10 @@ public sealed class ShellUrlSynchronizationService : IShellUrlSynchronizationSer
         // second pass in the same scope would reconcile against a stale host list.
         var currentHosts = ReadCurrentHosts();
 
+        // Every Managed Site declares its host names, switched off or not. Withdrawing the host of a
+        // disabled Managed Site would stop the tenant answering on it at all; keeping it means the
+        // address still resolves and serves Site Blueprint content, which is what a visitor should get.
         var declaredHosts = document.ManagedSites
-            .Where(managedSite => managedSite.Status != ManagedSiteStatus.Archived)
             .SelectMany(managedSite => ManagedSiteAddressValidator.SplitHostnames(managedSite.Hostname))
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)

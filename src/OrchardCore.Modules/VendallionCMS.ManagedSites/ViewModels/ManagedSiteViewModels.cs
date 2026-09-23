@@ -36,7 +36,7 @@ public class ManagedSiteEditViewModel
     /// <summary>
     /// Gets or sets the Managed Site status.
     /// </summary>
-    public ManagedSiteStatus Status { get; set; } = ManagedSiteStatus.Draft;
+    public ManagedSiteStatus Status { get; set; } = ManagedSiteStatus.Enabled;
 
     /// <summary>
     /// Gets or sets the host names this Managed Site answers on.

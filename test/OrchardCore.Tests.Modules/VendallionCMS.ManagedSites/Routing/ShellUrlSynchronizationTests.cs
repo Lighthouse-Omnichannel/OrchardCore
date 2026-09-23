@@ -142,14 +142,19 @@ public class ShellUrlSynchronizationTests
     }
 
     [Fact]
-    public void Synchronize_ArchivedManagedSite_DoesNotContributeItsHost()
+    public void Synchronize_SwitchedOffManagedSite_StillContributesItsHost()
     {
+        // Withdrawing the host would stop the tenant answering on it at all. Keeping it means the
+        // address still resolves and serves Site Blueprint content, which is what a visitor should get
+        // from a Managed Site that is switched off.
         var (service, shellSettings) = CreateService(requestUrlHost: "tenant.example");
 
         service.Synchronize(Document(
-            ManagedSitesTestData.ManagedSite("a", ManagedSiteStatus.Archived, hostname: "contoso.com")));
+            ManagedSitesTestData.ManagedSite("a", ManagedSiteStatus.Disabled, hostname: "contoso.com")));
 
-        Assert.Equal("tenant.example", shellSettings.RequestUrlHost);
+        Assert.Equal(
+            ["contoso.com", "tenant.example"],
+            shellSettings.RequestUrlHost.Split(',').Order());
     }
 
     [Fact]

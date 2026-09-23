@@ -12,11 +12,13 @@ namespace VendallionCMS.ManagedSites.Tests.Routing;
 public class ManagedSiteDefinitionTests
 {
     [Fact]
-    public void ManagedSite_DefaultStatus_IsDraft()
+    public void ManagedSite_DefaultStatus_IsEnabled()
     {
+        // With only two states, the other one reads as deliberately switched off. A Managed Site that
+        // had to be turned on before anything about it worked would be a trap, not a safeguard.
         var managedSite = new ManagedSite();
 
-        Assert.Equal(ManagedSiteStatus.Draft, managedSite.Status);
+        Assert.Equal(ManagedSiteStatus.Enabled, managedSite.Status);
     }
 
     [Fact]
@@ -62,12 +64,12 @@ public class ManagedSiteDefinitionTests
     public async Task SaveAsync_AddressChanged_ReplacesTheOldOne()
     {
         var service = CreateService();
-        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com", "shop"));
+        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com", null));
 
-        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com", "news"));
+        await service.SaveAsync(Definition("site-a", "Site A", "fabrikam.com", null));
 
-        Assert.NotNull(await service.FindByAddressAsync("contoso.com", "/news"));
-        Assert.Null(await service.FindByAddressAsync("contoso.com", "/shop"));
+        Assert.NotNull(await service.FindByAddressAsync("fabrikam.com", "/"));
+        Assert.Null(await service.FindByAddressAsync("contoso.com", "/"));
     }
 
     [Fact]

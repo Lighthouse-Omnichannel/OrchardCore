@@ -46,12 +46,17 @@ public class ManagedSiteAddressTests
     [Fact]
     public void Expand_OneAddressPerHostName()
     {
+        // The prefix is dropped, because a host-named Managed Site claims every path on its hosts and
+        // the stored prefix decides nothing.
         var managedSite = ManagedSitesTestData.ManagedSite(hostname: "contoso.com,fabrikam.com", urlPrefix: "shop");
 
         var addresses = ManagedSiteAddressValidator.Expand(managedSite);
 
         Assert.Equal(
-            [new ManagedSiteAddress("contoso.com", "shop"), new ManagedSiteAddress("fabrikam.com", "shop")],
+            [
+                new ManagedSiteAddress("contoso.com", string.Empty),
+                new ManagedSiteAddress("fabrikam.com", string.Empty),
+            ],
             addresses);
     }
 
@@ -76,16 +81,27 @@ public class ManagedSiteAddressTests
             new ManagedSiteAddress("fabrikam.com", "shop")));
 
     [Fact]
-    public void Overlaps_DifferentPrefixes_IsFalse()
+    public void Overlaps_DifferentPrefixesWithoutAHost_IsFalse()
         => Assert.False(ManagedSiteAddressValidator.Overlaps(
-            new ManagedSiteAddress("contoso.com", "shop"),
-            new ManagedSiteAddress("contoso.com", "news")));
+            new ManagedSiteAddress(string.Empty, "shop"),
+            new ManagedSiteAddress(string.Empty, "news")));
 
     [Fact]
-    public void Overlaps_HostAgnosticAgainstHostSpecific_IsTrue()
+    public void Overlaps_TheSameHost_IsTrueWhateverThePrefixes()
     {
-        // An empty host name answers on every host, so both would claim the same request.
+        // A host name claims every path on that host, so two Managed Sites naming it collide however
+        // their prefixes differ: neither prefix is consulted once the host matches.
         Assert.True(ManagedSiteAddressValidator.Overlaps(
+            new ManagedSiteAddress("contoso.com", "shop"),
+            new ManagedSiteAddress("contoso.com", "news")));
+    }
+
+    [Fact]
+    public void Overlaps_HostAgnosticAgainstHostSpecific_IsFalse()
+    {
+        // They do not collide: a request to the named host goes to the Managed Site that named it, and
+        // every other host is left to the prefix. Precedence settles this, not validation.
+        Assert.False(ManagedSiteAddressValidator.Overlaps(
             new ManagedSiteAddress(string.Empty, "shop"),
             new ManagedSiteAddress("contoso.com", "shop")));
     }
@@ -124,27 +140,33 @@ public class ManagedSiteAddressTests
     }
 
     [Fact]
-    public async Task SaveAsync_HostAgnosticPrefixAgainstHostSpecific_IsRejected()
+    public async Task SaveAsync_HostAgnosticPrefixAgainstHostSpecific_IsAllowed()
     {
+        // They divide the traffic rather than compete for it: contoso.com goes to the Managed Site that
+        // named it, and /shop on every other host goes to the one that named the prefix.
         var service = CreateService();
         await service.SaveAsync(ManagedSitesTestData.ManagedSite("a", name: "A", urlPrefix: "shop"));
 
-        var exception = await Assert.ThrowsAsync<ManagedSiteValidationException>(
-            async () => await service.SaveAsync(
-                ManagedSitesTestData.ManagedSite("b", name: "B", hostname: "contoso.com", urlPrefix: "shop")));
+        await service.SaveAsync(
+            ManagedSitesTestData.ManagedSite("b", name: "B", hostname: "contoso.com", urlPrefix: "shop"));
 
-        Assert.Equal(ManagedSitesConstants.ErrorCodes.UrlConflict, exception.Code);
+        Assert.Equal("b", (await service.FindByAddressAsync("contoso.com", "/shop")).Id);
+        Assert.Equal("a", (await service.FindByAddressAsync("fabrikam.com", "/shop")).Id);
     }
 
     [Fact]
-    public async Task SaveAsync_DifferentPrefixesOnTheSameHost_IsAllowed()
+    public async Task SaveAsync_DifferentPrefixesOnTheSameHost_IsRejected()
     {
+        // The second Managed Site would claim a host the first already answers on entirely, and its
+        // prefix cannot rescue it, because a prefix is not consulted once a host name matches.
         var service = CreateService();
-
         await service.SaveAsync(ManagedSitesTestData.ManagedSite("a", name: "A", hostname: "contoso.com", urlPrefix: "shop"));
-        await service.SaveAsync(ManagedSitesTestData.ManagedSite("b", name: "B", hostname: "contoso.com", urlPrefix: "news"));
 
-        Assert.Equal(2, (await service.ListAsync()).Count);
+        var exception = await Assert.ThrowsAsync<ManagedSiteValidationException>(
+            async () => await service.SaveAsync(
+                ManagedSitesTestData.ManagedSite("b", name: "B", hostname: "contoso.com", urlPrefix: "news")));
+
+        Assert.Equal(ManagedSitesConstants.ErrorCodes.UrlConflict, exception.Code);
     }
 
     [Fact]
@@ -175,13 +197,28 @@ public class ManagedSiteAddressTests
     [Fact]
     public async Task FindByAddressAsync_PrefersTheLongerPrefix()
     {
+        // Prefix length only separates Managed Sites that named no host, since those are the only ones
+        // whose prefix is consulted at all.
         var service = CreateService();
-        await service.SaveAsync(ManagedSitesTestData.ManagedSite("root", name: "Root", hostname: "contoso.com"));
-        await service.SaveAsync(ManagedSitesTestData.ManagedSite("deep", name: "Deep", hostname: "contoso.com", urlPrefix: "shop"));
+        await service.SaveAsync(ManagedSitesTestData.ManagedSite("shallow", name: "Shallow", urlPrefix: "shop"));
+        await service.SaveAsync(ManagedSitesTestData.ManagedSite("deep", name: "Deep", urlPrefix: "shop/outlet"));
 
-        var match = await service.FindByAddressAsync("contoso.com", "/shop/basket");
+        var match = await service.FindByAddressAsync("contoso.com", "/shop/outlet/socks");
 
         Assert.Equal("deep", match.Id);
+    }
+
+    [Fact]
+    public async Task FindByAddressAsync_HostNameClaimsEveryPathOnThatHost()
+    {
+        var service = CreateService();
+        await service.SaveAsync(ManagedSitesTestData.ManagedSite("named", name: "Named", hostname: "contoso.com", urlPrefix: "shop"));
+
+        // Every one of these is on the named host, so the prefix never comes into it.
+        Assert.Equal("named", (await service.FindByAddressAsync("contoso.com", "/")).Id);
+        Assert.Equal("named", (await service.FindByAddressAsync("contoso.com", "/about")).Id);
+        Assert.Equal("named", (await service.FindByAddressAsync("contoso.com", "/shop/basket")).Id);
+        Assert.Null(await service.FindByAddressAsync("fabrikam.com", "/shop"));
     }
 
     [Fact]

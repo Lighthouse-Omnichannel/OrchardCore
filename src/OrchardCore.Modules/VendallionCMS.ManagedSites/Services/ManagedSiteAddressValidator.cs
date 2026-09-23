@@ -97,12 +97,13 @@ public static class ManagedSiteAddressValidator
     {
         ArgumentNullException.ThrowIfNull(managedSite);
 
-        var prefix = NormalizePrefix(managedSite.UrlPrefix);
         var hosts = SplitHostnames(managedSite.Hostname);
 
+        // The prefix is dropped for a host-named Managed Site, because it claims every path on its
+        // hosts and two such Managed Sites collide on the host alone however their prefixes differ.
         return hosts.Length == 0
-            ? [new ManagedSiteAddress(string.Empty, prefix)]
-            : [.. hosts.Select(host => new ManagedSiteAddress(host, prefix))];
+            ? [new ManagedSiteAddress(string.Empty, NormalizePrefix(managedSite.UrlPrefix))]
+            : [.. hosts.Select(host => new ManagedSiteAddress(host, string.Empty))];
     }
 
     /// <summary>
@@ -117,14 +118,26 @@ public static class ManagedSiteAddressValidator
     /// <returns><see langword="true" /> when the two addresses overlap.</returns>
     public static bool Overlaps(ManagedSiteAddress first, ManagedSiteAddress second)
     {
-        if (!string.Equals(first.Prefix, second.Prefix, StringComparison.Ordinal))
+        var firstNamesAHost = !string.IsNullOrEmpty(first.Host);
+        var secondNamesAHost = !string.IsNullOrEmpty(second.Host);
+
+        // One claims a host outright, the other a prefix on every host. They do not collide: a request
+        // to the named host goes to the Managed Site that named it, and every other host is left to the
+        // prefix. Precedence settles this rather than validation forbidding it.
+        if (firstNamesAHost != secondNamesAHost)
         {
             return false;
         }
 
-        return string.IsNullOrEmpty(first.Host)
-            || string.IsNullOrEmpty(second.Host)
-            || string.Equals(first.Host, second.Host, StringComparison.Ordinal);
+        // Two host-named Managed Sites collide on a shared host whatever their prefixes say, because
+        // neither prefix is consulted once a host matches.
+        if (firstNamesAHost)
+        {
+            return string.Equals(first.Host, second.Host, StringComparison.Ordinal);
+        }
+
+        // Two host-agnostic Managed Sites collide only on the same prefix.
+        return string.Equals(first.Prefix, second.Prefix, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -139,15 +152,52 @@ public static class ManagedSiteAddressValidator
         ArgumentNullException.ThrowIfNull(managedSite);
 
         var hosts = SplitHostnames(managedSite.Hostname);
-        var normalizedHost = NormalizeHost(host);
 
-        if (hosts.Length > 0 && !hosts.Contains(normalizedHost, StringComparer.Ordinal))
+        // A Managed Site that names host names claims those hosts entirely, and its URL prefix decides
+        // nothing. The prefix is how Managed Sites share one host, so it only has work to do for a
+        // Managed Site that named no host of its own.
+        if (hosts.Length > 0)
         {
-            return false;
+            return hosts.Contains(NormalizeHost(host), StringComparer.Ordinal);
         }
 
         return PathStartsWithPrefix(path, NormalizePrefix(managedSite.UrlPrefix));
     }
+
+    /// <summary>
+    /// Finds the enabled Managed Site that answers a request, when more than one could.
+    /// </summary>
+    /// <remarks>
+    /// Precedence lives here rather than in the store so that matching and choosing between matches are
+    /// one implementation. A Managed Site naming the request host beats one answering on every host, and
+    /// a longer prefix beats a shorter one, so the most specific claim wins.
+    /// </remarks>
+    /// <param name="managedSites">The Managed Sites to consider.</param>
+    /// <param name="host">The request host.</param>
+    /// <param name="path">The request path.</param>
+    /// <returns>The matching Managed Site, or <see langword="null" /> when none answers.</returns>
+    public static ManagedSite FindBestMatch(IEnumerable<ManagedSite> managedSites, string host, string path)
+        => managedSites
+            .Where(managedSite => managedSite.Status == ManagedSiteStatus.Enabled)
+            .Where(managedSite => Matches(managedSite, host, path))
+            .OrderByDescending(managedSite => SplitHostnames(managedSite.Hostname).Length > 0)
+            .ThenByDescending(managedSite => AppliedPrefix(managedSite).Length)
+            .FirstOrDefault();
+
+    /// <summary>
+    /// Gets the URL prefix a Managed Site actually answers under.
+    /// </summary>
+    /// <remarks>
+    /// Empty for a Managed Site that names host names, because those claim every path on the host and
+    /// the stored prefix is not consulted. Callers that strip the prefix from a request path ask this
+    /// rather than reading the stored value, so nothing is stripped that was never matched.
+    /// </remarks>
+    /// <param name="managedSite">The Managed Site, or <see langword="null" />.</param>
+    /// <returns>The prefix in force, or an empty string.</returns>
+    public static string AppliedPrefix(ManagedSite managedSite)
+        => managedSite is null || SplitHostnames(managedSite.Hostname).Length > 0
+            ? string.Empty
+            : NormalizePrefix(managedSite.UrlPrefix);
 
     /// <summary>
     /// Determines whether a request path falls under a prefix.
@@ -189,7 +239,9 @@ public static class ManagedSiteAddressValidator
 
         foreach (var other in others)
         {
-            if (other.Status != ManagedSiteStatus.Enabled && other.Status != ManagedSiteStatus.Draft)
+            // A switched-off Managed Site releases its address, so another can take it over rather than
+            // be blocked by one that answers nothing.
+            if (other.Status != ManagedSiteStatus.Enabled)
             {
                 continue;
             }
