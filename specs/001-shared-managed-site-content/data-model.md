@@ -15,9 +15,9 @@ Represents a child site scope that owns URL registrations, scoped content, and m
 
 - `Id`: Stable managed-site identifier.
 - `Name`: Human-readable name.
-- `Hostname`: Zero or more host names this Managed Site answers on, held as one separator-delimited value exactly as a tenant holds its request hosts. Empty answers on every host the tenant serves.
-- `UrlPrefix`: A single URL path prefix, empty for the root. Managed Sites are addressed like tenants, so there is one prefix rather than a list of paths.
-- `Status`: Draft, Enabled, Disabled, or Archived.
+- `Hostname`: Zero or more host names this Managed Site answers on, held as one separator-delimited value exactly as a tenant holds its request hosts. Naming any host name claims every path on those hosts. Empty answers on every host the tenant serves, under the URL Prefix.
+- `UrlPrefix`: A single URL path prefix, empty for the root. Consulted only when the Managed Site names no host name, because a host name claims the whole host. It is how several Managed Sites share one host. A matched prefix is moved onto the request path base, so content routes underneath it resolve unchanged.
+- `Status`: Enabled or Disabled. A Managed Site is either serving or switched off; there is no third state. New Managed Sites are Enabled, because with two states the other one reads as a deliberate switch-off rather than a starting point.
 
 **Relationships**:
 
@@ -30,10 +30,11 @@ Represents a child site scope that owns URL registrations, scoped content, and m
 
 - Name is required and unique within the tenant.
 - Host names and the URL Prefix are normalized before comparison.
-- A Managed Site expands to one address per host name paired with its URL Prefix, or to a single host-agnostic address when the Hostname is empty.
-- Two Managed Sites conflict when any of their addresses collide: equal prefixes whose host names overlap, where an empty host name overlaps every host.
+- A Managed Site naming host names expands to one address per host name, carrying no prefix. One naming none expands to a single host-agnostic address carrying its prefix.
+- Two Managed Sites naming host names conflict when they share a host name, whatever their prefixes. Two naming none conflict when their prefixes are equal. One of each never conflicts, because the host-named one takes its hosts and the other keeps the rest.
 - A Managed Site naming the request host takes precedence over one that answers on every host.
-- Disabled Managed Sites must not allow new editor mutations.
+- A Disabled Managed Site resolves no request, renders none of its overrides, and accepts no editor changes. Everything it owns is kept and returns when it is enabled again.
+- A Disabled Managed Site releases its address, so another Managed Site may take it over.
 
 ## Tenant Hostname Synchronization
 
@@ -46,7 +47,7 @@ withdraw exactly those and leave operator-configured host names in place.
 
 **Validation Rules**:
 
-- On save or delete, the tenant Hostname becomes the operator host names plus the host names of every enabled Managed Site, where the operator ones are the current entries this module did not previously apply.
+- On save or delete, the tenant Hostname becomes the operator host names plus the host names of every Managed Site, switched off or not, where the operator ones are the current entries this module did not previously apply. Withdrawing the host of a disabled Managed Site would stop the tenant answering on it at all; keeping it means the address still resolves and serves Site Blueprint content.
 - Host names are added even when the tenant Hostname is currently empty, so the tenant then answers only on the host names it declares.
 - A tenant Hostname is never emptied while the tenant URL Prefix is also empty, which would turn it into a catch-all. With a URL Prefix set, emptying the Hostname is permitted because the prefix still distinguishes the tenant.
 - The tenant URL Prefix is never changed, because a tenant carries one prefix for all of its content.
@@ -124,6 +125,7 @@ The capability attached to a content item that declares the item customizable pe
 **Fields**:
 
 - `ContentItemId`: The source content item carrying the capability.
+- `ContainerContentItemId`: The stored content item that holds it, equal to `ContentItemId` when the item is stored in its own right.
 - `EditScopeMode`: All, Selected, or None.
 - `EditScopeManagedSiteIds`: Managed Sites allowed to override when mode is Selected.
 - `DisplayScopeMode`: All, Selected, or None.
@@ -158,6 +160,7 @@ Managed-site-owned content that replaces the original content of one Managed Con
 - `Id`: Stable override identifier.
 - `ManagedSiteId`: Owning Managed Site.
 - `SourceContentItemId`: Target Managed Content item.
+- `SourceContainerContentItemId`: The stored content item holding the source, recorded when the override is written so suppression can still reach it after the edit scope is withdrawn.
 - `OverrideContentItemId`: Managed-site content item used as the override.
 - `Status`: Draft, Published, Suppressed, or Recoverable.
 - `SuppressionReason`: Why the override does not render, when applicable.
@@ -189,7 +192,7 @@ Explains why an existing override does not render, so administrators can act on 
 - `SourceUnpublished`: The source content item is no longer published.
 - `SourceDeleted`: The source content item no longer exists.
 - `CapabilityDetached`: Managed Content was removed from the source content type.
-- `ManagedSiteDisabled`: The owning Managed Site is disabled or archived.
+- `ManagedSiteDisabled`: The owning Managed Site is switched off.
 
 **Validation Rules**:
 

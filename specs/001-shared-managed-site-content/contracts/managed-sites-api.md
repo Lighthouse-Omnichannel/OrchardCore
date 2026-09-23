@@ -189,7 +189,8 @@ Returns every content item carrying Managed Content whose edit scope includes th
       "override": {
         "overrideContentItemId": "override-content-item-id",
         "status": "Published",
-        "suppressionReason": null
+        "suppressionReason": null,
+        "supersededOverrideContentItemIds": []
       }
     }
   ],
@@ -202,6 +203,8 @@ Returns every content item carrying Managed Content whose edit scope includes th
 - Items whose edit scope excludes the route Managed Site are never listed.
 - `displayScopeIncludesManagedSite` is true for every item saved since FR-028a required the display scope to cover the edit scope. It stays on the contract because data written before that rule, or imported by a recipe, can still carry an override that would never render, and the portal warns when it does.
 - `override` is null when the Managed Site has not created one.
+- `supersededOverrideContentItemIds` names any other content item claiming to override the same item, which the system does not serve. Empty in normal operation; a value means content arrived by import or recipe and needs cleaning up, per FR-035a.
+- Items contained in another content item are listed alongside items stored in their own right, and are labelled with the item that holds them.
 
 **Responses**:
 
@@ -236,7 +239,27 @@ Returns every content item carrying Managed Content whose edit scope includes th
 
 ## Managed Content Overrides
 
-### Create or update an override
+### Create an override
+
+`POST /api/managed-sites/{managedSiteId}/managed-content/{sourceContentItemId}/override`
+
+Creates the content item this Managed Site will use to override the source item, as a draft copied from
+the source's current content.
+
+**Behavior**:
+
+- Authorized by managed-site clearance alone, per FR-011a, so an editor needs no tenant-wide content permission for the source's content type.
+- The new item is of the source's content type and is owned by the route Managed Site from the moment it exists.
+- Refused when the Managed Site already holds an override for the item.
+
+**Responses**:
+
+- `201 Created`: The override was created as a draft.
+- `403 Forbidden`: Edit scope excludes the route Managed Site, or the user lacks edit clearance.
+- `404 Not Found`: The source item is not published or does not exist.
+- `409 Conflict`: The Managed Site already holds an override, the source no longer carries Managed Content, or the Managed Site is disabled.
+
+### Update an override
 
 `PUT /api/managed-sites/{managedSiteId}/managed-content/{sourceContentItemId}/override`
 
