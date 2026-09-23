@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using OrchardCore.ContentManagement;
 using OrchardCore.ContentManagement.Display;
+using OrchardCore.ContentManagement.Handlers;
 using OrchardCore.ContentManagement.Display.ContentDisplay;
 using OrchardCore.Data;
 using OrchardCore.Data.Migration;
@@ -17,6 +20,7 @@ using OrchardCore.Settings;
 using OrchardCore.Users.Models;
 using OrchardCore.Users.Services;
 using VendallionCMS.ManagedSites.Drivers;
+using VendallionCMS.ManagedSites.Handlers;
 using VendallionCMS.ManagedSites.Indexes;
 using VendallionCMS.ManagedSites.Migrations;
 using VendallionCMS.ManagedSites.Models;
@@ -31,11 +35,19 @@ public sealed class Startup : StartupBase
 		services.AddDataMigration<ManagedSitesMigrations>();
 		services.AddPermissionProvider<Permissions>();
 		services.AddNavigationProvider<AdminMenu>();
+		services.TryAddSingleton(TimeProvider.System);
+
 		services.AddScoped<IManagedSiteAuthorizationService, ManagedSiteAuthorizationService>();
+
+		// Clearance is no longer only a portal concern. Content authorization asks it whether a Managed
+		// Site may act on its own override content, so it belongs to the feature that defines Managed
+		// Sites rather than to the one that renders the portal.
+		services.AddScoped<IManagedSiteClearanceService, ManagedSiteClearanceService>();
 		services.AddScoped<IManagedSiteService, ManagedSiteService>();
 		services.AddScoped<IShellUrlSynchronizationService, ShellUrlSynchronizationService>();
 		services.AddScoped<IManagedContentScopeService, ManagedContentScopeService>();
 		services.AddScoped<IManagedContentScopeAuthorizationHandler, ManagedContentScopeAuthorizationHandler>();
+		services.AddScoped<IManagedContentLocator, ManagedContentLocator>();
 		services.AddScoped<IManagedContentSuppressionService, ManagedContentSuppressionService>();
 		services.AddScoped<IManagedContentOverrideService, ManagedContentOverrideService>();
 		services.AddScoped<IManagedContentResolutionService, ManagedContentResolutionService>();
@@ -48,7 +60,11 @@ public sealed class Startup : StartupBase
 		// the type is registered for deserialization without a display driver.
 		services.AddContentPart<ManagedContentOverridePart>();
 
-		services.AddIndexProvider<ManagedContentEditScopeIndexProvider>();
+		// Registered as a scoped index provider rather than through AddIndexProvider, because it resolves
+		// the content manager per scope to walk contained items.
+		services.AddScoped<ManagedContentEditScopeIndexProvider>();
+		services.AddScoped<IScopedIndexProvider>(serviceProvider =>
+			serviceProvider.GetRequiredService<ManagedContentEditScopeIndexProvider>());
 		services.AddIndexProvider<ManagedContentOverrideIndexProvider>();
 
 		// Serving a Managed Site its own version of an item means replacing what the item renders, which
@@ -66,6 +82,38 @@ public sealed class Startup : StartupBase
 }
 
 /// <summary>
+/// Resolves incoming public requests to a Managed Site, and keeps composed output fresh.
+/// </summary>
+/// <remarks>
+/// This is what makes every other part of the feature visible. Without the middleware nothing tells a
+/// request which Managed Site it belongs to, so rendering always takes the Site Blueprint branch and
+/// no override is ever served.
+/// </remarks>
+[Feature(ManagedSitesConstants.Features.Routing)]
+public sealed class RoutingStartup : StartupBase
+{
+	// Ahead of the default so the Managed Site is resolved before anything renders with it.
+	public override int Order => -100;
+
+	public override void ConfigureServices(IServiceCollection services)
+	{
+		services.AddScoped<IManagedSiteUrlResolver, ManagedSiteUrlResolver>();
+		services.AddScoped<IManagedSiteCompositionCacheService, ManagedSiteCompositionCacheService>();
+		services.AddScoped<IContentHandler, ManagedSiteCompositionInvalidationHandler>();
+
+		// Substitutes a Managed Site's own content as content loads, which is the only point every
+		// consumer sees: a Liquid template that walks the content tree never asks the display manager
+		// for anything.
+		services.AddScoped<IContentHandler, ManagedContentCompositionHandler>();
+	}
+
+	public override void Configure(IApplicationBuilder app, IEndpointRouteBuilder routes, IServiceProvider serviceProvider)
+	{
+		app.UseMiddleware<ManagedSiteRequestMiddleware>();
+	}
+}
+
+/// <summary>
 /// Registers the Managed Site Admin Portal, its API surface, and the session scope services.
 /// </summary>
 [Feature(ManagedSitesConstants.Features.AdminPortal)]
@@ -73,9 +121,6 @@ public sealed class AdminPortalStartup : StartupBase
 {
 	public override void ConfigureServices(IServiceCollection services)
 	{
-		services.TryAddSingleton(TimeProvider.System);
-
-		services.AddScoped<IManagedSiteClearanceService, ManagedSiteClearanceService>();
 		services.AddScoped<IManagedSiteSessionStore, SiteSettingsManagedSiteSessionStore>();
 		services.AddScoped<IManagedSiteSessionService, ManagedSiteSessionService>();
 
@@ -96,5 +141,9 @@ public sealed class PermissionsStartup : StartupBase
 	{
 		services.AddDisplayDriver<User, ManagedSiteClearanceDisplayDriver>();
 		services.AddScoped<IUserClaimsProvider, ManagedSiteClaimsProvider>();
+
+		// FR-011a: a Managed Site's clearance authorizes content actions on that Managed Site's own
+		// override content, and on nothing else.
+		services.AddScoped<IAuthorizationHandler, ManagedSiteContentAuthorizationHandler>();
 	}
 }
