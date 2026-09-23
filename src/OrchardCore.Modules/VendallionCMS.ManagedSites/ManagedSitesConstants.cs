@@ -66,6 +66,7 @@ public static class ManagedSitesConstants
         public const string ScopeMismatch = "managed-sites.scope-mismatch";
         public const string SessionScopeMismatch = "managed-sites.session-scope-mismatch";
         public const string NoClearance = "managed-sites.no-clearance";
+        public const string NoEnabledManagedSite = "managed-sites.no-enabled-managed-site";
         public const string ManagedSiteUnavailable = "managed-sites.managed-site-unavailable";
         public const string SelectionRequired = "managed-sites.selection-required";
         public const string InvalidName = "managed-sites.invalid-name";

@@ -36,6 +36,20 @@ public sealed class ManagedSiteSessionApiController : ManagedSitesApiControllerB
 
         if (result.Status == ManagedSiteSessionStatus.NoClearance)
         {
+            // Holding clearance for Managed Sites that are all switched off is a different problem from
+            // holding none, and it is fixed by a different person. Saying "no clearance" for both sends
+            // the caller to ask for access they already have.
+            var clearances = await ClearanceService.GetEffectiveClearancesAsync(User);
+
+            if (clearances.Count > 0)
+            {
+                return ManagedSitesProblem(
+                    StatusCodes.Status403Forbidden,
+                    "No enabled Managed Site",
+                    $"The caller holds clearance for {clearances.Count} Managed Site(s), none of which is enabled.",
+                    ManagedSitesConstants.ErrorCodes.NoEnabledManagedSite);
+            }
+
             return ManagedSitesProblem(
                 StatusCodes.Status403Forbidden,
                 "Managed Site clearance required",

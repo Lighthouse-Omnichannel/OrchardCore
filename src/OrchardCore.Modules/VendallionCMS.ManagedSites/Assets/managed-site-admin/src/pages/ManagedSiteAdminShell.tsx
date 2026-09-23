@@ -20,6 +20,7 @@ type ScopedView = { kind: 'content' } | { kind: 'suppressed' } | { kind: 'overri
 type ShellState =
     | { kind: 'loading' }
     | { kind: 'noClearance' }
+    | { kind: 'noEnabledSite'; detail: string }
     | { kind: 'selecting'; managedSites: ManagedSiteSummary[] }
     | { kind: 'ready'; activeManagedSite: ManagedSiteSummary; managedSites: ManagedSiteSummary[] }
     | { kind: 'error'; message: string };
@@ -69,7 +70,13 @@ export function ManagedSiteAdminShell({ api }: ManagedSiteAdminShellProps) {
                 }
 
                 if (error instanceof ManagedSitesApiError && error.status === 403) {
-                    setState({ kind: 'noClearance' });
+                    // Clearance you hold for sites that are all switched off is not missing clearance,
+                    // and pointing the user at an administrator for access would waste their time.
+                    setState(
+                        error.code === 'managed-sites.no-enabled-managed-site'
+                            ? { kind: 'noEnabledSite', detail: error.message }
+                            : { kind: 'noClearance' },
+                    );
                     return;
                 }
 
@@ -111,6 +118,15 @@ export function ManagedSiteAdminShell({ api }: ManagedSiteAdminShellProps) {
         return (
             <div className="managed-site-admin__error" role="alert">
                 <p>{state.message}</p>
+            </div>
+        );
+    }
+
+    if (state.kind === 'noEnabledSite') {
+        return (
+            <div className="managed-site-admin__error" role="alert">
+                <p>{state.detail}</p>
+                <p>Enable a managed site under Managed Sites to start working on it.</p>
             </div>
         );
     }
