@@ -11,19 +11,37 @@ public sealed class ManagedSiteService : IManagedSiteService
 {
     private readonly ISiteService _siteService;
     private readonly IShellUrlSynchronizationService _shellUrlSynchronizationService;
+    private readonly IManagedSiteCompositionCacheService _compositionCacheService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedSiteService" /> class.
     /// </summary>
     /// <param name="siteService">The site service.</param>
     /// <param name="shellUrlSynchronizationService">The tenant hostname synchronization service.</param>
+    /// <param name="compositionCacheService">
+    /// The composition cache service, or <see langword="null" /> when composition is not being cached.
+    /// </param>
     public ManagedSiteService(
         ISiteService siteService,
-        IShellUrlSynchronizationService shellUrlSynchronizationService)
+        IShellUrlSynchronizationService shellUrlSynchronizationService,
+        IManagedSiteCompositionCacheService compositionCacheService = null)
     {
         _siteService = siteService;
         _shellUrlSynchronizationService = shellUrlSynchronizationService;
+        _compositionCacheService = compositionCacheService;
     }
+
+    /// <summary>
+    /// Drops composition state that depended on which addresses resolve to which Managed Site.
+    /// </summary>
+    /// <remarks>
+    /// Optional because the Managed Site store is usable without a cache behind it, and a store that
+    /// refused to work unless one was configured would be the wrong dependency direction.
+    /// </remarks>
+    private ValueTask InvalidateAddressesAsync()
+        => _compositionCacheService is null
+            ? ValueTask.CompletedTask
+            : _compositionCacheService.InvalidateAsync(managedSiteId: null, ManagedSiteCompositionArea.Address);
 
     /// <inheritdoc />
     public async ValueTask<ManagedSite> GetAsync(string managedSiteId)
@@ -51,17 +69,7 @@ public sealed class ManagedSiteService : IManagedSiteService
     {
         var document = await GetDocumentAsync();
 
-        var candidates = document.ManagedSites
-            .Where(managedSite => managedSite.Status == ManagedSiteStatus.Enabled)
-            .Where(managedSite => ManagedSiteAddressValidator.Matches(managedSite, host, path))
-            .ToArray();
-
-        // A Managed Site naming the request host wins over one answering on every host, and a longer
-        // prefix wins over a shorter one, so the most specific claim resolves the request.
-        return candidates
-            .OrderByDescending(managedSite => ManagedSiteAddressValidator.SplitHostnames(managedSite.Hostname).Length > 0)
-            .ThenByDescending(managedSite => ManagedSiteAddressValidator.NormalizePrefix(managedSite.UrlPrefix).Length)
-            .FirstOrDefault();
+        return ManagedSiteAddressValidator.FindBestMatch(document.ManagedSites, host, path);
     }
 
     /// <inheritdoc />
@@ -106,6 +114,8 @@ public sealed class ManagedSiteService : IManagedSiteService
 
         _shellUrlSynchronizationService.Synchronize(document);
 
+        await InvalidateAddressesAsync();
+
         site.Put(document);
 
         await _siteService.UpdateSiteSettingsAsync(site);
@@ -131,6 +141,8 @@ public sealed class ManagedSiteService : IManagedSiteService
         document.ManagedSites.Remove(existing);
 
         _shellUrlSynchronizationService.Synchronize(document);
+
+        await InvalidateAddressesAsync();
 
         site.Put(document);
 

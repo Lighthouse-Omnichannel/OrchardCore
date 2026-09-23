@@ -117,6 +117,16 @@ public sealed class ManagedSiteRequestContext
     public string ManagedSiteId { get; set; }
 
     /// <summary>
+    /// Gets or sets the URL prefix the resolved Managed Site answers under, empty when it answers at
+    /// the root.
+    /// </summary>
+    /// <remarks>
+    /// Carried so the request pipeline can move it out of the path, the way a tenant's own prefix is
+    /// moved, and so the content routes underneath it resolve unchanged.
+    /// </remarks>
+    public string UrlPrefix { get; set; }
+
+    /// <summary>
     /// Gets or sets the request host used for resolution.
     /// </summary>
     public string Host { get; set; }
