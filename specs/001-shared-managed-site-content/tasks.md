@@ -309,7 +309,8 @@ issued access token.
 **Purpose**: Connect preview behavior, public API contracts, and end-to-end validation across all user stories.
 
 - [ ] T112 [P] Add preview composition tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Preview/ManagedSitePreviewTests.cs`
-- [ ] T113 [P] Add composed rendering integration tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/ManagedSiteCompositionIntegrationTests.cs`
+- [X] T113 [P] Add composed rendering integration tests, covering a request arriving at a URL and the contained content it receives, in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/ManagedSiteCompositionIntegrationTests.cs`
+- [X] T113a [P] Add service registration tests that reject a dependency cycle among the module's services, and a content handler that reaches the content manager through its constructor, in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Registration/TenantServiceRegistrationTests.cs`
 - [ ] T114 [P] Add backward-compatibility tests proving types without the part render unchanged in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/UnattachedContentRegressionTests.cs`
 - [ ] T115 Implement preview service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSitePreviewService.cs`
 - [ ] T116 Implement preview API endpoint in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitePreviewApiController.cs`
@@ -448,7 +449,7 @@ Complete Phase 1, Phase 2, and User Story 1 first. This establishes the module, 
 
 ## Task Summary
 
-- **Total tasks**: 163
+- **Total tasks**: 164
 - **Setup tasks**: 14
 - **Foundational tasks**: 17 (two superseded, one re-opened)
 - **US1 tasks**: 10 (six superseded by the implicit blueprint)
@@ -457,9 +458,9 @@ Complete Phase 1, Phase 2, and User Story 1 first. This establishes the module, 
 - **US4 tasks**: 18
 - **US5 tasks**: 17
 - **US6 tasks**: 28 (four reopened by the 2026-09-20 requirements review, four added from running the feature)
-- **Preview/integration tasks**: 8
+- **Preview/integration tasks**: 9 (one added after two dependency cycles reached a running tenant unnoticed)
 - **Polish tasks**: 11
-- **Completed**: 144 of 163 (Phases 1-8)
+- **Completed**: 146 of 164 (Phases 1-8, plus composed rendering and service registration tests from Phase 9)
 - **Phase 4 is complete.** Managed Sites are defined, addressed, and synchronized to the tenant hostname.
 - **Phase 6 is complete.** Managed Content attaches to any content type, both scopes are configurable by blueprint administrators only, and the display scope covers the edit scope.
 - **Phase 7 is complete.** A Managed Site discovers what it may override, including sections stored inside a page; creates its own version with its clearance alone, starting from the blueprint content; and that version is what renders for it. Overrides stop rendering when their cause is withdrawn, keep the reason, and recover on their own when it is restored. Duplicates arriving outside the API resolve deterministically and are shown for cleanup.
