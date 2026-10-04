@@ -1,0 +1,38 @@
+@model VendallionCMS.ManagedSites.ViewModels.ManagedContentOverrideLinkViewModel
+
+@* Shown rather than offered. Which item an override replaces is settled when it is created, and
+   letting it be retyped here would let one managed site's content be pointed at another's item. *@
+<div class="alert alert-info" role="note">
+    <h5 class="alert-heading">@T["Managed site content"]</h5>
+
+    @if (Model.ManagedSiteName is null)
+    {
+        <p class="mb-1">@T["This content belongs to a managed site that no longer exists."]</p>
+    }
+    else
+    {
+        <p class="mb-1">@T["This is <strong>{0}</strong>'s version of another content item. It is served only on that managed site.", Model.ManagedSiteName]</p>
+    }
+
+    @if (Model.IsLinked)
+    {
+        <p class="mb-0">
+            @T["It replaces"]
+            <strong>@(Model.SourceDisplayText ?? Model.SourceContentType ?? Model.SourceContentItemId)</strong>
+
+            @if (Model.SourceIsContained)
+            {
+                @T["(a section inside another content item)"]
+            }
+
+            <a class="ms-2" asp-action="Edit" asp-controller="Admin" asp-area="OrchardCore.Contents"
+               asp-route-contentItemId="@(Model.SourceContainerContentItemId ?? Model.SourceContentItemId)">
+                @T["Open the original"]
+            </a>
+        </p>
+    }
+    else
+    {
+        <p class="mb-0">@T["The content item it replaced can no longer be found, so this version is not being served."]</p>
+    }
+</div>

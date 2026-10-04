@@ -11,7 +11,7 @@ namespace VendallionCMS.ManagedSites.Drivers;
 /// Edits the two scopes a Managed Content item carries.
 /// </summary>
 /// <remarks>
-/// The editor is shown only to users holding Site Blueprint management access, and an update from
+/// The editor is shown only to users who may govern Managed Sites, and an update from
 /// anyone else is discarded rather than partially applied. Scopes decide who may change common content,
 /// so a Managed Site administrator must not be able to widen their own reach.
 /// </remarks>
@@ -35,7 +35,9 @@ public sealed class ManagedContentPartDisplayDriver : ContentPartDisplayDriver<M
 
     /// <inheritdoc />
     public override IDisplayResult Edit(ManagedContentPart part, BuildPartEditorContext context)
-        => Initialize<ManagedContentPartViewModel>(GetEditorShapeType(context), async model =>
+        => IsOverride(part)
+            ? null
+            : Initialize<ManagedContentPartViewModel>(GetEditorShapeType(context), async model =>
         {
             model.CanConfigure = await _scopeAuthorization.CanConfigureScopesAsync();
             model.EditScopeMode = part.EditScope?.Mode ?? ManagedContentScopeMode.None;
@@ -67,13 +69,13 @@ public sealed class ManagedContentPartDisplayDriver : ContentPartDisplayDriver<M
                     };
                 })
                 .ToArray();
-        })
-        .RenderWhen(static driver => driver._scopeAuthorization.CanConfigureScopesAsync(), this);
+            })
+            .RenderWhen(static driver => driver._scopeAuthorization.CanConfigureScopesAsync(), this);
 
     /// <inheritdoc />
     public override async Task<IDisplayResult> UpdateAsync(ManagedContentPart part, UpdatePartEditorContext context)
     {
-        if (!await _scopeAuthorization.CanConfigureScopesAsync())
+        if (IsOverride(part) || !await _scopeAuthorization.CanConfigureScopesAsync())
         {
             return Edit(part, context);
         }
@@ -103,6 +105,18 @@ public sealed class ManagedContentPartDisplayDriver : ContentPartDisplayDriver<M
 
         return Edit(part, context);
     }
+
+    /// <summary>
+    /// Determines whether the item being edited is a Managed Site's override rather than a source item.
+    /// </summary>
+    /// <remarks>
+    /// An override is a content item of the same type as the item it replaces, so it inherits that
+    /// type's parts, this one included. Offering the scopes on it would invite a Managed Site to be
+    /// given the right to override an override, which means nothing: the scopes belong to the item that
+    /// is being overridden.
+    /// </remarks>
+    private static bool IsOverride(ManagedContentPart part)
+        => part?.ContentItem?.Has(nameof(ManagedContentOverridePart)) == true;
 
     private static List<string> NamedManagedSites(ManagedContentScope scope)
         => scope?.Mode == ManagedContentScopeMode.Selected ? scope.ManagedSiteIds : [];

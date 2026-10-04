@@ -60,6 +60,10 @@ public sealed class Startup : StartupBase
 		// the type is registered for deserialization without a display driver.
 		services.AddContentPart<ManagedContentOverridePart>();
 
+		// An item-level driver, because the override part is welded on by the override service rather
+		// than declared by any content type, and a part driver only runs for parts the type declares.
+		services.AddScoped<IContentDisplayDriver, ManagedContentOverrideDisplayDriver>();
+
 		services.AddIndexProvider<ManagedContentEditScopeIndexProvider>();
 		services.AddIndexProvider<ManagedContentOverrideIndexProvider>();
 
