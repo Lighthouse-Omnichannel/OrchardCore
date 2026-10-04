@@ -81,11 +81,19 @@ src/OrchardCore.Modules/VendallionCMS.ManagedSites/
 ├── Manifest.cs
 └── Startup.cs
 
+src/OrchardCore.Themes/VendallionCMS.ManagedSitesTheme/
+├── Recipes/
+│   └── managed-sites.recipe.json
+├── Views/
+├── Manifest.cs
+└── Startup.cs
+
 test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/
 ├── Authorization/
 ├── Composition/
 ├── ManagedContent/
 ├── Preview/
+├── Recipes/
 └── Routing/
 
 src/docs/reference/modules/ManagedSites/
@@ -93,6 +101,26 @@ src/docs/reference/modules/ManagedSites/
 ```
 
 **Structure Decision**: Implement a lean v1 as a single `VendallionCMS.ManagedSites` OrchardCore module. The core ManagedSites feature includes request composition and cannot operate without it; the Admin feature exposes the React-based Managed Site Admin Portal and depends on the core, routing, and permissions features. Split into separate projects only if module activation or deployment boundaries require it later.
+
+**Development Site Decision**: Ship a `VendallionCMS.ManagedSitesTheme` beside the module, modelled on
+`TheAgencyTheme`, whose setup recipe stands up a working Managed Sites site in one step: the features
+enabled, Managed Content attached to a page section, a stand-alone item and a menu entry, scopes set so
+each has something to override, three Managed Sites addressed by URL prefix, and three editors cleared
+for them.
+
+It is a theme because that is where OrchardCore keeps a setup recipe, and the recipe is the deliverable;
+the views exist to render what the recipe provisions. A separate theme rather than steps added to the
+Agency recipe, because a development site that demonstrates one feature should not change what every
+other site gets.
+
+Managed Sites are addressed by prefix rather than host name deliberately. Prefixes need no host file
+entries, no certificates and no second sign-in, and draft preview works through them, which it cannot
+across hosts while the authentication cookie is scoped to the host that issued it.
+
+This depends on recipe steps the module does not have yet: nothing declares a Managed Site, and the
+platform's users step carries neither clearances, which are stored as a section on the user, nor a
+plaintext password. Both are part of the same piece of work, and both are worth having beyond the
+development site, since a recipe is also how a real deployment would be provisioned.
 
 ## Phase 0 Research Summary
 

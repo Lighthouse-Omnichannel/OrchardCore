@@ -73,8 +73,20 @@
 now what makes a tenant the Site Blueprint, so the toggle, the name, the blueprint identifier, the
 blueprint entity, and their settings screen no longer exist. The toggle had gated nothing: its
 identifier was hardcoded, so both branches of every caller behaved identically. The
-`ManageSiteBlueprint` permission survives, because it governs who may manage common content and, from
-User Story 5 onward, who may configure managed content scopes.
+`ManageSiteBlueprint` permission survived here, because it governed who may manage common content and,
+from User Story 5 onward, who may configure managed content scopes.
+
+**Superseded 2026-10-03**: The permissions were reduced to two. `ManageManagedSites` now covers
+everything that governs a Managed Site, which is defining it, deciding what content it may override, and
+granting clearance to it; `EditManagedSiteContent` opens the Managed Site Admin Portal and is bounded
+further by the holder's clearance. `ManageSiteBlueprint` and `ManageManagedSiteClearances` are gone,
+their work folded into `ManageManagedSites`. The line between the two is what keeps a Managed Site
+editor from widening their own reach, since all three ways of doing so sit on the governing side.
+
+On a tenant set up before this change, re-check the roles. `ManageSiteBlueprint` and
+`ManageManagedSiteClearances` no longer resolve to anything, and a role that held `ManageManagedSites`
+only so its users could open the portal now governs Managed Sites as well, which is wider than was
+intended for it. Such a role should be moved to `EditManagedSiteContent`.
 
 ### Tests for User Story 1
 
@@ -92,7 +104,7 @@ User Story 5 onward, who may configure managed content scopes.
 - [X] T145 [US1] Remove the Site Blueprint designation, entity, service, and settings screen across `src/OrchardCore.Modules/VendallionCMS.ManagedSites/`
 - [X] T146 [US1] Remove `BlueprintId` from `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Models/ManagedSite.cs` and `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Indexes/ManagedSitesIndexes.cs`
 
-**Checkpoint**: A tenant with the feature enabled is the Site Blueprint, and common-content authorization is governed by the `ManageSiteBlueprint` permission.
+**Checkpoint**: A tenant with the feature enabled is the Site Blueprint, and common-content authorization is governed by the `ManageManagedSites` permission.
 
 ---
 
@@ -308,15 +320,147 @@ issued access token.
 
 **Purpose**: Connect preview behavior, public API contracts, and end-to-end validation across all user stories.
 
-- [ ] T112 [P] Add preview composition tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Preview/ManagedSitePreviewTests.cs`
+- [X] T112 [P] Add preview composition tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Preview/ManagedSitePreviewTests.cs`
 - [X] T113 [P] Add composed rendering integration tests, covering a request arriving at a URL and the contained content it receives, in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Composition/ManagedSiteCompositionIntegrationTests.cs`
 - [X] T113a [P] Add service registration tests that reject a dependency cycle among the module's services, and a content handler that reaches the content manager through its constructor, in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Registration/TenantServiceRegistrationTests.cs`
-- [ ] T114 [P] Add backward-compatibility tests proving types without the part render unchanged in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/UnattachedContentRegressionTests.cs`
-- [ ] T115 Implement preview service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSitePreviewService.cs`
-- [ ] T116 Implement preview API endpoint in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitePreviewApiController.cs`
-- [ ] T117 Implement portal preview UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/PreviewPage.tsx`
-- [ ] T118 Ensure all API routes match `specs/001-shared-managed-site-content/contracts/managed-sites-api.md` in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/`
-- [ ] T119 Validate quickstart scenarios in `specs/001-shared-managed-site-content/quickstart.md`
+- [X] T114 [P] Add backward-compatibility tests proving types without the part render unchanged in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/ManagedContent/UnattachedContentRegressionTests.cs`
+- [X] T115 Implement preview service in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Services/ManagedSitePreviewService.cs`
+- [X] T116 Implement preview API endpoint in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/ManagedSitePreviewApiController.cs`
+- [X] T117 Implement portal preview UI in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/pages/PreviewPage.tsx`
+- [X] T118 Ensure all API routes match `specs/001-shared-managed-site-content/contracts/managed-sites-api.md` in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Controllers/`
+- [X] T119 Validate quickstart scenarios in `specs/001-shared-managed-site-content/quickstart.md` **Walked in a browser against an isolated tenant. Scenarios 1, 2 and 5 all pass as of 2026-10-04. Seven defects were found and fixed along the way; see the walkthrough record below.**
+
+
+### T119 walkthrough record (2026-10-02)
+
+Walked with Playwright against a throwaway tenant (separate `App_Data`, port 5119, Agency recipe) so the
+developer's own tenant was untouched. Two Managed Sites were created as the scenario asks, one naming a
+host and one naming only a prefix, plus a third to check that a host-named and a host-agnostic Managed
+Site can coexist.
+
+**Scenario 1 — URL resolution: passes.** Each address resolves to its owner; a host-named Managed Site
+answers every path on its host and its prefix is not consulted; a prefix-named one answers under its
+prefix on every other host with the prefix moved onto the path base, so content underneath resolves and
+generated links carry the prefix back; unclaimed addresses fall through to the Site Blueprint; a second
+Managed Site on a taken host is rejected whatever its prefix.
+
+**Scenario 2 — portal scope selection: passes.** A user cleared for one Managed Site is scoped to it
+automatically; one cleared for two must choose, and a scoped call before choosing is refused with 409;
+a Managed Site the user holds no clearance for is neither listed nor reachable, and asking for its
+content directly is refused with 403.
+
+**Scenario 5 — content types beyond pages: partly passes.** A layer widget and a section inside a page
+are both overridable, and each Managed Site sees only its own override. Menus are not composed: see the
+open defect below.
+
+**Fixed while walking:**
+
+1. *A Managed Site addressed by URL prefix never rendered.* The middleware that resolves the Managed Site
+   was added from the module's `Configure`, which OrchardCore runs after `UseRouting`, so moving the
+   prefix onto the path base came after the endpoint had been chosen from the original path: the Managed
+   Site matched and then served a 404. It is now added through an `IStartupFilter`, which runs ahead of
+   routing, the same position OrchardCore rebases a tenant's own prefix from. Covered by
+   `Routing/ManagedSitePipelinePositionTests.cs`.
+2. *A clearance granting edit but not view listed nothing.* `edit`, `publish` and `preview` now imply
+   `view`. Covered by `Authorization/ManagedSiteClearanceScopeTests.cs`.
+3. *An override of an item carrying an alias, a route, or a layer membership.* The copy inherited parts
+   that claim a place of its own: an alias or route made the override impossible to publish at all, and a
+   layer membership had one Managed Site's widget drawn on every other Managed Site and on the Site
+   Blueprint. Those parts are now dropped from the copy. Covered by
+   `ManagedContent/OverrideIdentityTests.cs`.
+
+**Preview walked 2026-10-04 — works on a prefix-addressed Managed Site, cannot work on a host-named one.**
+Scenario 6 was covered by tests rather than walked, so it was walked. What holds: a draft override is
+invisible to published rendering; an anonymous caller who puts the drafts flag in the address gets
+nothing extra, so asking is still not being granted; the link the portal builds is the Managed Site's
+own address, composed by the pipeline that serves the site; and on a Managed Site addressed by URL
+prefix a cleared editor sees their draft while everyone else sees published content.
+
+What does not hold is draft preview on a Managed Site that names a host. The editor signs in on the
+admin's host and the preview link opens the Managed Site's host, so the authentication cookie, which is
+scoped to the host that issued it, does not travel. The cleared editor arrives anonymous and is served
+published content, silently. Confirmed by tracing the decision: `requested=true authenticated=False
+clearance=False`, against the same account that works through a prefix.
+
+This is the cost of composing preview at the Managed Site's own address, which the specification asks
+for deliberately and which is right for fidelity. Three ways out, none taken: carry the grant in the
+link as a short-lived signed token bound to the Managed Site, the user and an expiry, which is what
+"signed clearance" elsewhere in this specification already implies and which needs no cookie; widen the
+authentication cookie to a parent domain, which only works where the hosts share one and gives the
+cookie a longer reach than it has now; or state in the documentation that previewing drafts on a
+host-named Managed Site means signing in on that host first.
+
+Separately: the built link carries no port, as `//alpha.localhost/?managed-site-drafts=1`. Correct on 80
+and 443, wrong anywhere else, which is every development machine.
+
+**Found in use, 2026-10-03 — one Managed Site was shown another's content.** Signing in to one Managed
+Site and opening the portal's content list showed an item whose content belonged to a different Managed
+Site's override, under an ordinary-looking name. An override of a container is a copy of that container,
+so it carries copies of its children, and each copy keeps both the scopes the blueprint gave it and the
+identifier of the item it was copied from. The edit scope index indexed those copies, so an item could
+be described by two rows, one naming the blueprint container and one naming somebody's override, and the
+listing keeps one row per identifier: whichever came first decided which container was opened. Fixed in
+three places. `ManagedContentEditScopeIndexProvider` no longer indexes an override or anything inside
+one, which is covered by `ManagedContent/EditScopeIndexTests.cs`. The portal listing and the Managed
+Content locator both now refuse a row whose container is an override, because rows written before this
+stay until the override they describe is saved again.
+
+**Resolved 2026-10-03 — menu entries are composed; menu containers are not.** The cause was not the menu
+at all. A content item keeps every part it has been asked for, and the platform asks for all of them
+while loading, to hand them to the part handlers, which happens before any content handler sees the
+loaded item. The load-time swap edits the stored JSON, so it was invisible to anything reading a part:
+the menu went on handing out the Site Blueprint's entries however the JSON beneath them had been
+rewritten. Page sections hid this, because they are drawn through the display manager, where a separate
+decorator substitutes them; only consumers reading parts straight off the item were affected, and menus
+are the main one. `ManagedContentCompositionHandler` now drops the parts a substitution changed
+underneath, so they are read again, which is covered by `Composition/SubstitutedPartRefreshTests.cs`.
+Verified in a browser: a Managed Site renders its own version of a menu entry while the Site Blueprint
+and every other Managed Site render the original.
+
+**Resolved 2026-10-04 — an item stored in its own right is substituted too.** Load-time substitution
+replaced the items stored inside the item being loaded but never the item being loaded, so an override
+of a menu, a widget or a whole page was listed, published and reported as rendering while the Site
+Blueprint's version went on being served. `ManagedContentCompositionHandler` now gives the loaded item
+the Managed Site's content when one exists, and then visits nothing inside it, because what it holds is
+that Managed Site's own content rather than a set of further items for it to override.
+
+Identity is deliberately left alone: the database key, the content item identifier and the type stay the
+ones the request resolved, so routing, caching and invalidation go on keying as before; what changes is
+the content, and the display text, which templates show and which is not part of the content. Each
+property is removed rather than overwritten, which also drops the copy of that part the platform kept
+while loading. Covered by `Composition/TopLevelSubstitutionTests.cs`.
+
+Checked against the risk this carries, which is that loading a content item on a public request now
+means something different. Only two content items load on such a request, the page and the menu, so the
+reach is small and known. Identity is unchanged. Handlers run once per item per request, so the swap is
+not repeated. The Site Blueprint survived repeated substituted requests and a restart, so nothing is
+written back. The admin still shows Site Blueprint content and still offers the scopes, because no
+Managed Site is resolved for an admin or API request. Draft gating is unchanged, since the same
+clearance decides it.
+
+One consequence worth stating in the documentation Phase 10 covers: overriding a container replaces
+everything inside it, so a Managed Site that overrides a page stops seeing its own overrides of that
+page's sections until the page override is removed. That is the rule scenario 5 asks for, and it was
+verified both ways round, but it will surprise an editor who meets it by accident.
+
+**Earlier finding — menus are not composed.** A `Menu` override and an override of a `LinkMenuItem` inside a
+menu are both listed by the portal, publish successfully, and report `Published` with no suppression, yet
+the rendered navigation shows the Site Blueprint's entries on the Managed Site. The control holds: a
+change to the blueprint menu itself renders immediately, so the theme does render the menu content item,
+and a section inside a page composes correctly on the same request, so load-time composition works. The
+cause is specific to the menu path and is not a draft/published mismatch (republishing the menu changes
+nothing). Until this is resolved, scenario 5's first expected outcome, that one mechanism covers
+navigation entries as well as layer widgets and page content, does not hold for navigation entries.
+
+**Noted, not defects:**
+
+- A tenant whose hostname is empty answers on every host. Creating the first host-named Managed Site
+  narrows it to that host, which is the documented model, but it also takes the Site Blueprint's own
+  address and its admin offline until an operator declares that host on the tenant alongside it. Worth
+  saying plainly in the documentation Phase 10 covers.
+- A managed-site administrator can create and publish an override and edit the override item in the
+  content editor, but cannot use the Menu module's nested entry editor, which has its own permission.
+- The portal reports `isContainer: false` for a `Menu`, which does contain items.
 
 ---
 
@@ -329,6 +473,47 @@ issued access token.
 - [ ] T122 [P] Update module README in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/README.md`
 - [ ] T123 [P] Write canonical documentation covering the Managed Content part, both scopes, and override recovery in `src/docs/reference/modules/ManagedSites/README.md`
 - [ ] T124 Update feature manifest descriptions after implementation in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Manifest.cs`
+- [ ] T124a Add a `VendallionCMS.ManagedSitesTheme` theme in `src/OrchardCore.Themes/VendallionCMS.ManagedSitesTheme/`, modelled on `TheAgencyTheme`, whose setup recipe stands up a Managed Sites development site in one step
+- [ ] T124b Add a Managed Sites recipe step in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Recipes/ManagedSitesStep.cs` so a recipe can declare Managed Sites, and a clearance step so it can grant users access to them
+- [ ] T124c Add recipe round-trip tests for both steps in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Recipes/ManagedSitesRecipeStepTests.cs`
+- [ ] T124d Document the development site in `src/docs/reference/modules/ManagedSites/README.md`: what the recipe provisions, who to sign in as, and what to try first
+
+
+### The development site (T124a–T124d)
+
+**Why**: investigating this feature currently means an hour of clicking. Everything the T119 walkthrough
+needed, the content types, the scopes, the Managed Sites, the roles, the users and their clearances, has
+to be assembled by hand before a single override can be tried, and getting one step wrong produces
+behaviour that looks like a defect. A setup recipe makes a known-good site a one-step job, which is as
+useful for a developer reading the code as for anyone reproducing a report.
+
+**What the recipe provisions**:
+
+- The four Managed Sites features, alongside what the Agency recipe already enables.
+- A `Managed Site Content Editor` role holding `EditManagedSiteContent` and `AccessAdminPanel`, which is
+  the pair a Managed Site editor needs and nothing more. Notably not `ManageManagedSites`, so the site
+  demonstrates the line the permissions draw rather than blurring it.
+- Managed Content attached to the `Service`, `Page` and `LinkMenuItem` content types, so the three kinds
+  of content that compose differently are all represented: a section stored inside a page, an item
+  stored in its own right, and an entry nested in a menu.
+- Scopes set so there is something to override on each: services open to every Managed Site, one page
+  open to two of them, and named menu entries open to one. Leaving one item deliberately out of scope is
+  worth as much as putting the others in, because "why can I not see this" is the first question the
+  portal raises.
+- Three Managed Sites, `alpha`, `beta` and `gamma`, each addressed by URL prefix on the tenant's own
+  host. Prefixes rather than host names on purpose: they need no host file entries, no certificates and
+  no second sign-in, and draft preview works through them, which it cannot across hosts (see the preview
+  walkthrough above).
+- Three users, `alphaUser`, `betaUser` and `gammaUser`, each in the editor role and each cleared for the
+  one Managed Site they are named for. One of them cleared for two Managed Sites as well, so the portal's
+  selection screen is reachable without editing a user first.
+
+**What it needs first**: the recipe vocabulary does not reach this feature yet. There is no step for
+declaring a Managed Site, and `UsersStep` copies only the fields it knows, so it carries neither
+clearances, which are stored as a section on the user, nor a plaintext password, taking a precomputed
+hash instead. T124b covers both gaps; without it the recipe can enable features and shape content but
+cannot produce a site anyone can sign in to and use.
+
 - [ ] T125 Run module tests with `dotnet test test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.Tests.csproj`
 - [ ] T126 Run CMS build with `dotnet build src/OrchardCore.Cms.Web -c Debug -f net10.0`
 - [ ] T127 Run asset build with `yarn build`
@@ -460,7 +645,7 @@ Complete Phase 1, Phase 2, and User Story 1 first. This establishes the module, 
 - **US6 tasks**: 28 (four reopened by the 2026-09-20 requirements review, four added from running the feature)
 - **Preview/integration tasks**: 9 (one added after two dependency cycles reached a running tenant unnoticed)
 - **Polish tasks**: 11
-- **Completed**: 146 of 164 (Phases 1-8, plus composed rendering and service registration tests from Phase 9)
+- **Completed**: 152 of 164 (Phases 1-8, and Phase 9 but for the quickstart walkthrough)
 - **Phase 4 is complete.** Managed Sites are defined, addressed, and synchronized to the tenant hostname.
 - **Phase 6 is complete.** Managed Content attaches to any content type, both scopes are configurable by blueprint administrators only, and the display scope covers the edit scope.
 - **Phase 7 is complete.** A Managed Site discovers what it may override, including sections stored inside a page; creates its own version with its clearance alone, starting from the blueprint content; and that version is what renders for it. Overrides stop rendering when their cause is withdrawn, keep the reason, and recover on their own when it is restored. Duplicates arriving outside the API resolve deterministically and are shown for cleanup.
