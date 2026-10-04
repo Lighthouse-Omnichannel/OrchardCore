@@ -150,3 +150,44 @@ public sealed class ManagedSiteDefinitionRequest
     /// </summary>
     public string UrlPrefix { get; set; }
 }
+
+/// <summary>
+/// Asks for the address that shows a Managed Site's composed output for one path.
+/// </summary>
+public sealed class ManagedSitePreviewRequest
+{
+    /// <summary>
+    /// Gets or sets the path to preview, relative to the site root.
+    /// </summary>
+    public string Url { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the preview should show unpublished work.
+    /// </summary>
+    /// <remarks>
+    /// Asking is not being granted. The address carries the request and the preview clearance of
+    /// whoever opens it decides whether drafts are served.
+    /// </remarks>
+    public bool IncludeDrafts { get; set; }
+}
+
+/// <summary>
+/// The address that shows a Managed Site's composed output.
+/// </summary>
+public sealed class ManagedSitePreviewResponse
+{
+    /// <summary>
+    /// Gets or sets the address to open.
+    /// </summary>
+    public string PreviewUrl { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Managed Site the address resolves to.
+    /// </summary>
+    public string ManagedSiteId { get; set; }
+
+    /// <summary>
+    /// Gets or sets how the address composes.
+    /// </summary>
+    public string CompositionMode { get; set; }
+}

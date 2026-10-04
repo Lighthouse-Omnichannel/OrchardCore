@@ -101,6 +101,7 @@ public static class ManagedContentTestContent
 public sealed class FakeManagedContentOverrideService : IManagedContentOverrideService
 {
     private readonly Dictionary<string, ContentItem> _published = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ContentItem> _drafts = new(StringComparer.Ordinal);
     private readonly List<ManagedContentOverride> _suppressed = [];
     private ManagedContentOverrideError _error = ManagedContentOverrideError.None;
 
@@ -126,11 +127,41 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
         return this;
     }
 
+    /// <summary>
+    /// Registers unpublished work, which only an authorized preview is shown.
+    /// </summary>
+    /// <param name="managedSiteId">The owning Managed Site.</param>
+    /// <param name="sourceContentItemId">The source content item identifier.</param>
+    /// <param name="content">The draft override content.</param>
+    /// <returns>This instance, for chaining.</returns>
+    public FakeManagedContentOverrideService WithDraft(
+        string managedSiteId,
+        string sourceContentItemId,
+        ContentItem content)
+    {
+        _drafts[Key(managedSiteId, sourceContentItemId)] = content;
+
+        return this;
+    }
+
     /// <inheritdoc />
-    public ValueTask<ContentItem> FindPublishedOverrideAsync(string managedSiteId, string sourceContentItemId)
+    public ValueTask<ContentItem> FindOverrideContentAsync(
+        string managedSiteId,
+        string sourceContentItemId,
+        bool includeDrafts = false)
     {
         PublishedLookups++;
-        _published.TryGetValue(Key(managedSiteId, sourceContentItemId), out var content);
+
+        var key = Key(managedSiteId, sourceContentItemId);
+
+        // The latest version is the draft when one exists and the published version otherwise, which is
+        // what the index answers for a Latest row.
+        if (includeDrafts && _drafts.TryGetValue(key, out var draft))
+        {
+            return ValueTask.FromResult(draft);
+        }
+
+        _published.TryGetValue(key, out var content);
 
         return ValueTask.FromResult(content);
     }

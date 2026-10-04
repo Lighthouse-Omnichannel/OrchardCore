@@ -116,12 +116,18 @@ public interface IManagedContentOverrideService
     ValueTask<IReadOnlyList<ManagedContentOverride>> ListSuppressedAsync(string managedSiteId);
 
     /// <summary>
-    /// Finds the published content that overrides an item for a Managed Site.
+    /// Finds the content that overrides an item for a Managed Site.
     /// </summary>
     /// <param name="managedSiteId">The Managed Site identifier.</param>
     /// <param name="sourceContentItemId">The source content item identifier.</param>
-    /// <returns>The published override content, or <see langword="null" /> when there is none.</returns>
-    ValueTask<ContentItem> FindPublishedOverrideAsync(string managedSiteId, string sourceContentItemId);
+    /// <param name="includeDrafts">
+    /// Whether to return work that has not been published, which preview does and rendering never does.
+    /// </param>
+    /// <returns>The override content, or <see langword="null" /> when there is none.</returns>
+    ValueTask<ContentItem> FindOverrideContentAsync(
+        string managedSiteId,
+        string sourceContentItemId,
+        bool includeDrafts = false);
 
     /// <summary>
     /// Creates the content item a Managed Site will use to override a Managed Content item.
@@ -169,6 +175,19 @@ public interface IManagedContentOverrideService
 /// </remarks>
 public sealed class ManagedContentOverrideService : IManagedContentOverrideService
 {
+    // Named rather than typed: the module does not reference the modules defining them, and a tenant
+    // that has not enabled those features simply has no such part to remove.
+    private static readonly string[] s_partsClaimingAPlaceOfItsOwn =
+    [
+        // An address: one alias, one route, one owner. A second claimant is rejected outright.
+        "AliasPart",
+        "AutoroutePart",
+
+        // A place in the rendered page. A widget is drawn because it belongs to a layer, and the layer
+        // knows nothing of Managed Sites, so a copy that kept its membership was drawn on every site.
+        "LayerMetadata",
+    ];
+
     private readonly ISession _session;
     private readonly IContentManager _contentManager;
     private readonly IManagedContentLocator _locator;
@@ -252,7 +271,10 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
     }
 
     /// <inheritdoc />
-    public async ValueTask<ContentItem> FindPublishedOverrideAsync(string managedSiteId, string sourceContentItemId)
+    public async ValueTask<ContentItem> FindOverrideContentAsync(
+        string managedSiteId,
+        string sourceContentItemId,
+        bool includeDrafts = false)
     {
         if (string.IsNullOrEmpty(managedSiteId) || string.IsNullOrEmpty(sourceContentItemId))
         {
@@ -262,13 +284,24 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
         // Ordered rather than taking whichever row comes back first. At most one override should exist
         // per Managed Site and item, but content imported or recipe-deployed can break that, and an
         // arbitrary winner would mean the same request rendering differently on different machines.
-        return await _session
-            .Query<ContentItem, ManagedContentOverrideIndex>(index =>
-                index.ManagedSiteId == managedSiteId
-                && index.SourceContentItemId == sourceContentItemId
-                && index.Published)
-            .OrderBy(index => index.OverrideContentItemId)
-            .FirstOrDefaultAsync();
+        //
+        // Preview asks for the latest version, which is the draft when one exists and the published
+        // version otherwise. Rendering only ever asks for the published one.
+        return includeDrafts
+            ? await _session
+                .Query<ContentItem, ManagedContentOverrideIndex>(index =>
+                    index.ManagedSiteId == managedSiteId
+                    && index.SourceContentItemId == sourceContentItemId
+                    && index.Latest)
+                .OrderBy(index => index.OverrideContentItemId)
+                .FirstOrDefaultAsync()
+            : await _session
+                .Query<ContentItem, ManagedContentOverrideIndex>(index =>
+                    index.ManagedSiteId == managedSiteId
+                    && index.SourceContentItemId == sourceContentItemId
+                    && index.Published)
+                .OrderBy(index => index.OverrideContentItemId)
+                .FirstOrDefaultAsync();
     }
 
     /// <inheritdoc />
@@ -302,6 +335,17 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
         // scoped item, never a scoped item in its own right, and leaving the part on would list every
         // override back in the portal as something else to override.
         overrideContentItem.Remove(nameof(ManagedContentPart));
+
+        // Nor the parts that would give the copy a place of its own. An override is only ever reached
+        // by standing in for the item it replaces, so anything that would have the platform address it
+        // or draw it in its own right is wrong twice over: an alias or route claims a second owner for
+        // one address, which is rejected outright, so an override of an item carrying one could not be
+        // published at all; and a layer membership had the copy drawn on every Managed Site and on the
+        // Site Blueprint, which is one Managed Site's content showing up on all the others.
+        foreach (var part in s_partsClaimingAPlaceOfItsOwn)
+        {
+            overrideContentItem.Remove(part);
+        }
 
         var overridePart = overrideContentItem.GetOrCreate<ManagedContentOverridePart>();
         overridePart.ManagedSiteId = managedSiteId;

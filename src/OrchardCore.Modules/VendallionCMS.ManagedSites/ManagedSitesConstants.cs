@@ -48,6 +48,28 @@ public static class ManagedSitesConstants
     }
 
     /// <summary>
+    /// How a request asks to be previewed.
+    /// </summary>
+    public static class Preview
+    {
+        /// <summary>
+        /// Query value that asks for unpublished work, honoured only for a caller holding preview
+        /// clearance for the Managed Site the request resolved to.
+        /// </summary>
+        public const string DraftsQueryKey = "managed-site-drafts";
+
+        /// <summary>
+        /// Composition mode reported when the previewed address resolves to a Managed Site.
+        /// </summary>
+        public const string ManagedSiteMode = "ManagedSite";
+
+        /// <summary>
+        /// Composition mode reported when the previewed address resolves to no Managed Site.
+        /// </summary>
+        public const string SiteBlueprintMode = "SiteBlueprint";
+    }
+
+    /// <summary>
     /// Request headers understood by the Managed Sites API.
     /// </summary>
     public static class Headers

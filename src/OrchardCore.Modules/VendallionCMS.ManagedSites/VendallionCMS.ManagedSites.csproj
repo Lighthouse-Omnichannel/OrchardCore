@@ -14,6 +14,11 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <!-- For the index row building, which has no store behind it to test through. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="VendallionCMS.ManagedSites.Tests" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="YesSql.Abstractions" />
   </ItemGroup>

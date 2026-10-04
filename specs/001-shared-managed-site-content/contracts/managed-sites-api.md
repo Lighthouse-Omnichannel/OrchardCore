@@ -362,9 +362,17 @@ Returns overrides that exist but do not render, so administrators can review, re
 
 **Behavior**:
 
-- Uses OrchardCore preview behavior.
-- Simulates the ManagedSites request composition pipeline for the active Managed Site URL context.
-- Resolves each managed content item using the same display scope and override rules as published rendering.
+- `previewUrl` is the Managed Site's own address for the requested path, so the preview is composed by the pipeline that serves the site rather than by a separate renderer, and cannot drift from what visitors receive. This is how the request composition pipeline is simulated for the Managed Site URL context: it is not simulated, it is used.
+- Only a path is accepted. An absolute address is reduced to its path, so a caller cannot point preview at another host and have the answer presented as this Managed Site's.
+- `includeDrafts` adds a query value asking for unpublished work. Asking is not being granted: the request is honoured only for a caller holding preview clearance for the Managed Site the address resolves to, so a preview link shared with anyone else shows only published content.
+- Requires the `preview` clearance scope.
+- `compositionMode` is `ManagedSite` for an address that resolves to one.
+
+**Responses**:
+
+- `200 OK`: Preview address returned.
+- `403 Forbidden`: User lacks preview clearance for the Managed Site.
+- `409 Conflict`: The Managed Site is not serving requests, so it has no composed output to preview.
 - Includes draft overrides visible to the current user when `includeDrafts` is true.
 
 ## Blueprint Administration

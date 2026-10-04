@@ -63,6 +63,10 @@ public sealed class ManagedSiteRequestMiddleware
         {
             var context = await resolver.ResolveAsync(request.Host.Host, request.Path.Value);
 
+            // Recorded, not granted. Whoever acts on it checks the caller's clearance, which cannot be
+            // done here: authentication has not run this early in the pipeline.
+            context.PreviewRequested = request.Query.ContainsKey(ManagedSitesConstants.Preview.DraftsQueryKey);
+
             contextAccessor.Current = context;
 
             Rebase(request, context);

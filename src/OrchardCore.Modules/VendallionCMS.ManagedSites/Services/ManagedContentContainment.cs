@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
 using OrchardCore.ContentManagement;
-using OrchardCore.ContentManagement.Routing;
 using VendallionCMS.ManagedSites.Indexes;
+using VendallionCMS.ManagedSites.Models;
 using YesSql;
 
 namespace VendallionCMS.ManagedSites.Services;
@@ -9,9 +9,13 @@ namespace VendallionCMS.ManagedSites.Services;
 /// <summary>
 /// One content item found inside another.
 /// </summary>
+/// <param name="Content">The contained item's own JSON, which is where it is edited in place.</param>
 /// <param name="ContentItem">The contained item.</param>
 /// <param name="JsonPath">Where it sits inside the stored container.</param>
-public readonly record struct ManagedContentContainedItem(ContentItem ContentItem, string JsonPath);
+public readonly record struct ManagedContentContainedItem(
+    JsonObject Content,
+    ContentItem ContentItem,
+    string JsonPath);
 
 /// <summary>
 /// Walks the content items stored inside another content item.
@@ -21,25 +25,30 @@ public readonly record struct ManagedContentContainedItem(ContentItem ContentIte
 /// anything that looks for Managed Content only among stored documents finds none of the items that
 /// most often carry it.
 ///
-/// Containment is resolved through <see cref="ContainedContentItemsAspect" />, which each container part
-/// supplies for itself, so bag, flow, and anything else that holds children are all covered without
-/// this code knowing their names.
+/// Containment is found structurally rather than by asking each part what it holds. The platform's
+/// <c>ContainedContentItemsAspect</c> is the obvious mechanism and reaches too little: only bag and
+/// taxonomy parts publish it, so a widget in a flow part, which is how most pages are built, is
+/// invisible to anything that relies on it. A serialized content item is recognisable on its own terms,
+/// carrying both an identifier and a type, and that holds for every container part there is or will be.
 /// </remarks>
 public static class ManagedContentContainment
 {
+    private const string ContentItemIdProperty = "ContentItemId";
+    private const string ContentTypeProperty = "ContentType";
+
     /// <summary>
     /// Lists every content item stored inside a content item, at any depth.
     /// </summary>
-    /// <param name="contentManager">The content manager, used to resolve containment.</param>
     /// <param name="container">The stored content item to walk.</param>
     /// <returns>The contained items, each with the path at which it sits.</returns>
-    public static async Task<IReadOnlyList<ManagedContentContainedItem>> ListContainedAsync(
-        IContentManager contentManager,
-        ContentItem container)
+    public static IReadOnlyList<ManagedContentContainedItem> ListContained(ContentItem container)
     {
         var results = new List<ManagedContentContainedItem>();
 
-        await CollectAsync(contentManager, container, (JsonObject)container.Content, results);
+        if (container is not null)
+        {
+            Collect((JsonObject)container.Content, results);
+        }
 
         return results;
     }
@@ -47,14 +56,10 @@ public static class ManagedContentContainment
     /// <summary>
     /// Finds one content item inside a stored content item, or the container itself.
     /// </summary>
-    /// <param name="contentManager">The content manager, used to resolve containment.</param>
     /// <param name="container">The stored content item to search.</param>
     /// <param name="contentItemId">The content item identifier to find.</param>
     /// <returns>The item, or <see langword="null" /> when the container does not hold it.</returns>
-    public static async Task<ContentItem> FindAsync(
-        IContentManager contentManager,
-        ContentItem container,
-        string contentItemId)
+    public static ContentItem Find(ContentItem container, string contentItemId)
     {
         if (container is null || string.IsNullOrEmpty(contentItemId))
         {
@@ -66,36 +71,56 @@ public static class ManagedContentContainment
             return container;
         }
 
-        var contained = await ListContainedAsync(contentManager, container);
-
-        return contained
+        return ListContained(container)
             .FirstOrDefault(item =>
                 string.Equals(item.ContentItem.ContentItemId, contentItemId, StringComparison.Ordinal))
             .ContentItem;
     }
 
-    private static async Task CollectAsync(
-        IContentManager contentManager,
-        ContentItem owner,
-        JsonObject content,
-        List<ManagedContentContainedItem> results)
+    private static void Collect(JsonNode node, List<ManagedContentContainedItem> results)
     {
-        var aspect = await contentManager.PopulateAspectAsync<ContainedContentItemsAspect>(owner);
-
-        foreach (var accessor in aspect.Accessors)
+        switch (node)
         {
-            foreach (var jItem in accessor.Invoke(content).Cast<JsonObject>())
-            {
-                var contained = jItem.ToObject<ContentItem>();
+            case JsonArray array:
+                foreach (var element in array)
+                {
+                    Collect(element, results);
+                }
 
-                results.Add(new ManagedContentContainedItem(contained, jItem.GetNormalizedPath()));
+                break;
 
-                // A container can hold containers, and a section inside a section is still a content
-                // item a Managed Site may be given the right to override.
-                await CollectAsync(contentManager, contained, jItem, results);
-            }
+            case JsonObject item when IsContentItem(item):
+                results.Add(new ManagedContentContainedItem(
+                    item,
+                    item.ToObject<ContentItem>(),
+                    item.GetNormalizedPath()));
+
+                // A container can hold containers, and a section inside a section is still something a
+                // Managed Site may be given the right to override.
+                foreach (var property in item)
+                {
+                    Collect(property.Value, results);
+                }
+
+                break;
+
+            case JsonObject other:
+                foreach (var property in other)
+                {
+                    Collect(property.Value, results);
+                }
+
+                break;
         }
     }
+
+    // A serialized content item carries both an identifier and a type. A content picker stores only
+    // identifiers, as strings, so it is not mistaken for one.
+    private static bool IsContentItem(JsonObject candidate)
+        => candidate[ContentItemIdProperty] is JsonValue id
+            && candidate[ContentTypeProperty] is JsonValue type
+            && !string.IsNullOrEmpty(id.GetValue<string>())
+            && !string.IsNullOrEmpty(type.GetValue<string>());
 }
 
 /// <summary>
@@ -174,7 +199,7 @@ public sealed class ManagedContentLocator : IManagedContentLocator
             return null;
         }
 
-        containerContentItemId ??= await FindContainerIdAsync(contentItemId);
+        containerContentItemId ??= await FindContainerIdAsync(contentItemId, options);
 
         if (containerContentItemId is null)
         {
@@ -188,21 +213,41 @@ public sealed class ManagedContentLocator : IManagedContentLocator
             return null;
         }
 
-        var contentItem = await ManagedContentContainment.FindAsync(_contentManager, container, contentItemId);
+        var contentItem = ManagedContentContainment.Find(container, contentItemId);
 
         return contentItem is null
             ? null
             : new ManagedContentLocation { ContentItem = contentItem, Container = container };
     }
 
-    private async Task<string> FindContainerIdAsync(string contentItemId)
+    private async Task<string> FindContainerIdAsync(string contentItemId, VersionOptions options)
     {
-        var row = await _session
+        var rows = await _session
             .QueryIndex<ManagedContentEditScopeIndex>(index => index.ContentItemId == contentItemId)
-            .FirstOrDefaultAsync();
+            .ListAsync();
+
+        // A Managed Site's override of a container holds copies of that container's children, and a
+        // copy keeps the identifier of what it was copied from. So an item can be named by more than
+        // one row, and answering with the override's would resolve the Site Blueprint's item to another
+        // Managed Site's copy of it. The index no longer writes those rows; this skips the ones already
+        // written, which stay until the override they describe is saved again.
+        //
+        // Loading here costs nothing twice over: the caller loads the container it is given, and the
+        // content manager answers the second request from the same scope.
+        foreach (var candidate in rows
+            .Select(row => row.ContainerContentItemId ?? contentItemId)
+            .Distinct(StringComparer.Ordinal))
+        {
+            var container = await _contentManager.GetAsync(candidate, options ?? VersionOptions.Published);
+
+            if (container is not null && !container.Has(nameof(ManagedContentOverridePart)))
+            {
+                return candidate;
+            }
+        }
 
         // An item with no edit scope row is either not customizable or stored in its own right, and the
         // second case still resolves by loading it directly.
-        return row?.ContainerContentItemId ?? contentItemId;
+        return contentItemId;
     }
 }

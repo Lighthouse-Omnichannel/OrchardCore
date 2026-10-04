@@ -339,27 +339,40 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
                 (index.ManagedSiteId == managedSiteId || index.AllManagedSites) && index.Published)
             .ListAsync();
 
-        var matching = rows
+        var candidates = rows
             .Where(row => string.IsNullOrEmpty(contentType)
                 || string.Equals(row.ContentType, contentType, StringComparison.OrdinalIgnoreCase))
-            .GroupBy(row => row.ContentItemId, StringComparer.Ordinal)
-            .Select(group => group.First())
             .ToArray();
 
-        if (matching.Length == 0)
+        if (candidates.Length == 0)
         {
             return [];
         }
 
         // Several sections can live in one page, so each container is loaded once and then searched,
         // rather than loaded again for every item it holds.
-        var containerIds = matching
+        var containerIds = candidates
             .Select(row => row.ContainerContentItemId ?? row.ContentItemId)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
 
         var containers = (await _contentManager.GetAsync(containerIds, VersionOptions.Published))
             .ToDictionary(container => container.ContentItemId, StringComparer.Ordinal);
+
+        // A row whose container is somebody's override describes that Managed Site's copy of an item,
+        // not the Site Blueprint's. A copy keeps the identifier of what it was copied from, so the two
+        // rows look alike and only one survives the grouping below: whichever happened to come first
+        // decided which container was opened, and when that was another Managed Site's override, this
+        // Managed Site was shown that Managed Site's content under an ordinary-looking name.
+        //
+        // The index no longer writes such rows. They are dropped here as well, because the ones already
+        // written stay until the override they describe is saved again.
+        var matching = candidates
+            .Where(row => containers.TryGetValue(row.ContainerContentItemId ?? row.ContentItemId, out var container)
+                && !container.Has(nameof(ManagedContentOverridePart)))
+            .GroupBy(row => row.ContentItemId, StringComparer.Ordinal)
+            .Select(group => group.First())
+            .ToArray();
 
         var overrides = (await _overrideService.ListAsync(managedSiteId))
             .ToDictionary(item => item.SourceContentItemId, StringComparer.Ordinal);
@@ -373,7 +386,7 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
                 continue;
             }
 
-            var source = await ManagedContentContainment.FindAsync(_contentManager, container, row.ContentItemId);
+            var source = ManagedContentContainment.Find(container, row.ContentItemId);
 
             // The edit scope is checked against the item as it stands now, never trusted from the index
             // row, because a blueprint administrator can narrow it at any moment.

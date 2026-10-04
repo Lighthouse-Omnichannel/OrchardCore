@@ -60,11 +60,7 @@ public sealed class Startup : StartupBase
 		// the type is registered for deserialization without a display driver.
 		services.AddContentPart<ManagedContentOverridePart>();
 
-		// Registered as a scoped index provider rather than through AddIndexProvider, because it resolves
-		// the content manager per scope to walk contained items.
-		services.AddScoped<ManagedContentEditScopeIndexProvider>();
-		services.AddScoped<IScopedIndexProvider>(serviceProvider =>
-			serviceProvider.GetRequiredService<ManagedContentEditScopeIndexProvider>());
+		services.AddIndexProvider<ManagedContentEditScopeIndexProvider>();
 		services.AddIndexProvider<ManagedContentOverrideIndexProvider>();
 
 		// Serving a Managed Site its own version of an item means replacing what the item renders, which
@@ -97,6 +93,12 @@ public sealed class RoutingStartup : StartupBase
 
 	public override void ConfigureServices(IServiceCollection services)
 	{
+		// Added through a startup filter rather than this feature's Configure, because OrchardCore
+		// calls UseRouting before a module configures the pipeline and an endpoint is chosen there. A
+		// Managed Site answering under a URL prefix needs that prefix moved onto the path base before
+		// routing, exactly as a tenant's own prefix is.
+		services.AddSingleton<Microsoft.AspNetCore.Hosting.IStartupFilter, ManagedSiteRequestStartupFilter>();
+
 		services.AddScoped<IManagedSiteUrlResolver, ManagedSiteUrlResolver>();
 		services.AddScoped<IManagedSiteCompositionCacheService, ManagedSiteCompositionCacheService>();
 		services.AddScoped<IContentHandler, ManagedSiteCompositionInvalidationHandler>();
@@ -107,10 +109,6 @@ public sealed class RoutingStartup : StartupBase
 		services.AddScoped<IContentHandler, ManagedContentCompositionHandler>();
 	}
 
-	public override void Configure(IApplicationBuilder app, IEndpointRouteBuilder routes, IServiceProvider serviceProvider)
-	{
-		app.UseMiddleware<ManagedSiteRequestMiddleware>();
-	}
 }
 
 /// <summary>
@@ -123,6 +121,7 @@ public sealed class AdminPortalStartup : StartupBase
 	{
 		services.AddScoped<IManagedSiteSessionStore, SiteSettingsManagedSiteSessionStore>();
 		services.AddScoped<IManagedSiteSessionService, ManagedSiteSessionService>();
+		services.AddScoped<IManagedSitePreviewService, ManagedSitePreviewService>();
 
 		services.AddNavigationProvider<AdminPortalMenu>();
 

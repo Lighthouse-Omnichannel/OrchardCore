@@ -1,6 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
 using OrchardCore.ContentManagement;
-using OrchardCore.Data;
 using VendallionCMS.ManagedSites.Models;
 using VendallionCMS.ManagedSites.Services;
 using YesSql.Indexes;
@@ -74,74 +72,69 @@ public sealed class ManagedContentEditScopeIndex : MapIndex
 /// <remarks>
 /// Walks contained items as well as the document itself, because the sections of a page carry Managed
 /// Content far more often than the page does, and a section is stored inside its page rather than on
-/// its own. Containment is resolved by <see cref="ManagedContentContainment" />, so any part that holds
-/// child items is covered without this code naming it.
+/// its own. Containment is found structurally by <see cref="ManagedContentContainment" />, which covers
+/// every container part rather than only those publishing a containment aspect.
 /// </remarks>
-public sealed class ManagedContentEditScopeIndexProvider : IIndexProvider, IScopedIndexProvider
+public sealed class ManagedContentEditScopeIndexProvider : IndexProvider<ContentItem>
 {
-    private readonly IServiceProvider _serviceProvider;
-    private IContentManager _contentManager;
+    /// <inheritdoc />
+    public override void Describe(DescribeContext<ContentItem> context)
+        => context.For<ManagedContentEditScopeIndex>().Map(BuildRows);
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ManagedContentEditScopeIndexProvider" /> class.
+    /// Builds the edit scope rows a content item contributes.
     /// </summary>
-    /// <param name="serviceProvider">The service provider used to resolve the content manager lazily.</param>
-    public ManagedContentEditScopeIndexProvider(IServiceProvider serviceProvider)
+    /// <remarks>
+    /// Separated from <see cref="Describe" /> so the rule about overrides below can be tested without
+    /// a store behind it.
+    /// </remarks>
+    /// <param name="contentItem">The content item being indexed.</param>
+    /// <returns>The rows, or <see langword="null" /> when the item contributes none.</returns>
+    internal static List<ManagedContentEditScopeIndex> BuildRows(ContentItem contentItem)
     {
-        _serviceProvider = serviceProvider;
+        if (!contentItem.Latest && !contentItem.Published)
+        {
+            return null;
+        }
+
+        // An override contributes nothing, and neither does anything inside it. Its content is one
+        // Managed Site's answer to an item, not an item any Managed Site may be offered. Indexing it
+        // was worse than redundant: an override of a container carries copies of that container's
+        // children, each still holding the scopes the blueprint gave it, so every other Managed Site
+        // named in those scopes was shown an item belonging to somebody else's override, and the copy
+        // shares its identifier with the blueprint's own, so it could be listed in its place.
+        if (contentItem.Has(nameof(ManagedContentOverridePart)))
+        {
+            return null;
+        }
+
+        var results = new List<ManagedContentEditScopeIndex>();
+
+        contentItem.TryGet<ManagedContentPart>(out var part);
+        AddRows(
+            results,
+            contentItem,
+            part,
+            contentItem.ContentItemId,
+            contentItem.ContentType,
+            contentItem.ContentItemId,
+            jsonPath: null);
+
+        foreach (var contained in ManagedContentContainment.ListContained(contentItem))
+        {
+            contained.ContentItem.TryGet<ManagedContentPart>(out var containedPart);
+            AddRows(
+                results,
+                contentItem,
+                containedPart,
+                contained.ContentItem.ContentItemId,
+                contained.ContentItem.ContentType,
+                contentItem.ContentItemId,
+                contained.JsonPath);
+        }
+
+        return results;
     }
-
-    /// <inheritdoc />
-    public string CollectionName { get; set; }
-
-    /// <inheritdoc />
-    public Type ForType() => typeof(ContentItem);
-
-    /// <inheritdoc />
-    public void Describe(IDescriptor context) => Describe((DescribeContext<ContentItem>)context);
-
-    /// <summary>
-    /// Describes how a content item maps to edit scope rows.
-    /// </summary>
-    /// <param name="context">The describe context.</param>
-    public void Describe(DescribeContext<ContentItem> context)
-        => context.For<ManagedContentEditScopeIndex>()
-            .Map(async contentItem =>
-            {
-                if (!contentItem.Latest && !contentItem.Published)
-                {
-                    return null;
-                }
-
-                var results = new List<ManagedContentEditScopeIndex>();
-
-                contentItem.TryGet<ManagedContentPart>(out var part);
-                AddRows(
-                    results,
-                    contentItem,
-                    part,
-                    contentItem.ContentItemId,
-                    contentItem.ContentType,
-                    contentItem.ContentItemId,
-                    jsonPath: null);
-
-                _contentManager ??= _serviceProvider.GetRequiredService<IContentManager>();
-
-                foreach (var contained in await ManagedContentContainment.ListContainedAsync(_contentManager, contentItem))
-                {
-                    contained.ContentItem.TryGet<ManagedContentPart>(out var containedPart);
-                    AddRows(
-                        results,
-                        contentItem,
-                        containedPart,
-                        contained.ContentItem.ContentItemId,
-                        contained.ContentItem.ContentType,
-                        contentItem.ContentItemId,
-                        contained.JsonPath);
-                }
-
-                return results;
-            });
 
     private static void AddRows(
         List<ManagedContentEditScopeIndex> results,

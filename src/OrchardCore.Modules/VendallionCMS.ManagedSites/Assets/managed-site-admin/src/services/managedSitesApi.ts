@@ -76,6 +76,12 @@ export interface SuppressedOverridesResponse {
     items: SuppressedOverride[];
 }
 
+export interface ManagedSitePreview {
+    previewUrl: string;
+    managedSiteId: string;
+    compositionMode: 'ManagedSite' | 'SiteBlueprint';
+}
+
 export interface ManagedContentQuery {
     contentType?: string;
     overrideStatus?: ManagedContentOverrideStatus;
@@ -231,6 +237,20 @@ export class ManagedSitesApi {
     /** Removes this managed site's override, restoring the original content for it. */
     removeOverride(managedSiteId: string, sourceContentItemId: string): Promise<void> {
         return this.send<void>('DELETE', `/${managedSiteId}/managed-content/${sourceContentItemId}/override`, {
+            managedSiteId,
+        });
+    }
+
+    /**
+     * Builds the address that shows this managed site's composed output for a path.
+     *
+     * The address is the managed site's own, so what it shows is composed by the pipeline that serves
+     * the site rather than by a separate preview renderer. Unpublished work is asked for in the address
+     * and granted by the preview clearance of whoever opens it.
+     */
+    createPreview(managedSiteId: string, url: string, includeDrafts: boolean): Promise<ManagedSitePreview> {
+        return this.send<ManagedSitePreview>('POST', `/${managedSiteId}/preview`, {
+            body: { url, includeDrafts },
             managedSiteId,
         });
     }

@@ -127,6 +127,16 @@ public sealed class ManagedSiteRequestContext
     public string UrlPrefix { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the request asked to see unpublished work.
+    /// </summary>
+    /// <remarks>
+    /// Asking is not being granted. The request carries the question and whoever acts on it checks that
+    /// the caller holds preview clearance for this Managed Site, because a query value anyone can type
+    /// must never be what decides that visitors see drafts.
+    /// </remarks>
+    public bool PreviewRequested { get; set; }
+
+    /// <summary>
     /// Gets or sets the request host used for resolution.
     /// </summary>
     public string Host { get; set; }

@@ -59,7 +59,7 @@ public sealed class ManagedContentResolutionService : IManagedContentResolutionS
             return ManagedContentResolution.Original(contentItem);
         }
 
-        var overrideContent = await _overrideService.FindPublishedOverrideAsync(
+        var overrideContent = await _overrideService.FindOverrideContentAsync(
             managedSiteId,
             contentItem.ContentItemId);
 

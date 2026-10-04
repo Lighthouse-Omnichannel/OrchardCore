@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ManagedSiteSelector } from '../components/ManagedSiteSelector';
 import { ManagedContentListPage } from './ManagedContentListPage';
 import { ManagedContentOverridePage } from './ManagedContentOverridePage';
+import { PreviewPage } from './PreviewPage';
 import { SuppressedOverridesPage } from './SuppressedOverridesPage';
 import {
     ManagedSitesApi,
@@ -15,7 +16,11 @@ export interface ManagedSiteAdminShellProps {
 }
 
 /** Which scoped screen is open once a managed site is active. */
-type ScopedView = { kind: 'content' } | { kind: 'suppressed' } | { kind: 'override'; sourceContentItemId: string };
+type ScopedView =
+    | { kind: 'content' }
+    | { kind: 'suppressed' }
+    | { kind: 'preview' }
+    | { kind: 'override'; sourceContentItemId: string };
 
 type ShellState =
     | { kind: 'loading' }
@@ -186,9 +191,22 @@ export function ManagedSiteAdminShell({ api }: ManagedSiteAdminShellProps) {
                 >
                     Not rendering
                 </button>
+                <button
+                    type="button"
+                    aria-current={view.kind === 'preview' ? 'page' : undefined}
+                    onClick={() => setView({ kind: 'preview' })}
+                >
+                    Preview
+                </button>
             </nav>
 
-            {view.kind === 'override' ? (
+            {view.kind === 'preview' ? (
+                <PreviewPage
+                    api={api}
+                    managedSiteId={managedSiteId}
+                    managedSiteName={state.activeManagedSite.name}
+                />
+            ) : view.kind === 'override' ? (
                 <ManagedContentOverridePage
                     api={api}
                     managedSiteId={managedSiteId}
