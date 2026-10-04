@@ -24,7 +24,7 @@ public sealed class AdminPortalMenu : AdminNavigationProvider
         builder
             .Add(S["Managed Sites"], managedSites => managedSites
                 .Add(S["Admin Portal"], S["Admin Portal"].PrefixPosition(), portal => portal
-                    .Permission(Permissions.ManageManagedSites)
+                    .Permission(Permissions.EditManagedSiteContent)
                     .Action("Index", "Portal", new { area = ManagedSitesConstants.Features.ManagedSites })
                     .LocalNav()
                 )

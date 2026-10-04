@@ -12,24 +12,25 @@ public interface IManagedContentScopeAuthorizationHandler
     /// <summary>
     /// Determines whether the current user may configure Managed Content scopes.
     /// </summary>
-    /// <returns><see langword="true" /> when the user holds Site Blueprint management access.</returns>
+    /// <returns><see langword="true" /> when the user may govern Managed Sites.</returns>
     Task<bool> CanConfigureScopesAsync();
 
     /// <summary>
     /// Determines whether a user may configure Managed Content scopes.
     /// </summary>
     /// <param name="user">The user principal to evaluate.</param>
-    /// <returns><see langword="true" /> when the user holds Site Blueprint management access.</returns>
+    /// <returns><see langword="true" /> when the user may govern Managed Sites.</returns>
     Task<bool> CanConfigureScopesAsync(ClaimsPrincipal user);
 }
 
 /// <summary>
-/// Gates Managed Content scope configuration behind Site Blueprint management access.
+/// Gates Managed Content scope configuration behind the permission to govern Managed Sites.
 /// </summary>
 /// <remarks>
-/// Scopes decide who may change the tenant's common content, so changing them is a blueprint-level act.
-/// A Managed Site administrator must never be able to widen their own reach, which is why this check
-/// lives in one place and is shared by every surface that exposes the scopes.
+/// Scopes decide who may change the tenant's common content, so setting them governs Managed Sites
+/// rather than being work done inside one. Someone holding only the permission to edit a Managed Site's
+/// content must never be able to widen their own reach, which is why this check lives in one place and
+/// is shared by every surface that exposes the scopes.
 /// </remarks>
 public sealed class ManagedContentScopeAuthorizationHandler : IManagedContentScopeAuthorizationHandler
 {
@@ -65,6 +66,6 @@ public sealed class ManagedContentScopeAuthorizationHandler : IManagedContentSco
             return false;
         }
 
-        return await _authorizationService.AuthorizeAsync(user, Permissions.ManageSiteBlueprint);
+        return await _authorizationService.AuthorizeAsync(user, Permissions.ManageManagedSites);
     }
 }

@@ -158,6 +158,6 @@ public sealed class ManagedSiteClearanceDisplayDriver : SectionDisplayDriver<Use
         var httpContext = _httpContextAccessor.HttpContext;
 
         return httpContext is not null
-            && await _authorizationService.AuthorizeAsync(httpContext.User, Permissions.ManageManagedSiteClearances);
+            && await _authorizationService.AuthorizeAsync(httpContext.User, Permissions.ManageManagedSites);
     }
 }

@@ -36,7 +36,7 @@ public sealed class PortalController : Controller
     /// <returns>The portal host view.</returns>
     public async Task<IActionResult> Index()
     {
-        if (!await _authorizationService.AuthorizeAsync(User, Permissions.ManageManagedSites))
+        if (!await _authorizationService.AuthorizeAsync(User, Permissions.EditManagedSiteContent))
         {
             return Forbid();
         }

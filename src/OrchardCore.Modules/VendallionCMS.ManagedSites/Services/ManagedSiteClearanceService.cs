@@ -132,6 +132,38 @@ public sealed class ManagedSiteClearanceService : IManagedSiteClearanceService
         return !clearance.EffectiveTo.HasValue || clearance.EffectiveTo.Value > now;
     }
 
+    /// <summary>
+    /// Determines whether a clearance carries a scope.
+    /// </summary>
+    /// <remarks>
+    /// Changing or previewing a Managed Site's content implies being able to read it. Without that, a
+    /// clearance granting edit but not view leaves the portal with nothing to list, so the user it was
+    /// meant to empower cannot reach a single item.
+    ///
+    /// The rule lives here rather than where a grant is saved, so clearance arriving as a signed claim
+    /// from an external issuer follows it too, and so grants already stored without view are corrected
+    /// without anyone re-saving them.
+    /// </remarks>
+    /// <param name="clearance">The clearance.</param>
+    /// <param name="scope">The scope being asked for.</param>
+    /// <returns><see langword="true" /> when the clearance carries the scope.</returns>
     private static bool HasScope(ManagedSiteClearance clearance, string scope)
-        => string.IsNullOrWhiteSpace(scope) || clearance.Scopes.Contains(scope) || clearance.Scopes.Contains("*");
+    {
+        if (string.IsNullOrWhiteSpace(scope)
+            || clearance.Scopes.Contains(scope)
+            || clearance.Scopes.Contains("*"))
+        {
+            return true;
+        }
+
+        return string.Equals(scope, ManagedSitesConstants.Scopes.View, StringComparison.Ordinal)
+            && s_impliesView.Any(implying => clearance.Scopes.Contains(implying));
+    }
+
+    private static readonly string[] s_impliesView =
+    [
+        ManagedSitesConstants.Scopes.Edit,
+        ManagedSitesConstants.Scopes.Publish,
+        ManagedSitesConstants.Scopes.Preview,
+    ];
 }
