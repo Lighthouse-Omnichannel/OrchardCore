@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- NuGet properties-->
+    <Title>VendallionCMS Managed Sites development site</Title>
+    <Description>$(OCCMSDescription)
+
+    A setup recipe that stands up a Managed Sites site to develop and investigate against.</Description>
+    <PackageTags>$(PackageTags) OrchardCoreCMS Theme ManagedSites</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\OrchardCore\OrchardCore.Theme.Targets\OrchardCore.Theme.Targets.csproj" />
+    <ProjectReference Include="..\..\OrchardCore\OrchardCore.DisplayManagement\OrchardCore.DisplayManagement.csproj" />
+  </ItemGroup>
+
+</Project>

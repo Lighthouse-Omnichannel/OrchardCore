@@ -15,6 +15,7 @@ using OrchardCore.DisplayManagement;
 using OrchardCore.DisplayManagement.Handlers;
 using OrchardCore.Modules;
 using OrchardCore.Navigation;
+using OrchardCore.Recipes;
 using OrchardCore.Security.Permissions;
 using OrchardCore.Settings;
 using OrchardCore.Users.Models;
@@ -24,6 +25,7 @@ using VendallionCMS.ManagedSites.Handlers;
 using VendallionCMS.ManagedSites.Indexes;
 using VendallionCMS.ManagedSites.Migrations;
 using VendallionCMS.ManagedSites.Models;
+using VendallionCMS.ManagedSites.Recipes;
 using VendallionCMS.ManagedSites.Services;
 
 namespace VendallionCMS.ManagedSites;
@@ -51,6 +53,7 @@ public sealed class Startup : StartupBase
 		services.AddScoped<IManagedContentSuppressionService, ManagedContentSuppressionService>();
 		services.AddScoped<IManagedContentOverrideService, ManagedContentOverrideService>();
 		services.AddScoped<IManagedContentResolutionService, ManagedContentResolutionService>();
+
 		services.AddScoped<IManagedSiteCompositionContextAccessor, ManagedSiteCompositionContextAccessor>();
 
 		services.AddContentPart<ManagedContentPart>()
@@ -63,6 +66,11 @@ public sealed class Startup : StartupBase
 		// An item-level driver, because the override part is welded on by the override service rather
 		// than declared by any content type, and a part driver only runs for parts the type declares.
 		services.AddScoped<IContentDisplayDriver, ManagedContentOverrideDisplayDriver>();
+
+		// A recipe can declare Managed Sites and clear people for them, which is how a tenant is
+		// provisioned without anyone retyping it.
+		services.AddRecipeExecutionStep<ManagedSitesStep>();
+		services.AddRecipeExecutionStep<ManagedSiteEditorsStep>();
 
 		services.AddIndexProvider<ManagedContentEditScopeIndexProvider>();
 		services.AddIndexProvider<ManagedContentOverrideIndexProvider>();

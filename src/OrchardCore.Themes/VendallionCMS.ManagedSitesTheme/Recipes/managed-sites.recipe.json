@@ -1,0 +1,339 @@
+{
+  "name": "ManagedSitesDevelopment",
+  "displayName": "Managed Sites development site",
+  "description": "A site to investigate Managed Sites against: three managed sites on URL prefixes, three editors cleared for them, and content scoped so each kind of composition has something to override.",
+  "author": "VendallionCMS Team",
+  "website": "https://vendallioncms.example",
+  "version": "1.0.0",
+  "issetuprecipe": true,
+  "categories": [ "development" ],
+  "tags": [ "managedsites", "development" ],
+
+  "steps": [
+    {
+      "name": "feature",
+      "enable": [
+        "OrchardCore.HomeRoute",
+        "OrchardCore.Admin",
+        "OrchardCore.Diagnostics",
+        "OrchardCore.Features",
+        "OrchardCore.Navigation",
+        "OrchardCore.Recipes",
+        "OrchardCore.Resources",
+        "OrchardCore.Roles",
+        "OrchardCore.Settings",
+        "OrchardCore.Themes",
+        "OrchardCore.Users",
+
+        "OrchardCore.Alias",
+        "OrchardCore.Autoroute",
+        "OrchardCore.ContentFields",
+        "OrchardCore.Contents",
+        "OrchardCore.ContentTypes",
+        "OrchardCore.Flows",
+        "OrchardCore.Html",
+        "OrchardCore.Layers",
+        "OrchardCore.Liquid",
+        "OrchardCore.Menu",
+        "OrchardCore.Title",
+        "OrchardCore.Widgets",
+
+        "VendallionCMS.ManagedSites",
+        "VendallionCMS.ManagedSites.Routing",
+        "VendallionCMS.ManagedSites.Permissions",
+        "VendallionCMS.ManagedSites.AdminPortal",
+
+        "TheAdmin",
+        "TheTheme"
+      ]
+    },
+    {
+      "name": "themes",
+      "admin": "TheAdmin",
+      "site": "TheTheme"
+    },
+    {
+      // Everything a managed site editor needs and nothing more. Notably not ManageManagedSites:
+      // an editor who could govern managed sites could put more content in scope and clear
+      // themselves for it, which is the line this feature's permissions draw.
+      "name": "Roles",
+      "Roles": [
+        {
+          "Name": "Managed Site Content Editor",
+          "Description": "Edits the content of the managed sites they hold clearance for.",
+          "Permissions": [ "EditManagedSiteContent", "AccessAdminPanel" ]
+        }
+      ]
+    },
+    {
+      "name": "ContentDefinition",
+      "ContentTypes": [
+        {
+          "Name": "Section",
+          "DisplayName": "Section",
+          "Settings": { "ContentTypeSettings": { "Creatable": false, "Securable": false } },
+          "ContentTypePartDefinitionRecords": [
+            { "PartName": "TitlePart", "Name": "TitlePart", "Settings": {} },
+            { "PartName": "HtmlBodyPart", "Name": "HtmlBodyPart", "Settings": {} },
+            {
+              // The common case: a section lives inside its page rather than in its own right.
+              "PartName": "ManagedContentPart",
+              "Name": "ManagedContentPart",
+              "Settings": {}
+            }
+          ]
+        },
+        {
+          "Name": "Page",
+          "DisplayName": "Page",
+          "Settings": {
+            "ContentTypeSettings": { "Creatable": true, "Listable": true, "Draftable": true, "Securable": true }
+          },
+          "ContentTypePartDefinitionRecords": [
+            { "PartName": "TitlePart", "Name": "TitlePart", "Settings": {} },
+            { "PartName": "AutoroutePart", "Name": "AutoroutePart", "Settings": { "AutoroutePartSettings": { "Pattern": "{{ Model.ContentItem | display_text | slugify }}" } } },
+            { "PartName": "BagPart", "Name": "Sections", "Settings": { "BagPartSettings": { "ContainedContentTypes": [ "Section" ] } } },
+            {
+              // A page is stored in its own right, so overriding one replaces the whole page,
+              // sections included.
+              "PartName": "ManagedContentPart",
+              "Name": "ManagedContentPart",
+              "Settings": {}
+            }
+          ]
+        },
+        {
+          "Name": "LinkMenuItem",
+          "ContentTypePartDefinitionRecords": [
+            {
+              // A menu entry is nested in its menu and has no document of its own.
+              "PartName": "ManagedContentPart",
+              "Name": "ManagedContentPart",
+              "Settings": {}
+            }
+          ]
+        },
+        {
+          "Name": "RawHtml",
+          "ContentTypePartDefinitionRecords": [
+            {
+              // A layer widget is drawn on every page, so overriding one changes a managed site
+              // everywhere at once.
+              "PartName": "ManagedContentPart",
+              "Name": "ManagedContentPart",
+              "Settings": {}
+            }
+          ]
+        }
+      ],
+      "ContentParts": [
+        { "Name": "Section", "Settings": { "ContentPartSettings": { "Attachable": false } } }
+      ]
+    },
+    {
+      "name": "ManagedSites",
+      "ManagedSites": [
+        {
+          // Prefixes rather than host names on purpose: no host file entries, no certificates, no
+          // second sign-in, and draft preview works through them, which it cannot across hosts.
+          "Id": "alpha",
+          "Name": "Alpha",
+          "UrlPrefix": "alpha",
+          "Status": "Enabled"
+        },
+        {
+          "Id": "beta",
+          "Name": "Beta",
+          "UrlPrefix": "beta",
+          "Status": "Enabled"
+        },
+        {
+          "Id": "gamma",
+          "Name": "Gamma",
+          "UrlPrefix": "gamma",
+          "Status": "Enabled"
+        }
+      ]
+    },
+    {
+      "name": "ManagedSiteEditors",
+      "Editors": [
+        {
+          "UserName": "alphaUser",
+          "Password": "Password1!",
+          "RoleNames": [ "Managed Site Content Editor" ],
+          "Grants": [
+            { "ManagedSite": "Alpha", "Scopes": [ "edit", "publish", "preview" ] }
+          ]
+        },
+        {
+          // Cleared for two, so the portal's selection screen is reachable without editing a user
+          // first. A user cleared for one managed site is scoped to it automatically.
+          "UserName": "betaUser",
+          "Password": "Password1!",
+          "RoleNames": [ "Managed Site Content Editor" ],
+          "Grants": [
+            { "ManagedSite": "Beta", "Scopes": [ "edit", "publish", "preview" ] },
+            { "ManagedSite": "Gamma", "Scopes": [ "view" ] }
+          ]
+        },
+        {
+          "UserName": "gammaUser",
+          "Password": "Password1!",
+          "RoleNames": [ "Managed Site Content Editor" ],
+          "Grants": [
+            { "ManagedSite": "Gamma", "Scopes": [ "edit", "publish", "preview" ] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "content",
+      "data": [
+        {
+          "ContentItemId": "managedsiteshome000000000000",
+          "ContentItemVersionId": "managedsiteshomev00000000000",
+          "ContentType": "Page",
+          "DisplayText": "Home",
+          "Latest": true,
+          "Published": true,
+          "TitlePart": { "Title": "Home" },
+          "AutoroutePart": { "Path": "home", "SetHomepage": true },
+          "ManagedContentPart": {
+            // Open to every managed site: overriding this replaces the whole page, its sections
+            // included, which is worth seeing once.
+            "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "DisplayInBlueprintContext": true
+          },
+          "Sections": {
+            "ContentItems": [
+              {
+                "ContentItemId": "managedsitessection1000000000",
+                "ContentItemVersionId": "managedsitessection1v0000000",
+                "ContentType": "Section",
+                "DisplayText": "What we do",
+                "Latest": true,
+                "Published": true,
+                "TitlePart": { "Title": "What we do" },
+                "HtmlBodyPart": { "Html": "<p>The Site Blueprint's words. Every managed site may replace this one.</p>" },
+                "ManagedContentPart": {
+                  "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "DisplayInBlueprintContext": true
+                }
+              },
+              {
+                "ContentItemId": "managedsitessection2000000000",
+                "ContentItemVersionId": "managedsitessection2v0000000",
+                "ContentType": "Section",
+                "DisplayText": "Where we are",
+                "Latest": true,
+                "Published": true,
+                "TitlePart": { "Title": "Where we are" },
+                "HtmlBodyPart": { "Html": "<p>Only Alpha may replace this one, so Beta and Gamma will not see it in their portal.</p>" },
+                "ManagedContentPart": {
+                  "EditScope": { "Mode": "Selected", "ManagedSiteIds": [ "alpha" ] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "DisplayInBlueprintContext": true
+                }
+              },
+              {
+                "ContentItemId": "managedsitessection3000000000",
+                "ContentItemVersionId": "managedsitessection3v0000000",
+                "ContentType": "Section",
+                "DisplayText": "Not for anybody",
+                "Latest": true,
+                "Published": true,
+                "TitlePart": { "Title": "Not for anybody" },
+                "HtmlBodyPart": { "Html": "<p>Nobody may replace this one. It is here so the portal has something it does not list, which is the first question the portal raises.</p>" },
+                "ManagedContentPart": {
+                  "EditScope": { "Mode": "None", "ManagedSiteIds": [] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "DisplayInBlueprintContext": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "ContentItemId": "managedsitesmenu000000000000",
+          "ContentItemVersionId": "managedsitesmenuv0000000000",
+          "ContentType": "Menu",
+          "DisplayText": "Main Menu",
+          "Latest": true,
+          "Published": true,
+          "TitlePart": { "Title": "Main Menu" },
+          "AliasPart": { "Alias": "main-menu" },
+          "ManagedContentPart": {
+            "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "DisplayInBlueprintContext": true
+          },
+          "MenuItemsListPart": {
+            "MenuItems": [
+              {
+                "ContentItemId": "managedsitesmenuitem100000000",
+                "ContentType": "LinkMenuItem",
+                "DisplayText": "Home",
+                "LinkMenuItemPart": { "Name": "Home", "Url": "~/" },
+                "ManagedContentPart": {
+                  // An entry nested in a menu: overriding this changes one link for one managed
+                  // site, leaving the rest of the navigation alone.
+                  "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "DisplayInBlueprintContext": true
+                }
+              },
+              {
+                "ContentItemId": "managedsitesmenuitem200000000",
+                "ContentType": "LinkMenuItem",
+                "DisplayText": "About",
+                "LinkMenuItemPart": { "Name": "About", "Url": "~/about" },
+                "ManagedContentPart": {
+                  "EditScope": { "Mode": "None", "ManagedSiteIds": [] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "DisplayInBlueprintContext": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "ContentItemId": "managedsiteswidget0000000000",
+          "ContentItemVersionId": "managedsiteswidgetv000000000",
+          "ContentType": "RawHtml",
+          "DisplayText": "Footer note",
+          "Latest": true,
+          "Published": true,
+          "RawHtml": { "Content": { "Html": "<p>The Site Blueprint's footer, drawn on every page by a layer.</p>" } },
+          "LayerMetadata": { "Layer": "Always", "Zone": "Footer", "Position": "1", "RenderTitle": false },
+          "ManagedContentPart": {
+            "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "DisplayInBlueprintContext": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "layers",
+      "Layers": [
+        {
+          "Name": "Always",
+          "Rule": "true",
+          "Description": "The widgets in this layer are displayed on any page of this site."
+        }
+      ]
+    },
+    {
+      "name": "settings",
+      "HomeRoute": {
+        "Action": "Display",
+        "Controller": "Item",
+        "Area": "OrchardCore.Contents",
+        "ContentItemId": "managedsiteshome000000000000"
+      }
+    }
+  ]
+}

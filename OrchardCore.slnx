@@ -211,6 +211,7 @@
     <Project Path="src/OrchardCore.Themes/SafeMode/SafeMode.csproj" />
     <Project Path="src/OrchardCore.Themes/TheAdmin/TheAdmin.csproj" />
     <Project Path="src/OrchardCore.Themes/TheAgencyTheme/TheAgencyTheme.csproj" />
+    <Project Path="src/OrchardCore.Themes/VendallionCMS.ManagedSitesTheme/VendallionCMS.ManagedSitesTheme.csproj" />
     <Project Path="src/OrchardCore.Themes/TheBlogTheme/TheBlogTheme.csproj" />
     <Project Path="src/OrchardCore.Themes/TheComingSoonTheme/TheComingSoonTheme.csproj" />
     <Project Path="src/OrchardCore.Themes/TheTheme/TheTheme.csproj" />

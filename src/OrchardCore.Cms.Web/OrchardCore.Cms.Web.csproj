@@ -44,6 +44,7 @@
     <ProjectReference Include="..\OrchardCore\OrchardCore.Application.Cms.Targets\OrchardCore.Application.Cms.Targets.csproj" />
     <ProjectReference Include="..\OrchardCore\OrchardCore.Logging.NLog\OrchardCore.Logging.NLog.csproj" />
     <ProjectReference Include="..\OrchardCore.Modules\VendallionCMS.ManagedSites\VendallionCMS.ManagedSites.csproj" />
+    <ProjectReference Include="..\OrchardCore.Themes\VendallionCMS.ManagedSitesTheme\VendallionCMS.ManagedSitesTheme.csproj" />
   </ItemGroup>
 
   <!-- Necessary as we reference the Project and not the Package -->
