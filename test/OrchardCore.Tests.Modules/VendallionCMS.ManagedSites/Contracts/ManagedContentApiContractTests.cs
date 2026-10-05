@@ -245,12 +245,13 @@ public class ManagedContentApiContractTests
             var portal = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
 
             Controller = new ManagedContentApiController(
-                new Mock<ISession>(MockBehavior.Strict).Object,
-                new Mock<IContentManager>(MockBehavior.Strict).Object,
                 _locator,
-                new Mock<IContentDefinitionManager>(MockBehavior.Strict).Object,
                 new ManagedContentScopeService(),
                 Overrides,
+
+                // Strict and never set up: listing is the one thing these contracts do not cover, and
+                // the controller no longer reaches a store to do it.
+                new Mock<IManagedContentListService>(MockBehavior.Strict).Object,
                 portal.ClearanceService,
                 portal.SessionService)
             {

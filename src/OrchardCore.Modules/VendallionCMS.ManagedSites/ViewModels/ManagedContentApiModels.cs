@@ -1,3 +1,5 @@
+using VendallionCMS.ManagedSites.Models;
+
 namespace VendallionCMS.ManagedSites.ViewModels;
 
 /// <summary>
@@ -68,6 +70,29 @@ public sealed class ManagedContentOverrideSummary
     /// Gets or sets the other content items claiming to override the same item, which are not served.
     /// </summary>
     public List<string> SupersededOverrideContentItemIds { get; set; } = [];
+
+    /// <summary>
+    /// Describes an override, or nothing when the Managed Site has none.
+    /// </summary>
+    /// <remarks>
+    /// Absent rather than empty when there is no override, because "no version of your own" and "a
+    /// version of your own that is not rendering" are different things to show an editor.
+    /// </remarks>
+    /// <param name="managedContentOverride">The override, or <see langword="null" />.</param>
+    /// <returns>The summary, or <see langword="null" />.</returns>
+    public static ManagedContentOverrideSummary Of(ManagedContentOverride managedContentOverride)
+        => managedContentOverride is null
+            ? null
+            : new ManagedContentOverrideSummary
+            {
+                OverrideContentItemId = managedContentOverride.OverrideContentItemId,
+                Status = managedContentOverride.Status.ToString(),
+                SuppressionReason =
+                    managedContentOverride.SuppressionReason == ManagedContentOverrideSuppressionReason.None
+                        ? null
+                        : managedContentOverride.SuppressionReason.ToString(),
+                SupersededOverrideContentItemIds = [.. managedContentOverride.SupersededOverrideContentItemIds],
+            };
 }
 
 /// <summary>

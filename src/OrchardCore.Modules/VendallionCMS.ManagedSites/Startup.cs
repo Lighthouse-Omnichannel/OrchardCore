@@ -54,6 +54,9 @@ public sealed class Startup : StartupBase
 		services.AddScoped<IManagedContentOverrideService, ManagedContentOverrideService>();
 		services.AddScoped<IManagedContentResolutionService, ManagedContentResolutionService>();
 
+		// What a Managed Site may customize is an answer about the feature, not about whatever renders
+		// it, so the surface that shows it is not the one that works it out.
+		services.AddScoped<IManagedContentListService, ManagedContentListService>();
 		services.AddScoped<IManagedSiteCompositionContextAccessor, ManagedSiteCompositionContextAccessor>();
 
 		services.AddContentPart<ManagedContentPart>()

@@ -23,50 +23,33 @@ namespace VendallionCMS.ManagedSites.Controllers;
 [Route("api/managed-sites/{managedSiteId}/managed-content")]
 public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
 {
-    /// <summary>
-    /// Parts that make a content item hold children of its own.
-    /// </summary>
-    /// <remarks>
-    /// Named rather than referenced, so discovering that an item is a container does not make this
-    /// module depend on the modules that supply those parts.
-    /// </remarks>
-    private static readonly string[] _containerParts = ["ListPart", "BagPart", "FlowPart"];
-
-    private readonly ISession _session;
-    private readonly IContentManager _contentManager;
     private readonly IManagedContentLocator _locator;
-    private readonly IContentDefinitionManager _contentDefinitionManager;
     private readonly IManagedContentScopeService _scopeService;
     private readonly IManagedContentOverrideService _overrideService;
+    private readonly IManagedContentListService _listService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedContentApiController" /> class.
     /// </summary>
-    /// <param name="session">The document session.</param>
-    /// <param name="contentManager">The content manager.</param>
     /// <param name="locator">The Managed Content locator.</param>
-    /// <param name="contentDefinitionManager">The content definition manager.</param>
     /// <param name="scopeService">The Managed Content scope service.</param>
     /// <param name="overrideService">The Managed Content override service.</param>
+    /// <param name="listService">The Managed Content listing service.</param>
     /// <param name="clearanceService">The Managed Site clearance service.</param>
     /// <param name="sessionService">The Managed Site session service.</param>
     public ManagedContentApiController(
-        ISession session,
-        IContentManager contentManager,
         IManagedContentLocator locator,
-        IContentDefinitionManager contentDefinitionManager,
         IManagedContentScopeService scopeService,
         IManagedContentOverrideService overrideService,
+        IManagedContentListService listService,
         IManagedSiteClearanceService clearanceService,
         IManagedSiteSessionService sessionService)
         : base(clearanceService, sessionService)
     {
-        _session = session;
-        _contentManager = contentManager;
         _locator = locator;
-        _contentDefinitionManager = contentDefinitionManager;
         _scopeService = scopeService;
         _overrideService = overrideService;
+        _listService = listService;
     }
 
     /// <summary>
@@ -95,11 +78,11 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
             return validation.Failure;
         }
 
-        var items = await ListEditableAsync(managedSiteId, contentType);
+        ManagedContentOverrideStatus? status = null;
 
         if (!string.IsNullOrWhiteSpace(overrideStatus))
         {
-            if (!Enum.TryParse<ManagedContentOverrideStatus>(overrideStatus, ignoreCase: true, out var status))
+            if (!Enum.TryParse<ManagedContentOverrideStatus>(overrideStatus, ignoreCase: true, out var parsed))
             {
                 return ManagedSitesProblem(
                     StatusCodes.Status400BadRequest,
@@ -108,18 +91,17 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
                     ManagedSitesConstants.ErrorCodes.InvalidOverrideStatus);
             }
 
-            items = [.. items.Where(item => OverrideStatusOf(item) == status)];
+            status = parsed;
         }
 
-        // Paging is applied after filtering rather than in the query, because override status lives on
-        // the Managed Site's own content and cannot be joined into the edit scope lookup.
-        var take = Math.Clamp(pageSize, 1, 200);
-        var skip = Math.Max(page - 1, 0) * take;
+        var listing = await _listService.ListAsync(
+            managedSiteId,
+            new ManagedContentListQuery(contentType, status, page, pageSize));
 
         return Ok(new ManagedContentListResponse
         {
-            Items = [.. items.Skip(skip).Take(take)],
-            TotalCount = items.Count,
+            Items = [.. listing.Items],
+            TotalCount = listing.TotalCount,
         });
     }
 
@@ -202,7 +184,7 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
             DisplayText = source.DisplayText,
             EditScopeIncludesManagedSite = true,
             DisplayScopeIncludesManagedSite = _scopeService.CanDisplay(part, managedSiteId),
-            Override = Describe(managedContentOverride),
+            Override = ManagedContentOverrideSummary.Of(managedContentOverride),
         });
     }
 
@@ -234,7 +216,7 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
         var result = await _overrideService.CreateAsync(managedSiteId, sourceContentItemId);
 
         return result.Succeeded
-            ? StatusCode(StatusCodes.Status201Created, Describe(result.Override))
+            ? StatusCode(StatusCodes.Status201Created, ManagedContentOverrideSummary.Of(result.Override))
             : Problem(result.Error);
     }
 
@@ -296,7 +278,7 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
             request.OverrideContentItemId,
             publish);
 
-        return result.Succeeded ? Ok(Describe(result.Override)) : Problem(result.Error);
+        return result.Succeeded ? Ok(ManagedContentOverrideSummary.Of(result.Override)) : Problem(result.Error);
     }
 
     /// <summary>
@@ -330,111 +312,6 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
         }
 
         return NoContent();
-    }
-
-    private async Task<List<ManagedContentListItem>> ListEditableAsync(string managedSiteId, string contentType)
-    {
-        var rows = await _session
-            .QueryIndex<ManagedContentEditScopeIndex>(index =>
-                (index.ManagedSiteId == managedSiteId || index.AllManagedSites) && index.Published)
-            .ListAsync();
-
-        var candidates = rows
-            .Where(row => string.IsNullOrEmpty(contentType)
-                || string.Equals(row.ContentType, contentType, StringComparison.OrdinalIgnoreCase))
-            .ToArray();
-
-        if (candidates.Length == 0)
-        {
-            return [];
-        }
-
-        // Several sections can live in one page, so each container is loaded once and then searched,
-        // rather than loaded again for every item it holds.
-        var containerIds = candidates
-            .Select(row => row.ContainerContentItemId ?? row.ContentItemId)
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-
-        var containers = (await _contentManager.GetAsync(containerIds, VersionOptions.Published))
-            .ToDictionary(container => container.ContentItemId, StringComparer.Ordinal);
-
-        // A row whose container is somebody's override describes that Managed Site's copy of an item,
-        // not the Site Blueprint's. A copy keeps the identifier of what it was copied from, so the two
-        // rows look alike and only one survives the grouping below: whichever happened to come first
-        // decided which container was opened, and when that was another Managed Site's override, this
-        // Managed Site was shown that Managed Site's content under an ordinary-looking name.
-        //
-        // The index no longer writes such rows. They are dropped here as well, because the ones already
-        // written stay until the override they describe is saved again.
-        var matching = candidates
-            .Where(row => containers.TryGetValue(row.ContainerContentItemId ?? row.ContentItemId, out var container)
-                && !container.Has(nameof(ManagedContentOverridePart)))
-            .GroupBy(row => row.ContentItemId, StringComparer.Ordinal)
-            .Select(group => group.First())
-            .ToArray();
-
-        var overrides = (await _overrideService.ListAsync(managedSiteId))
-            .ToDictionary(item => item.SourceContentItemId, StringComparer.Ordinal);
-
-        var items = new List<ManagedContentListItem>();
-
-        foreach (var row in matching)
-        {
-            if (!containers.TryGetValue(row.ContainerContentItemId ?? row.ContentItemId, out var container))
-            {
-                continue;
-            }
-
-            var source = ManagedContentContainment.Find(container, row.ContentItemId);
-
-            // The edit scope is checked against the item as it stands now, never trusted from the index
-            // row, because a blueprint administrator can narrow it at any moment.
-            if (source is null
-                || !source.TryGet<ManagedContentPart>(out var part)
-                || !_scopeService.CanEdit(part, managedSiteId))
-            {
-                continue;
-            }
-
-            overrides.TryGetValue(source.ContentItemId, out var managedContentOverride);
-
-            items.Add(new ManagedContentListItem
-            {
-                SourceContentItemId = source.ContentItemId,
-                ContentType = source.ContentType,
-                DisplayText = DescribeItem(source, container),
-                IsContainer = await IsContainerAsync(source.ContentType),
-                DisplayScopeIncludesManagedSite = _scopeService.CanDisplay(part, managedSiteId),
-                Override = Describe(managedContentOverride),
-            });
-        }
-
-        return [.. items.OrderBy(item => item.DisplayText, StringComparer.OrdinalIgnoreCase)];
-    }
-
-    private static string DescribeItem(ContentItem source, ContentItem container)
-    {
-        var text = source.DisplayText;
-
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            // A section often carries no display text of its own. The identifier alone would give an
-            // editor nothing to recognise, so the type name stands in.
-            text = source.ContentType;
-        }
-
-        return string.Equals(source.ContentItemId, container.ContentItemId, StringComparison.Ordinal)
-            ? text
-            : $"{text} ({container.DisplayText ?? container.ContentType})";
-    }
-
-    private async Task<bool> IsContainerAsync(string contentType)
-    {
-        var definition = await _contentDefinitionManager.GetTypeDefinitionAsync(contentType);
-
-        return definition is not null
-            && definition.Parts.Any(part => _containerParts.Contains(part.PartDefinition?.Name, StringComparer.Ordinal));
     }
 
     private IActionResult Problem(ManagedContentOverrideError error) => error switch
@@ -489,23 +366,4 @@ public sealed class ManagedContentApiController : ManagedSitesApiControllerBase
         "Edit scope excludes this Managed Site",
         "The item's edit scope does not allow this Managed Site to override it.",
         ManagedSitesConstants.ErrorCodes.EditScopeExcluded);
-
-    private static ManagedContentOverrideStatus OverrideStatusOf(ManagedContentListItem item)
-        => item.Override is null
-            ? ManagedContentOverrideStatus.None
-            : Enum.Parse<ManagedContentOverrideStatus>(item.Override.Status);
-
-    private static ManagedContentOverrideSummary Describe(ManagedContentOverride managedContentOverride)
-        => managedContentOverride is null
-            ? null
-            : new ManagedContentOverrideSummary
-            {
-                OverrideContentItemId = managedContentOverride.OverrideContentItemId,
-                Status = managedContentOverride.Status.ToString(),
-                SuppressionReason =
-                    managedContentOverride.SuppressionReason == ManagedContentOverrideSuppressionReason.None
-                        ? null
-                        : managedContentOverride.SuppressionReason.ToString(),
-                SupersededOverrideContentItemIds = [.. managedContentOverride.SupersededOverrideContentItemIds],
-            };
 }
