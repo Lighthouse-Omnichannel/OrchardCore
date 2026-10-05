@@ -64,8 +64,6 @@ specs/001-shared-managed-site-content/
 
 ```text
 src/OrchardCore.Modules/VendallionCMS.ManagedSites/
-├── Assets/
-│   └── managed-site-admin/
 ├── Controllers/
 ├── Drivers/
 ├── Handlers/
@@ -101,6 +99,17 @@ src/docs/reference/modules/ManagedSites/
 ```
 
 **Structure Decision**: Implement a lean v1 as a single `VendallionCMS.ManagedSites` OrchardCore module. The core ManagedSites feature includes request composition and cannot operate without it; the Admin feature exposes the React-based Managed Site Admin Portal and depends on the core, routing, and permissions features. Split into separate projects only if module activation or deployment boundaries require it later.
+
+**Portal Decision**: Render the Managed Site Admin Portal as an OrchardCore admin surface rather than
+as a client application. It was a React single-page application backed by an HTTP API, and the API
+existed only because the application needed one: nothing but the browser called it. Removing both
+removes a toolchain, a build step, a second set of loading and error states, and session handling
+duplicated against the server's, and the portal inherits antiforgery, authorization filters,
+navigation, localization and the admin theme's accessibility instead of restating them.
+
+The services behind the portal do not move. What changes is the shape of the requests that reach them
+and what renders the answer. The one piece of logic that has to move is the editable-content listing,
+which lives in the API controller today and belongs in a service whichever surface calls it.
 
 **Development Site Decision**: Ship a `VendallionCMS.ManagedSitesTheme` beside the module, modelled on
 `TheAgencyTheme`, whose setup recipe stands up a working Managed Sites site in one step: the features

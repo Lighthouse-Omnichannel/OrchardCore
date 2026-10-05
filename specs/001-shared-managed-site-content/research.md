@@ -98,12 +98,16 @@
 - Portal-only filtering: improves UX but is insufficient security.
 - Role-only authorization without managed-site IDs: simple but cannot express per-site clearance precisely.
 
-## Decision: Managed Site Admin Portal uses OrchardCore APIs and existing preview behavior
+## Decision: Managed Site Admin Portal is an OrchardCore admin surface
 
-**Rationale**: The portal is React-based but should not become a parallel CMS backend. OrchardCore APIs remain the content mutation and preview boundary, with preview simulating the ManagedSites request composition pipeline for the active Managed Site URL context so the composed page matches published rendering rules.
+**Rationale**: The portal was a React single-page application backed by an HTTP API, and the API existed only because the application needed one: nothing but the browser ever called it. That bought a client application, a build step, a second set of loading and error states, and session handling duplicated against the server's, in exchange for interactions the admin already renders. Rendering the portal in the admin removes all of it and inherits antiforgery, authorization filters, navigation, localization, and the admin theme's accessibility rather than restating them.
+
+The boundary that mattered is unchanged. The portal does not become a parallel CMS backend: content is still mutated and previewed through platform services, with preview composed by the pipeline that serves the Managed Site so it cannot drift from published rendering.
 
 **Alternatives considered**:
 
+- Keep the single-page application: a richer client than these screens need, at the cost of a toolchain, a build step that falls out of date, and a second implementation of session and clearance handling.
+- Keep the API alongside the admin surface: justified if anything other than the browser called it. Nothing did, so it would be two surfaces to maintain for one consumer.
 - Direct document writes from the portal backend: fast but bypasses OrchardCore content lifecycle and permissions.
 - Separate preview engine: flexible but likely to diverge from real rendering behavior.
 

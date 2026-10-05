@@ -44,6 +44,11 @@ Lets start with this context, and try to create the spec"
 - Q: How is a Managed Site addressed? → A: The same way an OrchardCore tenant is, by a Hostname holding one or more host names and a single URL Prefix. A Managed Site no longer keeps a list of arbitrary address entries.
 - Q: Should a site be explicitly designated as a Site Blueprint, with its own identifier and name? → A: No. Enabling the Managed Sites feature is the designation. The tenant holds the common content and the Managed Sites together, so there is nothing to toggle and nothing for a Managed Site to point at. The designation setting, the blueprint identifier, and the blueprint entity are removed; "Site Blueprint" remains only as the name of the tenant's common-content context.
 
+### Session 2026-10-04
+
+- Q: What kind of web application is the Managed Site Admin Portal? → A: An OrchardCore admin surface, rendered on the server. The portal was a React single-page application backed by an HTTP API, and the API existed only because the application needed one: nothing but the browser ever called it. Rendering the portal in the admin removes the application, the API, the asset pipeline it depended on and the session handling it duplicated against the server, and the portal gains what the rest of the admin already has — antiforgery, authorization filters, navigation, localization, and the admin theme's accessibility.
+- Q: What becomes of the Managed Sites HTTP API? → A: It goes. Its endpoints existed to serve the single-page application; with the application gone, each one becomes an action on an admin controller calling the same services. Nothing outside the browser consumed it.
+
 ### Session 2026-09-20
 
 - Q: May a managed site be given the right to override an item it is not shown? → A: No. The display scope must cover the edit scope. Granting the override marks the managed site as seeing the item and fixes that control, and the rule is reapplied when the change is persisted. The display scope may still reach wider than the edit scope, and a managed site leaves the display scope by leaving the edit scope.
@@ -196,7 +201,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - **FR-011a**: Managed-site clearance MUST itself authorize content actions on that managed site's own override content, so a managed-site editor can author an override without holding tenant-wide content permissions. That clearance MUST NOT authorize any action on Site Blueprint content or on another managed site's override content, whether the request arrives through the Managed Site Admin Portal or through any other content interface.
 - **FR-012**: The system MUST reflect published updates to site blueprint and managed-site content in subsequent requests without requiring manual shell URL refresh actions.
 - **FR-013**: The solution MUST provide a Managed Site Admin Portal for editors to manage Managed Site content only.
-- **FR-014**: The Managed Site Admin Portal MUST be a web-based authoring experience.
+- **FR-014**: The Managed Site Admin Portal MUST be an OrchardCore admin surface rendered on the server, so that it inherits the admin's authentication, antiforgery, navigation, localization, and accessibility rather than restating them.
 - **FR-015**: The Managed Site Admin Portal MUST authenticate users before allowing access to content management functions.
 - **FR-016**: The Managed Site Admin Portal MUST use platform content services for managed-site content updates and page preview operations.
 - **FR-017**: The system MUST maintain managed-site clearances per user from signed authorization claims and scopes and expose only authorized managed sites to that user in the portal.
@@ -205,7 +210,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - **FR-020**: Content edits and preview actions initiated from the Managed Site Admin Portal MUST execute only against the active managed site selected for the session.
 - **FR-021**: Public rendering requests MUST resolve the active Managed Site from the incoming URL and store the result in request-scoped Managed Site context.
 - **FR-022**: Public rendering requests MUST NOT trust client-provided Managed Site scope metadata for Managed Site resolution.
-- **FR-023**: Administrative service requests MUST validate that the requested Managed Site scope, active portal session scope, and signed authorization clearance all refer to the same authorized Managed Site; when client-provided Managed Site scope metadata is present, it MUST match the requested Managed Site scope.
+- **FR-023**: Every administrative action MUST validate that the Managed Site it names, the active session scope, and the caller's signed clearance all refer to the same authorized Managed Site, and MUST refuse the action otherwise. The Managed Site an action applies to is taken from the request route and the session, never from anything the caller supplies alongside them.
 
 #### Managed Content Capability
 

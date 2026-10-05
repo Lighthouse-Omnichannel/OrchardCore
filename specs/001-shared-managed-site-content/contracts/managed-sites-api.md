@@ -1,5 +1,20 @@
 # Contract: Managed Sites API
 
+!!! warning "Superseded 2026-10-04"
+    This API no longer exists. Its endpoints served the React single-page application the portal used
+    to be, and nothing else ever called them. The portal is now an OrchardCore admin surface rendered
+    on the server, and each endpoint below is an action on its admin controller calling the same
+    services.
+
+    What the endpoints describe is still accurate about the feature, which is why this is kept rather
+    than deleted: the scoping rules, the refusals, the override lifecycle and the preview semantics all
+    survive the move, and the admin surface has to honour them. Read it as a description of what the
+    portal does, not of an interface anything can call.
+
+    One rule does not survive, because it had no meaning outside a client application: the optional
+    `X-Managed-Site-Id` consistency header. The Managed Site an action applies to now comes from the
+    request route and the session, and from nothing the caller supplies alongside them.
+
 The Managed Site Admin Portal uses authenticated OrchardCore APIs. All write and preview operations require a token containing managed-site clearance claims/scopes for the selected Managed Site.
 
 ## Authentication and Scope

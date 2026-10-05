@@ -169,7 +169,13 @@ these tasks close that gap.
 
 ## Phase 5: User Story 4 - Managed Site Admin Portal Session (Priority: P2)
 
-**Goal**: Editors use the React-based Managed Site Admin Portal to authenticate, select an active Managed Site, and perform API-backed scoped actions.
+**Goal**: Editors use the Managed Site Admin Portal to authenticate, select an active Managed Site, and perform scoped actions.
+
+**Superseded 2026-10-04**: The portal was a React single-page application backed by an HTTP API, and the
+API existed only because the application needed one: nothing but the browser called it. Both are
+replaced by an OrchardCore admin surface rendered on the server, tracked as T130 to T136 in Phase 10.
+The services behind the portal are unchanged, and so is every rule the API enforced, apart from the
+optional scope header, which had no meaning outside a client application.
 
 **Independent Test**: Sign in as a multi-site user, select an active Managed Site, edit managed-site content, preview a page, and verify all actions remain scoped.
 
@@ -468,15 +474,15 @@ navigation entries as well as layer widgets and page content, does not hold for 
 
 **Purpose**: Documentation, accessibility, localization, build validation, and final quality checks.
 
-- [ ] T120 [P] Add localization strings for admin UI and portal host views in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/`
-- [ ] T121 [P] Add accessibility checks for portal selection, content list, and override editor flows in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Assets/managed-site-admin/src/`
-- [ ] T122 [P] Update module README in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/README.md`
-- [ ] T123 [P] Write canonical documentation covering the Managed Content part, both scopes, and override recovery in `src/docs/reference/modules/ManagedSites/README.md`
-- [ ] T124 Update feature manifest descriptions after implementation in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Manifest.cs`
-- [ ] T124a Add a `VendallionCMS.ManagedSitesTheme` theme in `src/OrchardCore.Themes/VendallionCMS.ManagedSitesTheme/`, modelled on `TheAgencyTheme`, whose setup recipe stands up a Managed Sites development site in one step
-- [ ] T124b Add a Managed Sites recipe step in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Recipes/ManagedSitesStep.cs` so a recipe can declare Managed Sites, and a clearance step so it can grant users access to them
-- [ ] T124c Add recipe round-trip tests for both steps in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Recipes/ManagedSitesRecipeStepTests.cs`
-- [ ] T124d Document the development site in `src/docs/reference/modules/ManagedSites/README.md`: what the recipe provisions, who to sign in as, and what to try first
+- [ ] T120 [P] Add localization strings for the admin and portal views in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/` **Easier after T132: a server-rendered view localizes through `T[...]` rather than through a second mechanism in the client application.**
+- [ ] T121 [P] Add accessibility checks for the portal's scope selection, content list, and override screens **Easier after T132: the admin theme's conventions carry most of this, where the client application restated it.**
+- [X] T122 [P] Update module README in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/README.md`
+- [X] T123 [P] Write canonical documentation covering the Managed Content part, both scopes, and override recovery in `src/docs/reference/modules/ManagedSites/README.md` **Also listed in `mkdocs.yml`, which it was not before, so the page is reachable.**
+- [X] T124 Update feature manifest descriptions after implementation in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Manifest.cs`
+- [X] T124a Add a `VendallionCMS.ManagedSitesTheme` theme in `src/OrchardCore.Themes/VendallionCMS.ManagedSitesTheme/`, modelled on `TheAgencyTheme`, whose setup recipe stands up a Managed Sites development site in one step **Referenced from `OrchardCore.Cms.Web` rather than from `OrchardCore.Application.Cms.Targets`, where the built-in themes are referenced, so that no OrchardCore library is changed. Verified by running setup with it: the site serves on each prefix, each editor signs in, and each portal lists exactly what its scopes allow.**
+- [X] T124b Add a Managed Sites recipe step in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Recipes/ManagedSitesStep.cs` so a recipe can declare Managed Sites, and a clearance step so it can grant users access to them **The clearance step also creates the user when one does not exist, because the platform's `Users` step takes a password hash rather than a password and so cannot produce an account anybody can sign in to. A password is honoured only on creation; an existing user's is never changed.**
+- [X] T124c Add recipe round-trip tests for both steps in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Recipes/ManagedSitesRecipeStepTests.cs`
+- [X] T124d Document the development site in `src/docs/reference/modules/ManagedSites/README.md`: what the recipe provisions, who to sign in as, and what to try first
 
 
 ### The development site (T124a–T124d)
@@ -514,12 +520,33 @@ clearances, which are stored as a section on the user, nor a plaintext password,
 hash instead. T124b covers both gaps; without it the recipe can enable features and shape content but
 cannot produce a site anyone can sign in to and use.
 
+- [X] T130 Move the editable-content listing out of `Controllers/ManagedContentApiController.cs` into a service, so the surface that renders it is not the one that computes it **`Services/ManagedContentListService.cs`. Narrowing and paging are separated from reading, because that half is arithmetic over a list and is now covered by `Portal/ManagedContentListQueryTests.cs`, which found that the query object's declared defaults never applied.**
+- [ ] T131 Add `Controllers/ManagedSitePortalController.cs`: the active Managed Site, the content list with its filters, one item with its override, the suppressed list, and the preview link
+- [ ] T132 Add the portal's admin views in `src/OrchardCore.Modules/VendallionCMS.ManagedSites/Views/ManagedSitePortal/`, using the `ocat-*` admin conventions
+- [ ] T133 Rewrite the API tests as controller tests in `test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/Portal/`, keeping every rule the API enforced: clearance, active scope, and each refusal
+- [ ] T134 Remove the single-page application: `Assets/managed-site-admin/`, the `Assets.json` entry, the committed bundles in `wwwroot/Scripts/managed-site-admin/`, and `Controllers/PortalController.cs` with its view
+- [ ] T135 Remove the API controllers that served it, and the models and routes that exist only for them
+- [ ] T136 Update `src/docs/reference/modules/ManagedSites/README.md` and the module README where they describe the portal as a client application
+
+**What this changes, and what it must not.** Each API endpoint becomes an action: the authorized
+Managed Sites and the session become the portal's own scope selection, the content list keeps its
+content type, override status and paging filters, and create, publish and remove become posts from the
+item screen. The preview screen keeps building a link to the Managed Site's own address rather than
+rendering a preview itself.
+
+What must survive unchanged is every refusal. A caller without clearance for the Managed Site they name
+is refused; a caller cleared for several who has chosen none is told to choose; a Managed Site the
+caller holds no clearance for is neither listed nor reachable. Those rules are tested today against the
+API, and T133 is what stops them being lost in the move. The one rule that goes is the optional scope
+header: with no client application there is nothing to send it, and the Managed Site an action applies
+to comes from the route and the session.
+
 - [ ] T125 Run module tests with `dotnet test test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.Tests.csproj`
 - [ ] T126 Run CMS build with `dotnet build src/OrchardCore.Cms.Web -c Debug -f net10.0`
-- [ ] T127 Run asset build with `yarn build`
+- [X] ~~T127 Run asset build with `yarn build`~~ **Retired with the single-page application: the module ships no assets to build.**
 - [ ] T127a Record a usability walkthrough timing SC-005, SC-009, and SC-020 against the built portal
 - [ ] T128 Review final implementation against `specs/001-shared-managed-site-content/spec.md`
-- [ ] T129 Review API behavior against `specs/001-shared-managed-site-content/contracts/managed-sites-api.md`
+- [X] ~~T129 Review API behavior against `specs/001-shared-managed-site-content/contracts/managed-sites-api.md`~~ **Retired with the API. The contract is kept as a description of what the portal does, and T133 is what holds the admin surface to it.**
 
 ---
 
