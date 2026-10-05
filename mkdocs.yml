@@ -254,6 +254,7 @@ nav:
               - Admin Dashboard: reference/modules/AdminDashboard/README.md
               - Admin Menu: reference/modules/AdminMenu/README.md
               - Taxonomies: reference/modules/Taxonomies/README.md
+              - Managed Sites: reference/modules/ManagedSites/README.md
               - Authentication:
                   - Microsoft: reference/modules/Microsoft.Authentication/README.md
                   - Facebook: reference/modules/Facebook/README.md

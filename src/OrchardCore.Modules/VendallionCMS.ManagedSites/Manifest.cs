@@ -6,14 +6,14 @@ using VendallionCMS.ManagedSites;
     Author = "VendallionCMS Team",
     Website = "https://vendallioncms.example",
     Version = "1.0.0",
-    Description = "Provides Site Blueprint and Managed Site content composition capabilities.",
+    Description = "Serves several sites from one tenant, sharing most of their content.",
     Category = "Content Management"
 )]
 
 [assembly: Feature(
     Id = ManagedSitesConstants.Features.ManagedSites,
     Name = "Managed Sites",
-    Description = "Defines Site Blueprint and Managed Site scopes, URL registrations, and composition rules.",
+    Description = "Adds the Managed Content part, which decides who may override a content item and who renders it, and composes each request from the result.",
     Category = "Content Management",
     Dependencies = ["OrchardCore.Contents", "OrchardCore.Settings"]
 )]
@@ -21,7 +21,7 @@ using VendallionCMS.ManagedSites;
 [assembly: Feature(
     Id = ManagedSitesConstants.Features.AdminPortal,
     Name = "Managed Sites Admin Portal",
-    Description = "Provides the React-based Managed Site Admin Portal and administrative screens.",
+    Description = "Adds the portal a managed site editor works in, scoped to the managed sites their clearance names, and the screens for defining managed sites.",
     Category = "Content Management",
     Dependencies = [ManagedSitesConstants.Features.ManagedSites, ManagedSitesConstants.Features.Routing, ManagedSitesConstants.Features.Permissions, "OrchardCore.Admin", "OrchardCore.Navigation"]
 )]
@@ -29,7 +29,7 @@ using VendallionCMS.ManagedSites;
 [assembly: Feature(
     Id = ManagedSitesConstants.Features.Routing,
     Name = "Managed Sites Routing",
-    Description = "Resolves incoming URLs to Managed Site request context and synchronizes shell URL mappings.",
+    Description = "Resolves an incoming URL to the managed site that answers it, and keeps the tenant's host names in step with the ones managed sites declare.",
     Category = "Infrastructure",
     Dependencies = [ManagedSitesConstants.Features.ManagedSites, "OrchardCore.Autoroute"]
 )]
@@ -37,7 +37,7 @@ using VendallionCMS.ManagedSites;
 [assembly: Feature(
     Id = ManagedSitesConstants.Features.Permissions,
     Name = "Managed Sites Permissions",
-    Description = "Adds scoped permissions for Site Blueprint and Managed Site management.",
+    Description = "Adds the two permissions: governing managed sites, and editing the content of one.",
     Category = "Security",
     Dependencies = [ManagedSitesConstants.Features.ManagedSites, "OrchardCore.Roles", "OrchardCore.Users"]
 )]
