@@ -36,7 +36,8 @@ else
                         <td><span class="badge bg-warning text-dark">@item.SuppressionReason</span></td>
                         <td class="text-end">
                             <a class="btn btn-secondary btn-sm"
-                               asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId">@T["Open"]</a>
+                               asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId"
+                               aria-label="@T["Open your version of {0}", item.SourceContentItemId]">@T["Open"]</a>
                         </td>
                     </tr>
                 }

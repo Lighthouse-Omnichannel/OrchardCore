@@ -6,9 +6,11 @@
 
 <div class="ocat-wrapper">
     <div class="ocat-end-offset">
-        <p class="text-muted">
+        <p class="text-muted mb-1">
             @T["Everything you edit and preview applies to <strong>{0}</strong> only.", Model.ManagedSite.Name]
-            <a asp-action="Select">@T["Work on a different managed site"]</a>
+        </p>
+        <p class="mb-0">
+            <a asp-action="Select" class="text-decoration-underline">@T["Work on a different managed site"]</a>
         </p>
     </div>
 </div>
@@ -83,7 +85,10 @@ else
                         </td>
                         <td class="text-end">
                             <a class="btn btn-primary btn-sm"
-                               asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId">
+                               asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId"
+                               aria-label="@(item.Override is null
+                                   ? T["Create your version of {0}", item.DisplayText]
+                                   : T["Open your version of {0}", item.DisplayText])">
                                 @(item.Override is null ? T["Create your version"] : T["Open"])
                             </a>
                         </td>
