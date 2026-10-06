@@ -21,15 +21,15 @@ two scopes, clearance, preview, and what happens when an override stops renderin
 | `VendallionCMS.ManagedSites` | The Managed Content part, the scopes, and the composition rules |
 | `VendallionCMS.ManagedSites.Routing` | URL resolution and tenant host name synchronization |
 | `VendallionCMS.ManagedSites.Permissions` | The two Managed Sites permissions |
-| `VendallionCMS.ManagedSites.AdminPortal` | The React Managed Site Admin Portal and admin screens |
+| `VendallionCMS.ManagedSites.AdminPortal` | The Managed Site Admin Portal and the admin screens |
 
 ## Developing
 
-The portal's client application lives in `Assets/managed-site-admin/` and is built through the
-repository's asset pipeline:
+The module ships no assets: the portal is rendered on the server, so there is nothing to build beyond
+the project itself.
 
-```bash
-yarn build -n managed-site-admin
-```
+The quickest way to see the feature working is the `Managed Sites development site` setup recipe, which
+stands up three managed sites and the editors who work in them. See
+[the documentation](../../docs/reference/modules/ManagedSites/README.md#a-site-to-investigate-against).
 
 The specification this module implements is in `specs/001-shared-managed-site-content/`.

@@ -127,7 +127,7 @@ public sealed class RoutingStartup : StartupBase
 }
 
 /// <summary>
-/// Registers the Managed Site Admin Portal, its API surface, and the session scope services.
+/// Registers the Managed Site Admin Portal and the session scope services.
 /// </summary>
 [Feature(ManagedSitesConstants.Features.AdminPortal)]
 public sealed class AdminPortalStartup : StartupBase
@@ -140,7 +140,6 @@ public sealed class AdminPortalStartup : StartupBase
 
 		services.AddNavigationProvider<AdminPortalMenu>();
 
-		services.AddTransient<IConfigureOptions<AuthorizationOptions>, ManagedSitesApiAuthorizationOptionsConfiguration>();
 	}
 }
 

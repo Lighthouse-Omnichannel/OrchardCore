@@ -11,17 +11,6 @@ public static class ManagedSitesConstants
     }
 
     /// <summary>
-    /// Authorization policies used by the Managed Sites API surface.
-    /// </summary>
-    public static class AuthorizationPolicies
-    {
-        /// <summary>
-        /// Requires an authenticated user on either the bearer API scheme or the admin cookie scheme.
-        /// </summary>
-        public const string ManagedSitesApi = "ManagedSitesApi";
-    }
-
-    /// <summary>
     /// Action scopes that Managed Site clearance can grant.
     /// </summary>
     public static class Scopes
@@ -75,13 +64,18 @@ public static class ManagedSitesConstants
     public static class Headers
     {
         /// <summary>
-        /// Optional consistency header carrying the Managed Site the client believes is active.
+        /// A header naming the Managed Site a caller believes it is addressing.
+        ///
+        /// Public rendering ignores it, and ignores anything else a caller supplies: the URL decides
+        /// which Managed Site answers a request and nothing else does, or a visitor could ask for
+        /// another Managed Site's content by sending one. It is named here so that the rule can be
+        /// tested against the thing it forbids.
         /// </summary>
         public const string ManagedSiteId = "X-Managed-Site-Id";
     }
 
     /// <summary>
-    /// Problem detail codes returned by the Managed Sites API.
+    /// Codes naming why something was refused, carried alongside the message explaining it.
     /// </summary>
     public static class ErrorCodes
     {

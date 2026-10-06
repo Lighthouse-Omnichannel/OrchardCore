@@ -151,8 +151,9 @@ items stored inside a loaded item are swapped, and so is the loaded item itself.
 Identity is left alone. The database key, the content item identifier and the content type stay the Site
 Blueprint's, because routing, caching and invalidation all key on them; what changes is the content.
 
-Admin and API requests resolve no managed site, so they always see Site Blueprint content. That is what
-stops an editor saving a managed site's content over the blueprint's.
+Admin requests resolve no managed site, so they always see Site Blueprint content. That is what stops an
+editor saving a managed site's content over the blueprint's: the portal shows a managed site's version
+because it asks for it, not because the request it arrived on was composed.
 
 ## Preview
 
