@@ -211,6 +211,7 @@ public sealed class ManagedSitePortalController : Controller
             DisplayScopeIncludesManagedSite = _scopeService.CanDisplay(part, scope.ManagedSite.Id),
             Override = ManagedContentOverrideSummary.Of(
                 await _overrideService.GetAsync(scope.ManagedSite.Id, sourceContentItemId)),
+            VersionsInsideThisOne = await VersionsInsideAsync(scope.ManagedSite.Id, source),
         });
     }
 
@@ -344,7 +345,11 @@ public sealed class ManagedSitePortalController : Controller
 
         var preview = path is null
             ? null
-            : await _previewService.CreateAsync(scope.ManagedSite.Id, path, includeDrafts);
+            : await _previewService.CreateAsync(
+                scope.ManagedSite.Id,
+                path,
+                includeDrafts,
+                Request.Host.Port);
 
         return View(new ManagedSitePortalPreviewViewModel
         {
@@ -352,7 +357,56 @@ public sealed class ManagedSitePortalController : Controller
             Path = path,
             IncludeDrafts = includeDrafts,
             PreviewUrl = preview?.PreviewUrl,
+            OpensAnotherHost = OpensAnotherHost(scope.ManagedSite),
         });
+    }
+
+    /// <summary>
+    /// Lists the Managed Site's own versions of items stored inside this one.
+    /// </summary>
+    /// <remarks>
+    /// A version of a container replaces everything inside it, so these stop being served as soon as
+    /// one exists. Naming them is what turns a rule an editor meets by accident into one they chose.
+    /// </remarks>
+    /// <param name="managedSiteId">The Managed Site.</param>
+    /// <param name="source">The item being looked at.</param>
+    /// <returns>What to call each version that would be set aside.</returns>
+    private async Task<IReadOnlyList<string>> VersionsInsideAsync(string managedSiteId, ContentItem source)
+    {
+        var contained = ManagedContentContainment.ListContained(source);
+
+        if (contained.Count == 0)
+        {
+            return [];
+        }
+
+        var inside = contained
+            .Select(item => item.ContentItem.ContentItemId)
+            .ToHashSet(StringComparer.Ordinal);
+
+        return
+        [
+            .. (await _overrideService.ListAsync(managedSiteId))
+                .Where(item => inside.Contains(item.SourceContentItemId))
+                .Select(item => item.SourceContentItemId),
+        ];
+    }
+
+    /// <summary>
+    /// Determines whether a preview link would open a host the editor is not signed in on.
+    /// </summary>
+    /// <remarks>
+    /// A sign-in reaches only the host that issued it. A Managed Site that names a different host is
+    /// therefore previewed as nobody, and served published content however the link asked for drafts.
+    /// </remarks>
+    /// <param name="managedSite">The Managed Site being previewed.</param>
+    /// <returns><see langword="true" /> when the link leaves this host.</returns>
+    private bool OpensAnotherHost(ManagedSite managedSite)
+    {
+        var host = ManagedSiteAddressValidator.SplitHostnames(managedSite.Hostname).FirstOrDefault();
+
+        return !string.IsNullOrEmpty(host)
+            && !string.Equals(host, Request.Host.Host, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

@@ -7,6 +7,15 @@
 <div class="ocat-wrapper">
     <div class="ocat-end-offset">
         <p class="text-muted">@T["Opens a page at this managed site's own address, composed exactly as a visitor's request is."]</p>
+
+        @if (Model.OpensAnotherHost)
+        {
+            <div class="alert alert-warning" role="alert">
+                <p class="mb-0">
+                    @T["This managed site answers on <strong>{0}</strong>, and you are signed in here. A sign-in reaches only the host that issued it, so the link opens as a visitor and shows published content, whatever it asks for. To see work you have not published, sign in on {0} first.", Model.ManagedSite.Hostname]
+                </p>
+            </div>
+        }
     </div>
 </div>
 

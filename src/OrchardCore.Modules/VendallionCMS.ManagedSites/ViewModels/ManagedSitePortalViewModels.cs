@@ -103,6 +103,16 @@ public sealed class ManagedSitePortalDetailViewModel
     /// Gets or sets the Managed Site's own version, or <see langword="null" /> when it has none.
     /// </summary>
     public ManagedContentOverrideSummary Override { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Managed Site's own versions of items stored inside this one.
+    /// </summary>
+    /// <remarks>
+    /// A version of a container replaces everything inside it, so these stop being served the moment
+    /// one is created. The rule is deliberate; meeting it by accident is not, so the screen says which
+    /// work it would set aside before anybody loses it.
+    /// </remarks>
+    public IReadOnlyList<string> VersionsInsideThisOne { get; set; } = [];
 }
 
 /// <summary>
@@ -145,4 +155,15 @@ public sealed class ManagedSitePortalPreviewViewModel
     /// Gets or sets the link, once one has been built.
     /// </summary>
     public string PreviewUrl { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the link opens a host the editor is not signed in on.
+    /// </summary>
+    /// <remarks>
+    /// A sign-in reaches only the host that issued it, so a preview on a Managed Site that names a
+    /// different host arrives as nobody, and is served published content however the link asked for
+    /// drafts. Saying so is the difference between a limitation and an editor concluding their draft
+    /// did not save.
+    /// </remarks>
+    public bool OpensAnotherHost { get; set; }
 }

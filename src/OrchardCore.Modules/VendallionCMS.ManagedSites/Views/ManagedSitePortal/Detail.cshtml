@@ -16,6 +16,21 @@
                 @T["This item does not render on this managed site, so a version of your own would not be seen."]
             </div>
         }
+
+        @if (Model.VersionsInsideThisOne.Count > 0)
+        {
+            <div class="alert alert-warning" role="alert">
+                <p class="mb-1">
+                    @T["A version of this replaces everything inside it, including {0} of your own versions, which would stop being served:", Model.VersionsInsideThisOne.Count]
+                </p>
+                <ul class="mb-0">
+                    @foreach (var inside in Model.VersionsInsideThisOne)
+                    {
+                        <li>@inside</li>
+                    }
+                </ul>
+            </div>
+        }
     </div>
 </div>
 
