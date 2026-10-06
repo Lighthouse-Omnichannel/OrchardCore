@@ -1,0 +1,43 @@
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSitePortalSelectViewModel
+
+<zone Name="Title"><h1>@T["Select a managed site"]</h1></zone>
+
+<p class="text-muted">@T["Everything you edit and preview applies to the managed site you choose, and to that one only."]</p>
+
+<form asp-action="Select" method="post">
+    <div class="ocat-wrapper">
+        <div class="ocat-end-offset">
+            @if (Model.ManagedSites.Count == 0)
+            {
+                <div class="alert alert-warning" role="alert">
+                    @T["You hold no clearance for any managed site."]
+                </div>
+            }
+            else
+            {
+                <div class="list-group">
+                    @foreach (var managedSite in Model.ManagedSites)
+                    {
+                        <button type="submit" name="managedSiteId" value="@managedSite.Id"
+                                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span>
+                                <strong>@managedSite.Name</strong>
+                                <span class="text-muted ms-2">
+                                    @(string.IsNullOrEmpty(managedSite.Hostname) ? T["every host"] : managedSite.Hostname)
+                                    @if (!string.IsNullOrEmpty(managedSite.UrlPrefix) && string.IsNullOrEmpty(managedSite.Hostname))
+                                    {
+                                        <text>/@managedSite.UrlPrefix</text>
+                                    }
+                                </span>
+                            </span>
+                            @if (managedSite.Id == Model.SelectedManagedSiteId)
+                            {
+                                <span class="badge bg-primary">@T["Current"]</span>
+                            }
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</form>

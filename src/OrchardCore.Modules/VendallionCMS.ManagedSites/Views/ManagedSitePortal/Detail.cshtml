@@ -1,0 +1,89 @@
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSitePortalDetailViewModel
+
+<zone Name="Title">
+    <h1>@Model.DisplayText <small class="text-muted">@Model.ManagedSite.Name</small></h1>
+</zone>
+
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <p class="text-muted">
+            <a asp-action="Index">@T["Back to the list"]</a>
+        </p>
+
+        @if (!Model.DisplayScopeIncludesManagedSite)
+        {
+            <div class="alert alert-warning" role="alert">
+                @T["This item does not render on this managed site, so a version of your own would not be seen."]
+            </div>
+        }
+    </div>
+</div>
+
+<div class="ocat-wrapper">
+    <span class="ocat-label">@T["Type"]</span>
+    <div class="ocat-end"><span class="text-muted">@Model.ContentType</span></div>
+</div>
+
+<div class="ocat-wrapper">
+    <span class="ocat-label">@T["Your version"]</span>
+    <div class="ocat-end">
+        @if (Model.Override is null)
+        {
+            <p>@T["This managed site is served the blueprint content."]</p>
+            <span class="hint">@T["Creating your version copies the current blueprint content, so you change what differs rather than starting from an empty {0}.", Model.ContentType]</span>
+        }
+        else
+        {
+            <p>
+                @T["Your version is content item {0}, currently {1}.", Model.Override.OverrideContentItemId, Model.Override.Status]
+            </p>
+
+            @if (Model.Override.SuppressionReason is not null)
+            {
+                <div class="alert alert-warning" role="alert">
+                    @T["It is not being served: {0}.", Model.Override.SuppressionReason]
+                    <span class="d-block hint">@T["It is kept, and starts being served again if the reason is undone."]</span>
+                </div>
+            }
+
+            <p>
+                <a asp-action="Edit" asp-controller="Admin" asp-area="OrchardCore.Contents"
+                   asp-route-contentItemId="@Model.Override.OverrideContentItemId">
+                    @T["Edit its content"]
+                </a>
+            </p>
+        }
+    </div>
+</div>
+
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        @if (Model.Override is null)
+        {
+            <form asp-action="Create" asp-route-sourceContentItemId="@Model.SourceContentItemId" method="post">
+                <button type="submit" class="btn btn-primary">@T["Create my version"]</button>
+            </form>
+        }
+        else
+        {
+            <div class="d-flex gap-2">
+                @if (Model.Override.Status != "Published")
+                {
+                    <form asp-action="Publish" asp-route-sourceContentItemId="@Model.SourceContentItemId" method="post">
+                        <input type="hidden" name="overrideContentItemId" value="@Model.Override.OverrideContentItemId" />
+                        <button type="submit" class="btn btn-primary">@T["Publish to this site"]</button>
+                    </form>
+                }
+
+                <form asp-action="Remove" asp-route-sourceContentItemId="@Model.SourceContentItemId" method="post">
+                    <button type="submit" class="btn btn-danger"
+                            data-url-af="RemoveUrl UnsafeUrl"
+                            data-title="@T["Remove your version"]"
+                            data-message="@T["This managed site goes back to the blueprint content. Are you sure?"]">
+                        @T["Remove my version"]
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+</div>

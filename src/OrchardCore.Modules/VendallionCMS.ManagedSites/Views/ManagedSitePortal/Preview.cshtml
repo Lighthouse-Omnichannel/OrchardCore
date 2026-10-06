@@ -1,0 +1,50 @@
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSitePortalPreviewViewModel
+
+<zone Name="Title">
+    <h1>@T["Preview"] <small class="text-muted">@Model.ManagedSite.Name</small></h1>
+</zone>
+
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <p class="text-muted">@T["Opens a page at this managed site's own address, composed exactly as a visitor's request is."]</p>
+    </div>
+</div>
+
+<form asp-action="Preview" method="get">
+    <div class="ocat-wrapper">
+        <label for="path" class="ocat-label">@T["Path"]</label>
+        <div class="ocat-end">
+            <input type="text" id="path" name="path" value="@Model.Path" class="form-control" placeholder="/" />
+            <span class="hint">@T["A path on this site, such as / or /about."]</span>
+        </div>
+    </div>
+
+    <div class="ocat-wrapper">
+        <div class="ocat-end-offset">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="includeDrafts" name="includeDrafts" value="true"
+                       checked="@Model.IncludeDrafts" />
+                <label class="form-check-label" for="includeDrafts">@T["Include work I have not published"]</label>
+            </div>
+            <span class="hint">@T["Asking is not being granted: the link shows unpublished work only to someone who holds preview clearance for this managed site."]</span>
+        </div>
+    </div>
+
+    <div class="ocat-wrapper">
+        <div class="ocat-end-offset">
+            <button type="submit" class="btn btn-primary">@T["Build preview link"]</button>
+        </div>
+    </div>
+</form>
+
+@if (!string.IsNullOrEmpty(Model.PreviewUrl))
+{
+    <div class="ocat-wrapper">
+        <div class="ocat-end-offset">
+            <div class="alert alert-info" role="status">
+                <a href="@Model.PreviewUrl" target="_blank" rel="noopener">@Model.PreviewUrl</a>
+                <span class="d-block hint">@T["Composed as this managed site."]</span>
+            </div>
+        </div>
+    </div>
+}

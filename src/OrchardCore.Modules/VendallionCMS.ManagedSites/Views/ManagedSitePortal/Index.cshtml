@@ -1,0 +1,113 @@
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSitePortalListViewModel
+
+<zone Name="Title">
+    <h1>@T["Content you can customize"] <small class="text-muted">@Model.ManagedSite.Name</small></h1>
+</zone>
+
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <p class="text-muted">
+            @T["Everything you edit and preview applies to <strong>{0}</strong> only.", Model.ManagedSite.Name]
+            <a asp-action="Select">@T["Work on a different managed site"]</a>
+        </p>
+    </div>
+</div>
+
+<form asp-action="Index" method="get" class="mb-3">
+    <div class="ocat-wrapper">
+        <label for="overrideStatus" class="ocat-label">@T["Show"]</label>
+        <div class="ocat-end">
+            <div class="d-flex gap-2 flex-wrap">
+                <select id="overrideStatus" name="overrideStatus" class="form-select w-auto">
+                    <option value="">@T["All items"]</option>
+                    <option value="None" selected="@(Model.OverrideStatus == "None")">@T["Not customized"]</option>
+                    <option value="Draft" selected="@(Model.OverrideStatus == "Draft")">@T["Draft version"]</option>
+                    <option value="Published" selected="@(Model.OverrideStatus == "Published")">@T["Published version"]</option>
+                    <option value="Suppressed" selected="@(Model.OverrideStatus == "Suppressed")">@T["Not rendering"]</option>
+                </select>
+                <input type="text" name="contentType" value="@Model.ContentType" class="form-control w-auto"
+                       placeholder="@T["Any content type"]" aria-label="@T["Content type"]" />
+                <button type="submit" class="btn btn-secondary">@T["Apply"]</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="alert alert-info" role="status">
+        @T["Nothing here. An item appears once somebody who manages managed sites allows this one to customize it."]
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">@T["Item"]</th>
+                    <th scope="col">@T["Type"]</th>
+                    <th scope="col">@T["Your version"]</th>
+                    <th scope="col"><span class="visually-hidden">@T["Actions"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            @item.DisplayText
+                            @if (item.IsContainer)
+                            {
+                                <span class="hint d-block">@T["Your version of this replaces everything inside it."]</span>
+                            }
+                            @if (!item.DisplayScopeIncludesManagedSite)
+                            {
+                                <span class="hint d-block">@T["This item does not render on this managed site."]</span>
+                            }
+                        </td>
+                        <td><span class="text-muted">@item.ContentType</span></td>
+                        <td>
+                            @if (item.Override is null)
+                            {
+                                <span class="text-muted">@T["Using the blueprint content"]</span>
+                            }
+                            else if (item.Override.SuppressionReason is not null)
+                            {
+                                <span class="badge bg-warning text-dark">@T["Not rendering"]</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">@item.Override.Status</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <a class="btn btn-primary btn-sm"
+                               asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId">
+                                @(item.Override is null ? T["Create your version"] : T["Open"])
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="d-flex justify-content-between align-items-center" aria-label="@T["Pages"]">
+        <span class="text-muted">@T["{0} items", Model.TotalCount]</span>
+        <span class="btn-group">
+            @if (Model.HasPreviousPage)
+            {
+                <a class="btn btn-secondary btn-sm" asp-action="Index"
+                   asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize"
+                   asp-route-contentType="@Model.ContentType" asp-route-overrideStatus="@Model.OverrideStatus">@T["Previous"]</a>
+            }
+            @if (Model.HasNextPage)
+            {
+                <a class="btn btn-secondary btn-sm" asp-action="Index"
+                   asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize"
+                   asp-route-contentType="@Model.ContentType" asp-route-overrideStatus="@Model.OverrideStatus">@T["Next"]</a>
+            }
+        </span>
+    </nav>
+}

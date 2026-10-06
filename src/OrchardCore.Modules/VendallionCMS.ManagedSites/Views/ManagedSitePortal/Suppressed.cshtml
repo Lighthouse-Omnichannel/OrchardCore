@@ -1,0 +1,46 @@
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSitePortalSuppressedViewModel
+
+<zone Name="Title">
+    <h1>@T["Not rendering"] <small class="text-muted">@Model.ManagedSite.Name</small></h1>
+</zone>
+
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <p class="text-muted">
+            @T["Versions of your own that exist but are not being served. Each is kept, and starts being served again if the reason is undone."]
+            <a asp-action="Index">@T["Back to the list"]</a>
+        </p>
+    </div>
+</div>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="alert alert-info" role="status">@T["Everything you have customized is being served."]</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">@T["Item"]</th>
+                    <th scope="col">@T["Why it stopped"]</th>
+                    <th scope="col"><span class="visually-hidden">@T["Actions"]</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.SourceContentItemId</td>
+                        <td><span class="badge bg-warning text-dark">@item.SuppressionReason</span></td>
+                        <td class="text-end">
+                            <a class="btn btn-secondary btn-sm"
+                               asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId">@T["Open"]</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
