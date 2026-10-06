@@ -36,7 +36,11 @@ public interface IManagedSitePreviewService
     /// <param name="url">The path to preview, relative to the site root.</param>
     /// <param name="includeDrafts">Whether the address should ask to show unpublished work.</param>
     /// <returns>The preview, or <see langword="null" /> when the Managed Site cannot be previewed.</returns>
-    ValueTask<ManagedSitePreview> CreateAsync(string managedSiteId, string url, bool includeDrafts);
+    ValueTask<ManagedSitePreview> CreateAsync(
+        string managedSiteId,
+        string url,
+        bool includeDrafts,
+        int? port = null);
 }
 
 /// <summary>
@@ -65,7 +69,11 @@ public sealed class ManagedSitePreviewService : IManagedSitePreviewService
     }
 
     /// <inheritdoc />
-    public async ValueTask<ManagedSitePreview> CreateAsync(string managedSiteId, string url, bool includeDrafts)
+    public async ValueTask<ManagedSitePreview> CreateAsync(
+        string managedSiteId,
+        string url,
+        bool includeDrafts,
+        int? port = null)
     {
         var managedSite = await _managedSiteService.GetAsync(managedSiteId);
 
@@ -85,6 +93,14 @@ public sealed class ManagedSitePreviewService : IManagedSitePreviewService
         if (!string.IsNullOrEmpty(host))
         {
             builder.Append("//").Append(host);
+
+            // The Managed Site is served by this application, so a link to it has to reach the port
+            // this application answers on. Without it the link is right only where that port is the
+            // default one, which is nowhere a developer works.
+            if (port is { } value and not 80 and not 443)
+            {
+                builder.Append(':').Append(value);
+            }
         }
 
         if (!string.IsNullOrEmpty(prefix))

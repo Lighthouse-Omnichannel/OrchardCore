@@ -82,6 +82,41 @@ public class ManagedSitePreviewTests
         Assert.Equal("//costis.localhost/about", preview.PreviewUrl);
     }
 
+    [Theory]
+    [InlineData(5001)]
+    [InlineData(8080)]
+    public async Task Preview_OfAHostNamedManagedSite_ReachesThePortThisApplicationAnswersOn(int port)
+    {
+        // The Managed Site is served by this application, so a link to it has to carry the port this
+        // application is listening on. Without it the link is right only where that port is the default
+        // one, which is nowhere a developer works.
+        var preview = await PreviewService().CreateAsync("costis", "/about", includeDrafts: false, port);
+
+        Assert.Equal($"//costis.localhost:{port}/about", preview.PreviewUrl);
+    }
+
+    [Theory]
+    [InlineData(80)]
+    [InlineData(443)]
+    public async Task Preview_OnADefaultPort_LeavesItOut(int port)
+    {
+        // Naming it would be correct and ugly, and would differ from the address a visitor types.
+        var preview = await PreviewService().CreateAsync("costis", "/about", includeDrafts: false, port);
+
+        Assert.Equal("//costis.localhost/about", preview.PreviewUrl);
+    }
+
+    [Fact]
+    public async Task Preview_OfAPrefixedManagedSite_NeedsNoPort()
+    {
+        // It stays on the host the editor is already on, so the link is a path and carries nothing else.
+        var service = PreviewService(ManagedSitesTestData.ManagedSite("shop", urlPrefix: "shop"));
+
+        var preview = await service.CreateAsync("shop", "/basket", includeDrafts: false, 5001);
+
+        Assert.Equal("/shop/basket", preview.PreviewUrl);
+    }
+
     [Fact]
     public async Task Preview_OfADisabledManagedSite_IsRefused()
     {
@@ -131,9 +166,10 @@ public class ManagedSitePreviewTests
         Assert.Equal("Published", TitleOfFirstSection(page));
     }
 
-    private static ManagedSitePreviewService PreviewService()
-        => new(new FakeManagedSiteService(
-            ManagedSitesTestData.ManagedSite("costis", hostname: "costis.localhost")));
+    private static ManagedSitePreviewService PreviewService(params ManagedSite[] managedSites)
+        => new(new FakeManagedSiteService(managedSites.Length > 0
+            ? managedSites
+            : [ManagedSitesTestData.ManagedSite("costis", hostname: "costis.localhost")]));
 
     private static string TitleOfFirstSection(ContentItem page)
         => ((JsonObject)((JsonArray)((JsonObject)page.Content)[BagName]["ContentItems"])[0])
