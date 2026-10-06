@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Localization;
 using OrchardCore.Entities;
 using OrchardCore.Recipes.Models;
 using OrchardCore.Recipes.Services;
@@ -34,21 +35,26 @@ public sealed class ManagedSiteEditorsStep : NamedRecipeStepHandler
     private readonly IUserService _userService;
     private readonly UserManager<IUser> _userManager;
 
+    private readonly IStringLocalizer S;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedSiteEditorsStep" /> class.
     /// </summary>
     /// <param name="managedSiteService">The Managed Site service.</param>
     /// <param name="userService">The user service, which creates a user from a password.</param>
     /// <param name="userManager">The user manager.</param>
+    /// <param name="stringLocalizer">The string localizer.</param>
     public ManagedSiteEditorsStep(
         IManagedSiteService managedSiteService,
         IUserService userService,
-        UserManager<IUser> userManager)
+        UserManager<IUser> userManager,
+        IStringLocalizer<ManagedSiteEditorsStep> stringLocalizer)
         : base("ManagedSiteEditors")
     {
         _managedSiteService = managedSiteService;
         _userService = userService;
         _userManager = userManager;
+        S = stringLocalizer;
     }
 
     /// <inheritdoc />
@@ -67,7 +73,7 @@ public sealed class ManagedSiteEditorsStep : NamedRecipeStepHandler
         {
             if (string.IsNullOrWhiteSpace(editor.UserName))
             {
-                context.Errors.Add("An editor in this recipe has no user name.");
+                context.Errors.Add(S["An editor in this recipe has no user name."]);
 
                 continue;
             }
@@ -152,7 +158,7 @@ public sealed class ManagedSiteEditorsStep : NamedRecipeStepHandler
         if (string.IsNullOrEmpty(editor.Password))
         {
             context.Errors.Add(
-                $"'{editor.UserName}' does not exist and the recipe gives no password to create them with.");
+                S["'{0}' does not exist and the recipe gives no password to create them with.", editor.UserName]);
 
             return null;
         }
@@ -174,7 +180,7 @@ public sealed class ManagedSiteEditorsStep : NamedRecipeStepHandler
             return user;
         }
 
-        context.Errors.Add($"'{editor.UserName}' was not created: {string.Join(" ", errors)}");
+        context.Errors.Add(S["'{0}' was not created: {1}", editor.UserName, string.Join(" ", errors)]);
 
         return null;
     }

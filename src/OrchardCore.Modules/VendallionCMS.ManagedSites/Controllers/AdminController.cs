@@ -220,9 +220,35 @@ public sealed class AdminController : Controller
                 || exception.Code == ManagedSitesConstants.ErrorCodes.NameConflict
                     ? nameof(ManagedSiteEditViewModel.Name)
                     : nameof(ManagedSiteEditViewModel.Hostname),
-                exception.Message);
+                Describe(exception));
 
             return false;
         }
     }
+
+    /// <summary>
+    /// Says in the reader's language why a Managed Site could not be saved.
+    /// </summary>
+    /// <remarks>
+    /// The service raises a code and a message, and only the code is a contract. Wording belongs here,
+    /// where there is a reader and a language to write it in; the message the service carries is a
+    /// developer's description and reaches an administrator only when a refusal arrives that this
+    /// screen does not know about.
+    /// </remarks>
+    /// <param name="exception">The refusal.</param>
+    /// <returns>The message to show.</returns>
+    private string Describe(ManagedSiteValidationException exception) => exception.Code switch
+    {
+        ManagedSitesConstants.ErrorCodes.InvalidName =>
+            S["A managed site needs a name."],
+        ManagedSitesConstants.ErrorCodes.NameConflict =>
+            S["Another managed site is already called that."],
+        ManagedSitesConstants.ErrorCodes.InvalidUrl =>
+            S["That address cannot be used. A host name goes without a scheme or a path, and a URL prefix is a single segment without slashes."],
+        ManagedSitesConstants.ErrorCodes.UrlConflict =>
+            S["Another managed site already answers on that address."],
+        ManagedSitesConstants.ErrorCodes.ManagedSiteNotFound =>
+            S["That managed site no longer exists."],
+        _ => exception.Message,
+    };
 }

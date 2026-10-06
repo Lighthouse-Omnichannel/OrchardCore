@@ -35,7 +35,7 @@
 
     <div class="mb-3">
         <label asp-for="UrlPrefix" class="form-label">@T["URL prefix"]</label>
-        <input asp-for="UrlPrefix" class="form-control" placeholder="shop" />
+        <input asp-for="UrlPrefix" class="form-control" placeholder="@T["shop"]" />
         <span asp-validation-for="UrlPrefix" class="text-danger"></span>
         <span class="hint">@T["A single path prefix, without leading or trailing slashes. Leave empty to answer at the root."]</span>
     </div>

@@ -154,7 +154,8 @@ public class ManagedSitesRecipeStepTests
     {
         var context = new RecipeExecutionContext { Name = "ManagedSites", Step = step };
 
-        await new ManagedSitesStep(service, new SequentialIdGenerator()).ExecuteAsync(context);
+        await new ManagedSitesStep(service, new SequentialIdGenerator(), new StubStringLocalizer<ManagedSitesStep>())
+            .ExecuteAsync(context);
 
         return context;
     }

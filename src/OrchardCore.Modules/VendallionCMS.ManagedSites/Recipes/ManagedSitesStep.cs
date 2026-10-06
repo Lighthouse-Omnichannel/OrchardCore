@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Microsoft.Extensions.Localization;
 using OrchardCore.Entities;
 using OrchardCore.Recipes.Models;
 using OrchardCore.Recipes.Services;
@@ -28,16 +29,23 @@ public sealed class ManagedSitesStep : NamedRecipeStepHandler
     private readonly IManagedSiteService _managedSiteService;
     private readonly IIdGenerator _idGenerator;
 
+    private readonly IStringLocalizer S;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedSitesStep" /> class.
     /// </summary>
     /// <param name="managedSiteService">The Managed Site service.</param>
     /// <param name="idGenerator">The identifier generator.</param>
-    public ManagedSitesStep(IManagedSiteService managedSiteService, IIdGenerator idGenerator)
+    /// <param name="stringLocalizer">The string localizer.</param>
+    public ManagedSitesStep(
+        IManagedSiteService managedSiteService,
+        IIdGenerator idGenerator,
+        IStringLocalizer<ManagedSitesStep> stringLocalizer)
         : base("ManagedSites")
     {
         _managedSiteService = managedSiteService;
         _idGenerator = idGenerator;
+        S = stringLocalizer;
     }
 
     /// <inheritdoc />
@@ -56,7 +64,7 @@ public sealed class ManagedSitesStep : NamedRecipeStepHandler
         {
             if (string.IsNullOrWhiteSpace(declared.Name))
             {
-                context.Errors.Add("A Managed Site in this recipe has no name.");
+                context.Errors.Add(S["A managed site in this recipe has no name."]);
 
                 continue;
             }
@@ -87,7 +95,7 @@ public sealed class ManagedSitesStep : NamedRecipeStepHandler
             {
                 // Reported rather than thrown, so one unusable Managed Site does not abandon the rest of
                 // a setup recipe partway through.
-                context.Errors.Add($"Managed Site '{declared.Name}' was not saved: {exception.Message}");
+                context.Errors.Add(S["The managed site '{0}' was not saved: {1}", declared.Name, exception.Message]);
             }
         }
     }

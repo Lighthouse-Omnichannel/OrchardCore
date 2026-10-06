@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Localization;
+using Microsoft.AspNetCore.Mvc.Localization;
+using System.Globalization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -202,4 +205,39 @@ public sealed class FakeShellUrlSynchronizationService : IShellUrlSynchronizatio
 
         return false;
     }
+}
+
+/// <summary>
+/// A localizer that answers with the key it was asked for.
+/// </summary>
+/// <remarks>
+/// Tests assert on what a refusal is, not on how it is worded, and a stub that answers with the key
+/// keeps a reworded message from failing a test about behaviour.
+/// </remarks>
+/// <typeparam name="T">The type the localizer belongs to.</typeparam>
+public sealed class StubStringLocalizer<T> : IStringLocalizer<T>
+{
+    public LocalizedString this[string name] => new(name, name);
+
+    public LocalizedString this[string name, params object[] arguments]
+        => new(name, string.Format(CultureInfo.InvariantCulture, name, arguments));
+
+    public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
+}
+
+/// <summary>
+/// An HTML localizer that answers with the key it was asked for.
+/// </summary>
+/// <typeparam name="T">The type the localizer belongs to.</typeparam>
+public sealed class StubHtmlLocalizer<T> : IHtmlLocalizer<T>
+{
+    public LocalizedHtmlString this[string name] => new(name, name);
+
+    public LocalizedHtmlString this[string name, params object[] arguments] => new(name, name, false, arguments);
+
+    public LocalizedString GetString(string name) => new(name, name);
+
+    public LocalizedString GetString(string name, params object[] arguments) => new(name, name);
+
+    public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
 }

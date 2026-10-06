@@ -239,8 +239,8 @@ public class ManagedSitePortalAccessTests
                 new ManagedContentScopeService(),
                 new ManagedSitePreviewService(Portal.ManagedSiteService),
                 Mock.Of<INotifier>(),
-                new StubStringLocalizer(),
-                new StubHtmlLocalizer())
+                new StubStringLocalizer<ManagedSitePortalController>(),
+                new StubHtmlLocalizer<ManagedSitePortalController>())
             {
                 ControllerContext = new ControllerContext
                 {
@@ -267,28 +267,5 @@ public class ManagedSitePortalAccessTests
     {
         public ValueTask<ManagedContentListing> ListAsync(string managedSiteId, ManagedContentListQuery query)
             => ValueTask.FromResult(new ManagedContentListing([], 0));
-    }
-
-    private sealed class StubStringLocalizer : IStringLocalizer<ManagedSitePortalController>
-    {
-        public LocalizedString this[string name] => new(name, name);
-
-        public LocalizedString this[string name, params object[] arguments]
-            => new(name, string.Format(CultureInfo.InvariantCulture, name, arguments));
-
-        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
-    }
-
-    private sealed class StubHtmlLocalizer : IHtmlLocalizer<ManagedSitePortalController>
-    {
-        public LocalizedHtmlString this[string name] => new(name, name);
-
-        public LocalizedHtmlString this[string name, params object[] arguments] => new(name, name, false, arguments);
-
-        public LocalizedString GetString(string name) => new(name, name);
-
-        public LocalizedString GetString(string name, params object[] arguments) => new(name, name);
-
-        public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
     }
 }
