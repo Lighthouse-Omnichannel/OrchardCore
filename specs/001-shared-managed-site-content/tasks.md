@@ -470,6 +470,41 @@ navigation entries as well as layer widgets and page content, does not hold for 
 
 ---
 
+## Usability walkthrough (T127a, 2026-10-06)
+
+Walked against the development site, after the portal became an admin surface, so nothing measured
+against the single-page application carries over.
+
+A note on what this is. The times below are mechanical: a browser doing the steps, with no reading,
+deciding or typing in them. They are a floor, not a measurement of a person, and the criteria ask about
+people. What the walk measures honestly is the shape of each path, the steps it takes and whether
+anything in it stops or misleads somebody, and that is what the numbers are reported beside.
+
+| Criterion | Target | Steps | Mechanical |
+| --- | --- | --- | --- |
+| SC-005, change a managed site's URL mapping | under 3 minutes | 7 | 2.7s |
+| SC-009, sign in and select an active managed site | under 60 seconds | 6 | 2.8s |
+| SC-020, find an item and publish a version of it | under 3 minutes | 10 | 4.1s |
+
+Three of those steps are signing in, which every path shares. What is left is four steps to change an
+address, three to choose a managed site, and seven to find an item and put a version of it on one
+site. At that shape, the targets have room for a person to read and think between every step and still
+be met several times over. None of the three paths has a step where the next move is unclear, and the
+portal lists what a managed site may customize on the screen it opens on, so SC-020's "locate" costs
+nothing beyond reading a list.
+
+**Changed by the walk.** The link from a version to the content editor carried no way back, so an
+editor saved their work and was left in a screen with no route to the one they came from: the portal is
+the whole of their job, and the content editor is the platform's. It carries a return now, which is
+what makes SC-020 ten steps rather than eleven and a guess.
+
+**Noted, not changed.** For a content type with no draft state, saving a version publishes it, so the
+portal's publish step never appears and the version is served as soon as it is saved. That follows from
+the content type rather than from this feature, but it means SC-020 has one step fewer for some types
+and an editor has no way to hold such a version back.
+
+---
+
 ## Phase 10: Polish and Cross-Cutting Concerns
 
 **Purpose**: Documentation, accessibility, localization, build validation, and final quality checks.
@@ -544,7 +579,7 @@ to comes from the route and the session.
 - [ ] T125 Run module tests with `dotnet test test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.Tests.csproj`
 - [ ] T126 Run CMS build with `dotnet build src/OrchardCore.Cms.Web -c Debug -f net10.0`
 - [X] ~~T127 Run asset build with `yarn build`~~ **Retired with the single-page application: the module ships no assets to build.**
-- [ ] T127a Record a usability walkthrough timing SC-005, SC-009, and SC-020 against the built portal
+- [X] T127a Record a usability walkthrough timing SC-005, SC-009, and SC-020 against the built portal **Walked 2026-10-06 against the development site; the record is below.**
 - [ ] T128 Review final implementation against `specs/001-shared-managed-site-content/spec.md`
 - [X] ~~T129 Review API behavior against `specs/001-shared-managed-site-content/contracts/managed-sites-api.md`~~ **Retired with the API. The contract is kept as a description of what the portal does, and T133 is what holds the admin surface to it.**
 

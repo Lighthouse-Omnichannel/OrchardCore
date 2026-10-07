@@ -62,8 +62,12 @@
             }
 
             <p>
+                @* Carries the way back. The content editor is the platform's, and an editor who works
+                   in the portal would otherwise save their version and be left in a screen with no
+                   route to the one they came from. *@
                 <a asp-action="Edit" asp-controller="Admin" asp-area="OrchardCore.Contents"
-                   asp-route-contentItemId="@Model.Override.OverrideContentItemId">
+                   asp-route-contentItemId="@Model.Override.OverrideContentItemId"
+                   asp-route-returnUrl="@Url.Action("Detail", "ManagedSitePortal", new { area = "VendallionCMS.ManagedSites", sourceContentItemId = Model.SourceContentItemId })">
                     @T["Edit its content"]
                 </a>
             </p>
