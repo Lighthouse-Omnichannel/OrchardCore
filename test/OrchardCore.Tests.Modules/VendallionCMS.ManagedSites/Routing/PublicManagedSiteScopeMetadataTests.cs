@@ -144,6 +144,57 @@ public class PublicManagedSiteScopeMetadataTests
         Assert.Equal("/shop/about", context.Request.Path);
     }
 
+    [Fact]
+    public async Task AdminUnderAManagedSitePrefix_IsLeftInTheSiteBlueprintContext()
+    {
+        // The prefix is still in the path here, so the admin arrives as "/shop/Admin" and does not read
+        // as the admin unless the prefix is accounted for. When it did not, the admin served every Site
+        // Blueprint item filled with this Managed Site's content under the Site Blueprint item's own
+        // address, and saving wrote one site's content over the content every site is served.
+        var context = Request("localhost", "/shop/Admin/Contents/ContentItems");
+
+        var accessor = await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+
+        Assert.Null(accessor.Current);
+    }
+
+    [Fact]
+    public async Task AdminUnderAManagedSitePrefix_KeepsThePathAsItArrived()
+    {
+        // Rebasing is what routes the request to the admin at all. Leaving the path alone is what makes
+        // the admin answer only at the tenant's own address.
+        var context = Request("localhost", "/shop/Admin");
+
+        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+
+        Assert.Equal(string.Empty, context.Request.PathBase.ToString());
+        Assert.Equal("/shop/Admin", context.Request.Path);
+    }
+
+    [Fact]
+    public async Task ApiUnderAManagedSitePrefix_IsLeftInTheSiteBlueprintContext()
+    {
+        var context = Request("localhost", "/shop/api/content");
+
+        var accessor = await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+
+        Assert.Null(accessor.Current);
+    }
+
+    [Fact]
+    public async Task PathThatMerelyBeginsLikeTheAdmin_IsStillAPageToRender()
+    {
+        // "/shop/Administration" is a page. Segment matching is what tells it from the admin, and losing
+        // that would stop a Managed Site serving any page whose first segment starts with "Admin".
+        var context = Request("localhost", "/shop/Administration");
+
+        var accessor = await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+
+        Assert.Equal("site-a", accessor.Current.ManagedSiteId);
+        Assert.Equal("/shop", context.Request.PathBase);
+        Assert.Equal("/Administration", context.Request.Path);
+    }
+
     private static async Task<IManagedSiteCompositionContextAccessor> InvokeAsync(HttpContext httpContext)
     {
         var accessor = new ManagedSiteCompositionContextAccessor();

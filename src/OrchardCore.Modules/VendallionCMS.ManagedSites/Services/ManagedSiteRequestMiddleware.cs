@@ -29,6 +29,13 @@ namespace VendallionCMS.ManagedSites.Services;
 /// would let an editor save a Managed Site's content over the Site Blueprint's. Admin requests are
 /// recognised by path rather than by <see cref="AdminAttribute" />, which is applied by a filter during
 /// action execution and so has decided nothing yet this early.
+///
+/// That recognition has to happen twice. A Managed Site addressed by prefix still carries its prefix in
+/// the path at this point, so its admin arrives as "/shop/Admin" and is not the "/Admin" the first check
+/// is looking for. It once passed as a page to render, and the admin then opened every Site Blueprint
+/// item already filled with that Managed Site's content, under the Site Blueprint item's own address, so
+/// saving wrote one site's content over the content every site is served. The second check asks the same
+/// question of the path the request is about to have, which is the one the admin will be routed by.
 /// </remarks>
 public sealed class ManagedSiteRequestMiddleware
 {
@@ -59,17 +66,23 @@ public sealed class ManagedSiteRequestMiddleware
     {
         var request = httpContext.Request;
 
-        if (IsPublicRenderingRequest(request, adminOptions.Value))
+        if (IsPublicRenderingRequest(request.Path, adminOptions.Value))
         {
             var context = await resolver.ResolveAsync(request.Host.Host, request.Path.Value);
 
-            // Recorded, not granted. Whoever acts on it checks the caller's clearance, which cannot be
-            // done here: authentication has not run this early in the pipeline.
-            context.PreviewRequested = request.Query.ContainsKey(ManagedSitesConstants.Preview.DraftsQueryKey);
+            // Asked again, now that the Managed Site is known. A Managed Site addressed by prefix keeps
+            // that prefix in the path until it is rebased, so its admin arrives as "/shop/Admin" and the
+            // first question, which knows only "/Admin", answers that it is a page being rendered.
+            if (IsPublicRenderingRequest(PathWithoutPrefix(request.Path, context), adminOptions.Value))
+            {
+                // Recorded, not granted. Whoever acts on it checks the caller's clearance, which cannot be
+                // done here: authentication has not run this early in the pipeline.
+                context.PreviewRequested = request.Query.ContainsKey(ManagedSitesConstants.Preview.DraftsQueryKey);
 
-            contextAccessor.Current = context;
+                contextAccessor.Current = context;
 
-            Rebase(request, context);
+                Rebase(request, context);
+            }
         }
 
         await _next(httpContext);
@@ -107,16 +120,34 @@ public sealed class ManagedSiteRequestMiddleware
     /// Site's content over the Site Blueprint's. Admin and API requests are how content is edited, so
     /// neither resolves a Managed Site and both always see the original.
     /// </remarks>
-    private static bool IsPublicRenderingRequest(HttpRequest request, AdminOptions adminOptions)
+    private static bool IsPublicRenderingRequest(PathString path, AdminOptions adminOptions)
     {
         var adminPrefix = adminOptions.AdminUrlPrefix;
 
         if (!string.IsNullOrEmpty(adminPrefix)
-            && request.Path.StartsWithSegments('/' + adminPrefix, StringComparison.OrdinalIgnoreCase))
+            && path.StartsWithSegments('/' + adminPrefix, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
-        return !request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase);
+        return !path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Gives the path as it will read once a resolved Managed Site's prefix has moved to the path base.
+    /// </summary>
+    /// <param name="path">The request path.</param>
+    /// <param name="context">The resolved Managed Site.</param>
+    /// <returns>The path without the Managed Site's prefix, or the path itself when there is none.</returns>
+    private static PathString PathWithoutPrefix(PathString path, ManagedSiteRequestContext context)
+    {
+        if (string.IsNullOrEmpty(context.ManagedSiteId) || string.IsNullOrEmpty(context.UrlPrefix))
+        {
+            return path;
+        }
+
+        return path.StartsWithSegments('/' + context.UrlPrefix, StringComparison.OrdinalIgnoreCase, out var remaining)
+            ? remaining
+            : path;
     }
 }
