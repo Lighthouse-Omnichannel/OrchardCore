@@ -117,7 +117,7 @@ public sealed class ManagedSiteClearanceService : IManagedSiteClearanceService
             && HasScope(clearance, scope));
     }
 
-    private bool IsEffective(ManagedSiteClearance clearance, DateTimeOffset now)
+    private static bool IsEffective(ManagedSiteClearance clearance, DateTimeOffset now)
     {
         if (string.IsNullOrEmpty(clearance.ManagedSiteId))
         {

@@ -125,10 +125,13 @@ public sealed class ShellUrlSynchronizationService : IShellUrlSynchronizationSer
 
         _shellSettings.RequestUrlHost = updated;
 
-        _logger.LogInformation(
-            "Managed Sites updated the hostname for tenant '{TenantName}' to '{RequestUrlHost}'.",
-            _shellSettings.Name,
-            updated);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Managed Sites updated the hostname for tenant '{TenantName}' to '{RequestUrlHost}'.",
+                _shellSettings.Name,
+                updated);
+        }
 
         // Persisting shell settings reloads the tenant, so it is deferred until the current request has
         // finished rather than pulled out from under it.

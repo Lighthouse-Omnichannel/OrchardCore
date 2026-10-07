@@ -638,8 +638,8 @@ API, and T133 is what stops them being lost in the move. The one rule that goes 
 header: with no client application there is nothing to send it, and the Managed Site an action applies
 to comes from the route and the session.
 
-- [ ] T125 Run module tests with `dotnet test test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.Tests.csproj`
-- [ ] T126 Run CMS build with `dotnet build src/OrchardCore.Cms.Web -c Debug -f net10.0`
+- [X] T125 Run module tests with `dotnet test test/OrchardCore.Tests.Modules/VendallionCMS.ManagedSites/VendallionCMS.ManagedSites.Tests.csproj` **358 tests, all passing.**
+- [X] T126 Run CMS build with `dotnet build src/OrchardCore.Cms.Web -c Debug -f net10.0` **Succeeds. The gate earned its place: run in full rather than filtered, it showed two analyzer warnings in this module that narrower builds had been hiding, an unguarded log argument and a method that never touched instance state. Both fixed, and the module now builds without a warning of its own.**
 - [X] ~~T127 Run asset build with `yarn build`~~ **Retired with the single-page application: the module ships no assets to build.**
 - [X] T127a Record a usability walkthrough timing SC-005, SC-009, and SC-020 against the built portal **Walked 2026-10-06 against the development site; the record is below.**
 - [X] T128 Review final implementation against `specs/001-shared-managed-site-content/spec.md` **Reviewed 2026-10-07; the record is below. Fifty-nine requirements, two deviations, one coverage gap found and closed.**
