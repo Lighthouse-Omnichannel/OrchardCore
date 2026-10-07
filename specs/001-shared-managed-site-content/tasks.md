@@ -470,6 +470,68 @@ navigation entries as well as layer widgets and page content, does not hold for 
 
 ---
 
+## Review against the specification (T128, 2026-10-07)
+
+Fifty-nine functional requirements, read one at a time against the code and the tests that hold it.
+Fifty-seven are met. What follows is the rest, and one thing that was met but untested.
+
+### FR-049 is not met for a managed site that names a host
+
+> Preview MUST show the composed output for the active managed site, including draft overrides visible
+> to the current user.
+
+It does, on a managed site addressed by URL prefix. On one that names a host it shows published content
+instead, because a sign-in reaches only the host that issued it and the preview link opens another one,
+so the editor arrives as nobody. This was settled on 2026-10-06 as a limitation to state rather than
+engineer away: carrying the grant in the link would make the link a credential, and the same link shown
+to somebody else would then show them unpublished work, which is what Scenario 6 forbids. The portal
+now says so before the editor follows the link.
+
+The requirement is therefore knowingly unmet rather than overlooked, and the choice is between amending
+it to say which addressing it holds for, and building the handoff that would make it true everywhere: a
+one-shot token in the link that the managed site's host exchanges for a short, host-scoped preview
+cookie. That is the only option considered that satisfies the requirement without contradicting
+Scenario 6.
+
+### FR-036 is met only where the content type has a draft state
+
+> Overrides MUST use the existing content draft and publish lifecycle so each managed site can hold
+> unpublished work without affecting what is served.
+
+Overrides do use that lifecycle, exactly and without a parallel one, which is the point of the
+requirement. But a content type that is not draftable has no unpublished state to use, so saving a
+version of such an item publishes it: the managed site cannot hold work back, and the portal's publish
+step never appears. That follows from the content type rather than from this feature, and the feature
+has nothing to add to a lifecycle that does not exist. Worth saying in the documentation rather than
+leaving an editor to discover that one kind of item behaves unlike the rest.
+
+### FR-035a was implemented and untested
+
+> If more than one published override nonetheless exists for a managed site and source content item,
+> because content was imported or deployed, the system MUST serve one deterministically and report the
+> others.
+
+The rule was there and nothing exercised it, which is the worst place for a rule to be: it exists for
+content that arrives without passing through the refusal that would have prevented it, so it runs only
+when something has already gone wrong, and that is not when anybody wants to find out it was never
+tried. The choice is now `ManagedContentOverrideService.ChooseServed`, covered by
+`ManagedContent/DuplicateOverrideTests.cs`, including the case the rule exists for: whatever order the
+store returns the rows in, the same override is served.
+
+### Everything else
+
+The remaining requirements are met and evidenced. Addressing, precedence and the tenant hostname
+(FR-004 to FR-010a, FR-051) are covered by the routing tests and were walked in a browser. The
+permission model and clearance (FR-002, FR-005, FR-011, FR-011a, FR-017 to FR-020, FR-023, FR-030) are
+covered by the authorization and portal tests, and the line the two permissions draw was walked with an
+editor account holding one of them. Managed Content and its scopes (FR-024 to FR-029) are covered by the
+managed content tests. Rendering and composition (FR-008, FR-009, FR-031, FR-037 to FR-042) are covered
+by the composition tests and were watched on three managed sites at once. Recovery (FR-043 to FR-047)
+is covered by the recovery and suppression tests. Cache invalidation (FR-012, FR-050) is covered by the
+composition cache tests.
+
+---
+
 ## Usability walkthrough (T127a, 2026-10-06)
 
 Walked against the development site, after the portal became an admin surface, so nothing measured
@@ -580,7 +642,7 @@ to comes from the route and the session.
 - [ ] T126 Run CMS build with `dotnet build src/OrchardCore.Cms.Web -c Debug -f net10.0`
 - [X] ~~T127 Run asset build with `yarn build`~~ **Retired with the single-page application: the module ships no assets to build.**
 - [X] T127a Record a usability walkthrough timing SC-005, SC-009, and SC-020 against the built portal **Walked 2026-10-06 against the development site; the record is below.**
-- [ ] T128 Review final implementation against `specs/001-shared-managed-site-content/spec.md`
+- [X] T128 Review final implementation against `specs/001-shared-managed-site-content/spec.md` **Reviewed 2026-10-07; the record is below. Fifty-nine requirements, two deviations, one coverage gap found and closed.**
 - [X] ~~T129 Review API behavior against `specs/001-shared-managed-site-content/contracts/managed-sites-api.md`~~ **Retired with the API. The contract is kept as a description of what the portal does, and T133 is what holds the admin surface to it.**
 
 ---

@@ -492,21 +492,37 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
             : (ManagedContentOverrideError.EditScopeExcluded, null);
     }
 
-    private async ValueTask<ManagedContentOverride> DescribeAsync(ManagedContentOverrideIndex[] rows)
+    /// <summary>
+    /// Chooses which of a Managed Site's overrides of one item is served, and names the rest.
+    /// </summary>
+    /// <remarks>
+    /// There should only ever be one. The feature refuses to create a second, but content imported or
+    /// deployed by recipe arrives without passing through that refusal, so more than one can exist and
+    /// something has to decide between them.
+    ///
+    /// The lowest identifier wins, for no reason other than that it is a total order: an arbitrary
+    /// winner would mean the same request rendering differently on two machines, which is far worse to
+    /// diagnose than the wrong one of two winning consistently. The rest are named rather than hidden,
+    /// so an administrator reading the item can see what is there and remove it.
+    ///
+    /// The same rule decides what renders, so what an administrator is shown is what visitors receive.
+    /// </remarks>
+    /// <param name="rows">The index rows for one Managed Site and one source item.</param>
+    /// <returns>The override being served, and the others in order.</returns>
+    internal static (string Served, string[] Superseded) ChooseServed(ManagedContentOverrideIndex[] rows)
     {
-        // The same rule rendering uses, so what an administrator is shown is what visitors receive.
-        var served = rows
+        var candidates = rows
             .Select(candidate => candidate.OverrideContentItemId)
             .Distinct(StringComparer.Ordinal)
-            .Order(StringComparer.Ordinal)
-            .First();
-
-        var superseded = rows
-            .Select(candidate => candidate.OverrideContentItemId)
-            .Distinct(StringComparer.Ordinal)
-            .Where(candidate => !string.Equals(candidate, served, StringComparison.Ordinal))
             .Order(StringComparer.Ordinal)
             .ToArray();
+
+        return (candidates[0], [.. candidates.Skip(1)]);
+    }
+
+    private async ValueTask<ManagedContentOverride> DescribeAsync(ManagedContentOverrideIndex[] rows)
+    {
+        var (served, superseded) = ChooseServed(rows);
 
         rows = [.. rows.Where(candidate =>
             string.Equals(candidate.OverrideContentItemId, served, StringComparison.Ordinal))];
