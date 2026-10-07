@@ -9,6 +9,10 @@
   "categories": [ "development" ],
   "tags": [ "managedsites", "development" ],
 
+  "variables": {
+    "homeId": "[js:uuid()]"
+  },
+
   "steps": [
     {
       "name": "feature",
@@ -191,8 +195,8 @@
       "name": "content",
       "data": [
         {
-          "ContentItemId": "managedsiteshome000000000000",
-          "ContentItemVersionId": "managedsiteshomev00000000000",
+          "ContentItemId": "[js:variables('homeId')]",
+          "ContentItemVersionId": "[js:uuid()]",
           "ContentType": "Page",
           "DisplayText": "Home",
           "Latest": true,
@@ -209,8 +213,8 @@
           "Sections": {
             "ContentItems": [
               {
-                "ContentItemId": "managedsitessection1000000000",
-                "ContentItemVersionId": "managedsitessection1v0000000",
+                "ContentItemId": "[js:uuid()]",
+                "ContentItemVersionId": "[js:uuid()]",
                 "ContentType": "Section",
                 "DisplayText": "What we do",
                 "Latest": true,
@@ -224,8 +228,8 @@
                 }
               },
               {
-                "ContentItemId": "managedsitessection2000000000",
-                "ContentItemVersionId": "managedsitessection2v0000000",
+                "ContentItemId": "[js:uuid()]",
+                "ContentItemVersionId": "[js:uuid()]",
                 "ContentType": "Section",
                 "DisplayText": "Where we are",
                 "Latest": true,
@@ -239,8 +243,8 @@
                 }
               },
               {
-                "ContentItemId": "managedsitessection3000000000",
-                "ContentItemVersionId": "managedsitessection3v0000000",
+                "ContentItemId": "[js:uuid()]",
+                "ContentItemVersionId": "[js:uuid()]",
                 "ContentType": "Section",
                 "DisplayText": "Not for anybody",
                 "Latest": true,
@@ -257,8 +261,8 @@
           }
         },
         {
-          "ContentItemId": "managedsitesmenu000000000000",
-          "ContentItemVersionId": "managedsitesmenuv0000000000",
+          "ContentItemId": "[js:uuid()]",
+          "ContentItemVersionId": "[js:uuid()]",
           "ContentType": "Menu",
           "DisplayText": "Main Menu",
           "Latest": true,
@@ -273,7 +277,7 @@
           "MenuItemsListPart": {
             "MenuItems": [
               {
-                "ContentItemId": "managedsitesmenuitem100000000",
+                "ContentItemId": "[js:uuid()]",
                 "ContentType": "LinkMenuItem",
                 "DisplayText": "Home",
                 "LinkMenuItemPart": { "Name": "Home", "Url": "~/" },
@@ -286,7 +290,7 @@
                 }
               },
               {
-                "ContentItemId": "managedsitesmenuitem200000000",
+                "ContentItemId": "[js:uuid()]",
                 "ContentType": "LinkMenuItem",
                 "DisplayText": "About",
                 "LinkMenuItemPart": { "Name": "About", "Url": "~/about" },
@@ -300,8 +304,8 @@
           }
         },
         {
-          "ContentItemId": "managedsiteswidget0000000000",
-          "ContentItemVersionId": "managedsiteswidgetv000000000",
+          "ContentItemId": "[js:uuid()]",
+          "ContentItemVersionId": "[js:uuid()]",
           "ContentType": "RawHtml",
           "DisplayText": "Footer note",
           "Latest": true,
@@ -332,7 +336,7 @@
         "Action": "Display",
         "Controller": "Item",
         "Area": "OrchardCore.Contents",
-        "ContentItemId": "managedsiteshome000000000000"
+        "ContentItemId": "[js:variables('homeId')]"
       }
     }
   ]
