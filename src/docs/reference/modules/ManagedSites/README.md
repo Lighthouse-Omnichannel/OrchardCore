@@ -155,10 +155,15 @@ Admin requests resolve no managed site, so they always see Site Blueprint conten
 editor saving a managed site's content over the blueprint's: the portal shows a managed site's version
 because it asks for it, not because the request it arrived on was composed.
 
-The admin answers at the tenant's own address and nowhere else. A managed site's URL prefix in front of
-it, `/alpha/Admin`, is not an admin address and is not found; the prefix addresses the content a managed
-site serves, not the screens the tenant is administered from. Editors reach the portal at the tenant's
-admin whichever managed site they work on, and which one that is comes from the portal, not the URL.
+The admin answers at the tenant's own address and nowhere else. A managed site's URL prefix addresses the
+content that site serves, not the screens the tenant is administered from, so a request that reaches for
+the admin through one — `/alpha/Admin` — is redirected to `/Admin`, carrying the rest of the path, the
+query and the method with it. Links are built from the request's path base, and a page served for a
+managed site has that site's prefix on it, so every admin link such a page draws points under the prefix;
+the redirect is what keeps the user menu and the dashboard working from a managed site's pages.
+
+Editors therefore reach the portal at the tenant's admin whichever managed site they work on, and which
+one that is comes from the portal, not from the URL.
 
 ## Preview
 

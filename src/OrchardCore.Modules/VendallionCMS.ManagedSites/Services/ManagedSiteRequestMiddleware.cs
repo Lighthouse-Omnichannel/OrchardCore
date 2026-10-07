@@ -36,6 +36,10 @@ namespace VendallionCMS.ManagedSites.Services;
 /// item already filled with that Managed Site's content, under the Site Blueprint item's own address, so
 /// saving wrote one site's content over the content every site is served. The second check asks the same
 /// question of the path the request is about to have, which is the one the admin will be routed by.
+///
+/// Such a request is redirected to the tenant's own address rather than refused, because links are built
+/// from the path base and a page served for a Managed Site has that site's prefix on it, so every admin
+/// link on a Managed Site's page points under the prefix.
 /// </remarks>
 public sealed class ManagedSiteRequestMiddleware
 {
@@ -73,19 +77,52 @@ public sealed class ManagedSiteRequestMiddleware
             // Asked again, now that the Managed Site is known. A Managed Site addressed by prefix keeps
             // that prefix in the path until it is rebased, so its admin arrives as "/shop/Admin" and the
             // first question, which knows only "/Admin", answers that it is a page being rendered.
-            if (IsPublicRenderingRequest(PathWithoutPrefix(request.Path, context), adminOptions.Value))
+            var path = PathWithoutPrefix(request.Path, context);
+
+            if (!IsPublicRenderingRequest(path, adminOptions.Value))
             {
-                // Recorded, not granted. Whoever acts on it checks the caller's clearance, which cannot be
-                // done here: authentication has not run this early in the pipeline.
-                context.PreviewRequested = request.Query.ContainsKey(ManagedSitesConstants.Preview.DraftsQueryKey);
+                SendToTheTenantsOwnAddress(httpContext, path);
 
-                contextAccessor.Current = context;
-
-                Rebase(request, context);
+                return;
             }
+
+            // Recorded, not granted. Whoever acts on it checks the caller's clearance, which cannot be
+            // done here: authentication has not run this early in the pipeline.
+            context.PreviewRequested = request.Query.ContainsKey(ManagedSitesConstants.Preview.DraftsQueryKey);
+
+            contextAccessor.Current = context;
+
+            Rebase(request, context);
         }
 
         await _next(httpContext);
+    }
+
+    /// <summary>
+    /// Sends a request that reached for the admin through a Managed Site's prefix to the one address the
+    /// admin answers at.
+    /// </summary>
+    /// <remarks>
+    /// Links are built from the request's path base, and a page served for a Managed Site has that site's
+    /// prefix on it, so every admin link on such a page points under the prefix: the dashboard reads as
+    /// "/shop/Admin". The admin is not there and must not be, because a request that resolved a Managed
+    /// Site composes content for it, and an editor would then save that Managed Site's content over the
+    /// Site Blueprint's. Refusing outright would leave those links broken, so they are sent on instead.
+    ///
+    /// The method is preserved, so a form that posts to such a link arrives intact rather than becoming a
+    /// GET of its action. The redirect is temporary because a Managed Site's prefix is a setting somebody
+    /// can change, and a permanent one would be remembered by browsers long after it had.
+    /// </remarks>
+    /// <param name="httpContext">The request context.</param>
+    /// <param name="path">The path with the Managed Site's prefix taken off.</param>
+    private static void SendToTheTenantsOwnAddress(HttpContext httpContext, PathString path)
+    {
+        var request = httpContext.Request;
+
+        // The path base is still the tenant's own here, because the Managed Site's prefix has not been
+        // appended to it, so this carries a hosting path or a tenant prefix back unchanged.
+        httpContext.Response.StatusCode = StatusCodes.Status307TemporaryRedirect;
+        httpContext.Response.Headers.Location = request.PathBase + path + request.QueryString;
     }
 
     /// <summary>

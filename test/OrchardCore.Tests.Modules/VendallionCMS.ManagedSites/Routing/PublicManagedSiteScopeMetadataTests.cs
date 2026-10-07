@@ -159,16 +159,62 @@ public class PublicManagedSiteScopeMetadataTests
     }
 
     [Fact]
-    public async Task AdminUnderAManagedSitePrefix_KeepsThePathAsItArrived()
+    public async Task AdminUnderAManagedSitePrefix_IsSentToTheTenantsOwnAddress()
     {
-        // Rebasing is what routes the request to the admin at all. Leaving the path alone is what makes
-        // the admin answer only at the tenant's own address.
-        var context = Request("localhost", "/shop/Admin");
+        // Links are built from the path base, so a page served for a Managed Site puts that site's prefix
+        // on every admin link it draws, the dashboard included. Refusing them would leave the user menu
+        // of every Managed Site pointing at nothing.
+        var context = Request("localhost", "/shop/Admin/Contents/ContentItems", queryString: "?page=2");
 
         await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
 
-        Assert.Equal(string.Empty, context.Request.PathBase.ToString());
-        Assert.Equal("/shop/Admin", context.Request.Path);
+        Assert.Equal(StatusCodes.Status307TemporaryRedirect, context.Response.StatusCode);
+        Assert.Equal("/Admin/Contents/ContentItems?page=2", context.Response.Headers.Location);
+    }
+
+    [Fact]
+    public async Task AdminUnderAManagedSitePrefix_IsSentOnWithTheMethodItArrivedWith()
+    {
+        // A form that posts to such a link has to arrive as the post it was, not as a GET of its action.
+        var context = Request("localhost", "/shop/Admin/Contents/ContentItems");
+        context.Request.Method = HttpMethods.Post;
+
+        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+
+        Assert.Equal(StatusCodes.Status307TemporaryRedirect, context.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AdminUnderAManagedSitePrefix_KeepsAHostingPathOrTenantPrefix()
+    {
+        // Only the Managed Site's prefix comes off. Whatever put the rest of the path base there still
+        // needs it to reach the tenant at all.
+        var context = Request("localhost", "/shop/Admin");
+        context.Request.PathBase = "/tenant";
+
+        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+
+        Assert.Equal("/tenant/Admin", context.Response.Headers.Location);
+    }
+
+    [Fact]
+    public async Task AdminUnderAManagedSitePrefix_IsNotPassedFurtherDownThePipeline()
+    {
+        var context = Request("localhost", "/shop/Admin");
+        var reached = false;
+
+        await Middleware(_ =>
+        {
+            reached = true;
+
+            return Task.CompletedTask;
+        }).InvokeAsync(
+            context,
+            new ManagedSiteUrlResolver(new FakeManagedSiteService(ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"))),
+            new ManagedSiteCompositionContextAccessor(),
+            AdminOptions());
+
+        Assert.False(reached);
     }
 
     [Fact]
@@ -179,6 +225,7 @@ public class PublicManagedSiteScopeMetadataTests
         var accessor = await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
 
         Assert.Null(accessor.Current);
+        Assert.Equal("/api/content", context.Response.Headers.Location);
     }
 
     [Fact]
