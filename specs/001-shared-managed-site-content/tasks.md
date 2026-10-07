@@ -470,6 +470,33 @@ navigation entries as well as layer widgets and page content, does not hold for 
 
 ---
 
+## Found in use, 2026-10-07 — signing out under a URL prefix did nothing
+
+Reported from a running site: logging off from a Managed Site served under a prefix left the user
+signed in.
+
+The platform leaves the sign-in cookie's path unset so that it follows the request's path base, which
+for an ordinary tenant is that tenant's own prefix and so scopes the cookie to the tenant. This feature
+puts a Managed Site's prefix on the same path base, which is what makes the content underneath it
+resolve, and the cookie followed it there. Signing in at the tenant root wrote the cookie at "/";
+signing out from "/beta" wrote the expiry at "/beta"; the browser kept the cookie it already had.
+
+A sign-in that cannot be undone is the worst shape this could take, and it was reachable by anybody
+using a prefixed Managed Site, which is the addressing this feature recommends.
+
+A Managed Site is not a tenant. It is one of several addresses the same tenant answers on, and the
+person signed in is signed in to the tenant, so `ManagedSiteCookiePathConfiguration` pins the cookie to
+the tenant's own base: exactly the path it would have had if this feature were not enabled. Covered by
+`Routing/SignInCookiePathTests.cs`, and checked in a browser in all three combinations, signing in and
+out at the root and under a prefix in either order.
+
+One case is not covered. An application hosted under a virtual directory carries that directory in its
+path base too, and a tenant knows only its own prefix, so the cookie is written one segment wider than
+before. That costs it being sent on paths it need not be and nothing else: the cookie carries the
+tenant's name, so no other tenant can read it as its own.
+
+---
+
 ## Review against the specification (T128, 2026-10-07)
 
 Fifty-nine functional requirements, read one at a time against the code and the tests that hold it.

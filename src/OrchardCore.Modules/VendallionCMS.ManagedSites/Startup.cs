@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -113,6 +114,12 @@ public sealed class RoutingStartup : StartupBase
 		// Managed Site answering under a URL prefix needs that prefix moved onto the path base before
 		// routing, exactly as a tenant's own prefix is.
 		services.AddSingleton<Microsoft.AspNetCore.Hosting.IStartupFilter, ManagedSiteRequestStartupFilter>();
+
+		// Moving a Managed Site's prefix onto the path base is what makes the content underneath it
+		// resolve, and the sign-in cookie's path follows that same path base. Left alone, a sign-in
+		// becomes undoable: signing out from under a prefix writes the expiry somewhere the cookie is
+		// not. The cookie belongs to the tenant, so it is pinned there.
+		services.AddTransient<IConfigureOptions<CookieAuthenticationOptions>, ManagedSiteCookiePathConfiguration>();
 
 		services.AddScoped<IManagedSiteUrlResolver, ManagedSiteUrlResolver>();
 		services.AddScoped<IManagedSiteCompositionCacheService, ManagedSiteCompositionCacheService>();
