@@ -33,149 +33,163 @@
             </div>
         </div>
     </div>
+</form>
 
-    <ul class="list-group">
-        <li class="list-group-item text-bg-theme">
-            <div class="row gx-3">
-                <div class="col">
-                    <span class="text-nowrap">
-                        @T.Plural(Model.Items.Count, "{0} item", "{0} items")<span class="text-muted" title="@T["Items {0} to {1}", Model.StartIndex, Model.EndIndex]">@T.Plural(Model.TotalCount, " / {0} item in total", " / {0} items in total")</span>
-                    </span>
-                </div>
-                <div class="col col-md-auto text-end">
-                    <span class="badge ta-badge fw-normal">
-                        <i class="fa-solid fa-sitemap text-secondary" aria-hidden="true"></i>
-                        @T["Editing {0}", Model.ManagedSite.Name]
-                    </span>
-                    <a asp-action="Select" class="ms-2 link-body-emphasis text-decoration-underline">@T["Change"]</a>
-                </div>
+<ul class="list-group">
+    <li class="list-group-item text-bg-theme">
+        <div class="row gx-3">
+            <div class="col">
+                <span class="text-nowrap">
+                    @T.Plural(Model.Items.Count, "{0} item", "{0} items")<span class="text-muted" title="@T["Items {0} to {1}", Model.StartIndex, Model.EndIndex]">@T.Plural(Model.TotalCount, " / {0} item in total", " / {0} items in total")</span>
+                </span>
             </div>
-        </li>
+            <div class="col col-md-auto text-end">
+                <span class="badge ta-badge fw-normal">
+                    <i class="fa-solid fa-sitemap text-secondary" aria-hidden="true"></i>
+                    @T["Editing {0}", Model.ManagedSite.Name]
+                </span>
+                <a asp-action="Select" class="ms-2 link-body-emphasis text-decoration-underline">@T["Change"]</a>
+            </div>
+        </div>
+    </li>
 
-        @if (Model.Items.Count > 0)
+    @if (Model.Items.Count > 0)
+    {
+        @foreach (var item in Model.Items)
         {
-            @foreach (var item in Model.Items)
-            {
-                <li class="list-group-item list-group-item-action">
-                    <div class="row">
-                        <div class="col-lg col-12 title d-flex align-items-center">
-                            <div class="summary d-flex flex-column">
-                              <div class="d-flex flex-column flex-md-row">
-                                <div class="contentitem me-2">
-                                    <a asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId">@item.DisplayText</a>
-                                </div>
-                                <div class="contenttype me-1">
-                                    <span class="badge ta-badge fw-normal">
-                                        <i class="fa-regular fa-file-alt text-secondary" aria-hidden="true"></i>
-                                        @item.ContentType
-                                    </span>
-                                </div>
-                                <div class="metadata me-1">
-                                    @* The same badge idiom the content list uses for a content item's own
-                                       status, so "published" reads the same here as it does there. *@
-                                    @if (item.Override is null)
-                                    {
-                                        <span class="badge ta-badge fw-normal" data-bs-toggle="tooltip" title="@T["Status"]">
-                                            <i class="fa-regular fa-circle text-secondary" aria-hidden="true"></i> @T["Blueprint content"]
-                                        </span>
-                                    }
-                                    else if (item.Override.SuppressionReason is not null)
-                                    {
-                                        <span class="badge ta-badge fw-normal" data-bs-toggle="tooltip" title="@item.Override.SuppressionReason">
-                                            <i class="fa-solid fa-triangle-exclamation text-warning" aria-hidden="true"></i> @T["Not rendering"]
-                                        </span>
-                                    }
-                                    else if (string.Equals(item.Override.Status, "Published", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        <span class="badge ta-badge fw-normal" data-bs-toggle="tooltip" title="@T["Status"]">
-                                            <i class="fa-solid fa-check text-success" aria-hidden="true"></i> @T["Published"]
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge ta-badge fw-normal" data-bs-toggle="tooltip" title="@T["Status"]">
-                                            <i class="fa-solid fa-pencil text-primary" aria-hidden="true"></i> @T["Draft"]
-                                        </span>
-                                    }
-
-                                    @if (!item.DisplayScopeIncludesManagedSite)
-                                    {
-                                        <span class="badge ta-badge fw-normal text-muted" data-bs-toggle="tooltip"
-                                              title="@T["This item does not render on this managed site."]">
-                                            <i class="fa-regular fa-eye-slash" aria-hidden="true"></i>
-                                            @T["Not shown here"]
-                                        </span>
-                                    }
-                                </div>
-                              </div>
-
-                              @* What the item holds, said under its name rather than beside it: it is
-                                 about this item's contents, not another badge about the item itself. *@
-                              @if (item.ContainedItemCount > 0)
-                              {
-                                  <span class="hint">
-                                      @if (item.Override is not null)
-                                      {
-                                          @T.Plural(item.ContainedItemCount,
-                                              "Your version of this replaces the {0} item inside it.",
-                                              "Your version of this replaces the {0} items inside it.")
-                                      }
-                                      else if (item.ContainedOverriddenCount > 0)
-                                      {
-                                          @T.Plural(item.ContainedItemCount,
-                                              "{0} item inside it you can customize",
-                                              "{0} items inside it you can customize")
-                                          <text>&nbsp;&middot;&nbsp;</text>
-                                          @T.Plural(item.ContainedOverriddenCount,
-                                              "{0} with a version of your own",
-                                              "{0} with versions of your own")
-                                      }
-                                      else
-                                      {
-                                          @T.Plural(item.ContainedItemCount,
-                                              "{0} item inside it you can customize, none customized yet",
-                                              "{0} items inside it you can customize, none customized yet")
-                                      }
-                                  </span>
-                              }
-                              else if (item.IsContainer)
-                              {
-                                  <span class="hint">@T["Nothing inside it is yours to customize."]</span>
-                              }
+            <li class="list-group-item list-group-item-action">
+                <div class="row">
+                    <div class="col-lg col-12 title d-flex align-items-center">
+                        <div class="summary d-flex flex-column">
+                          <div class="d-flex flex-column flex-md-row">
+                            <div class="contentitem me-2">
+                                <a asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId">@item.DisplayText</a>
                             </div>
-                        </div>
-                        <div class="col-lg-auto col-12 d-flex justify-content-end">
-                            <div class="actions d-flex gap-2 align-items-start">
-                                @if (item.ContainedItemCount > 0)
+                            <div class="contenttype me-1">
+                                <span class="badge ta-badge fw-normal">
+                                    <i class="fa-regular fa-file-alt text-secondary" aria-hidden="true"></i>
+                                    @item.ContentType
+                                </span>
+                            </div>
+                            <div class="metadata me-1">
+                                @* The same badge idiom the content list uses for a content item's own
+                                   status, so "published" reads the same here as it does there. *@
+                                @if (item.Override is null)
                                 {
-                                    <a class="btn btn-secondary btn-sm"
-                                       asp-action="Contained" asp-route-sourceContentItemId="@item.SourceContentItemId"
-                                       aria-label="@T["List what is inside {0}", item.DisplayText]">
-                                        @T["What is inside"]
-                                    </a>
+                                    <span class="badge ta-badge fw-normal" data-bs-toggle="tooltip" title="@T["Status"]">
+                                        <i class="fa-regular fa-circle text-secondary" aria-hidden="true"></i> @T["Blueprint content"]
+                                    </span>
                                 }
-                                <a class="btn btn-primary btn-sm"
-                                   asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId"
-                                   aria-label="@(item.Override is null
-                                       ? T["Create your version of {0}", item.DisplayText]
-                                       : T["Open your version of {0}", item.DisplayText])">
-                                    @(item.Override is null ? T["Create your version"] : T["Open"])
-                                </a>
+                                else if (item.Override.SuppressionReason is not null)
+                                {
+                                    <span class="badge ta-badge fw-normal" data-bs-toggle="tooltip" title="@item.Override.SuppressionReason">
+                                        <i class="fa-solid fa-triangle-exclamation text-warning" aria-hidden="true"></i> @T["Not rendering"]
+                                    </span>
+                                }
+                                else if (string.Equals(item.Override.Status, "Published", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="badge ta-badge fw-normal" data-bs-toggle="tooltip" title="@T["Status"]">
+                                        <i class="fa-solid fa-check text-success" aria-hidden="true"></i> @T["Published"]
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge ta-badge fw-normal" data-bs-toggle="tooltip" title="@T["Status"]">
+                                        <i class="fa-solid fa-pencil text-primary" aria-hidden="true"></i> @T["Draft"]
+                                    </span>
+                                }
+
+                                @if (!item.DisplayScopeIncludesManagedSite)
+                                {
+                                    <span class="badge ta-badge fw-normal text-muted" data-bs-toggle="tooltip"
+                                          title="@T["This item does not render on this managed site."]">
+                                        <i class="fa-regular fa-eye-slash" aria-hidden="true"></i>
+                                        @T["Not shown here"]
+                                    </span>
+                                }
                             </div>
+                          </div>
+
+                          @* What the item holds, said under its name rather than beside it: it is
+                             about this item's contents, not another badge about the item itself. *@
+                          @if (item.ContainedItemCount > 0)
+                          {
+                              <span class="hint">
+                                  @if (item.Override is not null)
+                                  {
+                                      @T.Plural(item.ContainedItemCount,
+                                          "Your version of this replaces the {0} item inside it.",
+                                          "Your version of this replaces the {0} items inside it.")
+                                  }
+                                  else if (item.ContainedOverriddenCount > 0)
+                                  {
+                                      @T.Plural(item.ContainedItemCount,
+                                          "{0} item inside it you can customize",
+                                          "{0} items inside it you can customize")
+                                      <text>&nbsp;&middot;&nbsp;</text>
+                                      @T.Plural(item.ContainedOverriddenCount,
+                                          "{0} with a version of your own",
+                                          "{0} with versions of your own")
+                                  }
+                                  else
+                                  {
+                                      @T.Plural(item.ContainedItemCount,
+                                          "{0} item inside it you can customize, none customized yet",
+                                          "{0} items inside it you can customize, none customized yet")
+                                  }
+                              </span>
+                          }
+                          else if (item.IsContainer)
+                          {
+                              <span class="hint">@T["Nothing inside it is yours to customize."]</span>
+                          }
                         </div>
                     </div>
-                </li>
-            }
-        }
-        else
-        {
-            <li class="list-group-item">
-                <div class="alert alert-info mb-0" role="alert">
-                    @T["<strong>Nothing here!</strong> An item appears once somebody who manages managed sites allows this one to customize it."]
+                    <div class="col-lg-auto col-12 d-flex justify-content-end">
+                        <div class="actions d-flex gap-2 align-items-start">
+                            @if (item.ContainedItemCount > 0)
+                            {
+                                <a class="btn btn-secondary btn-sm"
+                                   asp-action="Contained" asp-route-sourceContentItemId="@item.SourceContentItemId"
+                                   aria-label="@T["List what is inside {0}", item.DisplayText]">
+                                    @T["What is inside"]
+                                </a>
+                            }
+                            @if (item.Override is not null)
+                            {
+                                <a class="btn btn-primary btn-sm"
+                                   asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId"
+                                   aria-label="@T["Open your version of {0}", item.DisplayText]">
+                                    @T["Open"]
+                                </a>
+                            }
+                            else if (Model.CanEdit)
+                            {
+                                @* Creates the version and opens it. The copy an editor is handed is
+                                   the blueprint content until they change it, so the point of
+                                   creating one is to start. *@
+                                <form asp-action="Create" asp-route-sourceContentItemId="@item.SourceContentItemId" method="post">
+                                    <input type="hidden" name="returnUrl" value="@FullRequestPath" />
+                                    <button type="submit" class="btn btn-primary btn-sm"
+                                            aria-label="@T["Create your version of {0} and edit it", item.DisplayText]">
+                                        @T["Create your version"]
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
                 </div>
             </li>
         }
-    </ul>
-</form>
+    }
+    else
+    {
+        <li class="list-group-item">
+            <div class="alert alert-info mb-0" role="alert">
+                @T["<strong>Nothing here!</strong> An item appears once somebody who manages managed sites allows this one to customize it."]
+            </div>
+        </li>
+    }
+</ul>
 
 @await DisplayAsync(Model.Pager)

@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.Localization;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
@@ -213,6 +214,106 @@ public class ManagedSitePortalAccessTests
         Assert.IsType<ForbidResult>(await context.Controller.Remove("source-item"));
     }
 
+    [Fact]
+    public async Task CreatingAVersion_OpensItForEditing()
+    {
+        // Creating a version is the beginning of changing it, and the copy handed over is the blueprint
+        // content until the editor does, so there is nothing to read on a screen in between.
+        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        context.WithSource(ManagedContentScope.All());
+
+        var result = Assert.IsType<RedirectToActionResult>(await context.Controller.Create("source-item"));
+
+        Assert.Equal("Edit", result.ActionName);
+        Assert.Equal("Admin", result.ControllerName);
+        Assert.Equal("OrchardCore.Contents", result.RouteValues["area"]);
+    }
+
+    [Fact]
+    public async Task CreatingAVersion_ReturnsToWhereItWasAskedFor()
+    {
+        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        context.WithSource(ManagedContentScope.All());
+
+        var result = Assert.IsType<RedirectToActionResult>(
+            await context.Controller.Create("source-item", "/Admin/ManagedSites/Portal/Index"));
+
+        Assert.Equal("/Admin/ManagedSites/Portal/Index", result.RouteValues["returnUrl"]);
+    }
+
+    [Fact]
+    public async Task CreatingAVersion_WillNotBounceTheEditorOffTheSite()
+    {
+        // The value arrives in the query string, where anyone can put anything.
+        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        context.WithSource(ManagedContentScope.All());
+
+        var result = Assert.IsType<RedirectToActionResult>(
+            await context.Controller.Create("source-item", "https://elsewhere.example/"));
+
+        Assert.DoesNotContain("elsewhere.example", result.RouteValues["returnUrl"]?.ToString() ?? string.Empty);
+    }
+
+    [Fact]
+    public async Task TheList_OffersNoWayToChangeAnythingWithoutEditClearance()
+    {
+        var context = new PortalContext(clearance: ["site-a:view"]);
+
+        var result = Assert.IsType<ViewResult>(await context.Controller.Index(null, null, new PagerParameters()));
+
+        Assert.False(Assert.IsType<ManagedSitePortalListViewModel>(result.Model).CanEdit);
+    }
+
+    [Fact]
+    public async Task TheList_OffersTheWayToChangeThingsWithEditClearance()
+    {
+        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+
+        var result = Assert.IsType<ViewResult>(await context.Controller.Index(null, null, new PagerParameters()));
+
+        Assert.True(Assert.IsType<ManagedSitePortalListViewModel>(result.Model).CanEdit);
+    }
+
+    [Fact]
+    public async Task AnItem_OffersPublishingOnlyToSomebodyWhoMayPublish()
+    {
+        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        context.WithSource(ManagedContentScope.All());
+
+        var result = Assert.IsType<ViewResult>(await context.Controller.Detail("source-item"));
+        var model = Assert.IsType<ManagedSitePortalDetailViewModel>(result.Model);
+
+        Assert.True(model.CanEdit);
+        Assert.False(model.CanPublish);
+    }
+
+    /// <summary>
+    /// Enough of a URL helper for the portal to decide where to hand an editor back to.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="IsLocalUrl" /> follows the platform's own rule: a path rooted at the site, and not one
+    /// that starts a host of its own. The rule is what the portal relies on to refuse a return address
+    /// pointing somewhere else, so a stub that said yes to everything would test nothing.
+    /// </remarks>
+    private sealed class StubUrlHelper : IUrlHelper
+    {
+        public ActionContext ActionContext { get; } = new();
+
+        public string Action(UrlActionContext actionContext)
+            => $"/Admin/ManagedSites/Portal/{actionContext.Action}";
+
+        public string Content(string contentPath) => contentPath;
+
+        public bool IsLocalUrl(string url)
+            => !string.IsNullOrEmpty(url)
+                && url[0] == '/'
+                && (url.Length == 1 || (url[1] != '/' && url[1] != '\\'));
+
+        public string Link(string routeName, object values) => null;
+
+        public string RouteUrl(UrlRouteContext routeContext) => null;
+    }
+
     /// <summary>
     /// Builds a bare shape, which is all the pager needs here: these tests are about who the list is
     /// shown to, not what it looks like.
@@ -270,6 +371,7 @@ public class ManagedSitePortalAccessTests
                 {
                     HttpContext = new DefaultHttpContext { User = _user },
                 },
+                Url = new StubUrlHelper(),
             };
         }
 

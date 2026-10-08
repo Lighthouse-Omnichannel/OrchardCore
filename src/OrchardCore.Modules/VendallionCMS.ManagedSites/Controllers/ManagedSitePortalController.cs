@@ -141,6 +141,7 @@ public sealed class ManagedSitePortalController : Controller
         return View(new ManagedSitePortalListViewModel
         {
             ManagedSite = scope.ManagedSite,
+            CanEdit = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Edit),
             Items = listing.Items,
             TotalCount = listing.TotalCount,
             StartIndex = listing.TotalCount == 0 ? 0 : ((pager.Page - 1) * pager.PageSize) + 1,
@@ -273,6 +274,7 @@ public sealed class ManagedSitePortalController : Controller
         return View(new ManagedSitePortalContainedViewModel
         {
             ManagedSite = scope.ManagedSite,
+            CanEdit = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Edit),
             SourceContentItemId = sourceContentItemId,
             ContainerDisplayText = container.DisplayText ?? container.ContentType,
             ContainerIsOverridden = containerOverride is not null,
@@ -314,6 +316,8 @@ public sealed class ManagedSitePortalController : Controller
         return View(new ManagedSitePortalDetailViewModel
         {
             ManagedSite = scope.ManagedSite,
+            CanEdit = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Edit),
+            CanPublish = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Publish),
             SourceContentItemId = sourceContentItemId,
             ContentType = source.ContentType,
             DisplayText = source.DisplayText ?? source.ContentType,
@@ -337,7 +341,7 @@ public sealed class ManagedSitePortalController : Controller
     /// <returns>The item screen, carrying what happened.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(string sourceContentItemId)
+    public async Task<IActionResult> Create(string sourceContentItemId, string returnUrl = null)
     {
         var scope = await ResolveScopeAsync(ManagedSitesConstants.Scopes.Edit);
 
@@ -350,8 +354,49 @@ public sealed class ManagedSitePortalController : Controller
 
         await ReportAsync(result.Error, S["Your version was created as a draft, starting from the blueprint content."]);
 
-        return RedirectToAction(nameof(Detail), new { sourceContentItemId });
+        var back = Back(returnUrl, sourceContentItemId);
+
+        if (!result.Succeeded)
+        {
+            return Redirect(back);
+        }
+
+        // Straight into the editor. Creating a version is the beginning of changing it, and the copy an
+        // editor is handed is identical to the blueprint content until they do, so a screen between the
+        // two only asks them to say they meant it twice. Nothing is served until they publish it.
+        return RedirectToAction("Edit", "Admin", new
+        {
+            area = "OrchardCore.Contents",
+            contentItemId = result.Override.OverrideContentItemId,
+            returnUrl = back,
+        });
     }
+
+    /// <summary>
+    /// Answers whether the editor holds a clearance for the active Managed Site.
+    /// </summary>
+    /// <param name="managedSiteId">The active Managed Site.</param>
+    /// <param name="scope">What the clearance would allow.</param>
+    /// <returns><see langword="true" /> when they hold it.</returns>
+    private ValueTask<bool> CanAsync(string managedSiteId, string scope)
+        => _clearanceService.HasClearanceAsync(User, managedSiteId, scope);
+
+    /// <summary>
+    /// Works out where an action should hand the editor back to.
+    /// </summary>
+    /// <remarks>
+    /// A caller says where it came from, so creating a version from the list returns to the list and
+    /// creating one from an item returns to the item. Only local URLs are honoured: the value arrives
+    /// in the query string, where anyone can put anything, and an unchecked one would make the portal
+    /// bounce people to another site.
+    /// </remarks>
+    /// <param name="returnUrl">Where the caller came from.</param>
+    /// <param name="sourceContentItemId">The item being customized, used when the caller said nothing.</param>
+    /// <returns>A local URL.</returns>
+    private string Back(string returnUrl, string sourceContentItemId)
+        => Url.IsLocalUrl(returnUrl)
+            ? returnUrl
+            : Url.Action(nameof(Detail), new { sourceContentItemId });
 
     /// <summary>
     /// Publishes the Managed Site's own version of an item, so that visitors receive it.

@@ -61,32 +61,44 @@
                 </div>
             }
 
-            <p>
-                @* Carries the way back. The content editor is the platform's, and an editor who works
-                   in the portal would otherwise save their version and be left in a screen with no
-                   route to the one they came from. *@
-                <a asp-action="Edit" asp-controller="Admin" asp-area="OrchardCore.Contents"
-                   asp-route-contentItemId="@Model.Override.OverrideContentItemId"
-                   asp-route-returnUrl="@Url.Action("Detail", "ManagedSitePortal", new { area = "VendallionCMS.ManagedSites", sourceContentItemId = Model.SourceContentItemId })">
-                    @T["Edit its content"]
-                </a>
-            </p>
+            @if (Model.CanEdit)
+            {
+                <p>
+                    @* Carries the way back. The content editor is the platform's, and an editor who
+                       works in the portal would otherwise save their version and be left in a screen
+                       with no route to the one they came from. *@
+                    <a asp-action="Edit" asp-controller="Admin" asp-area="OrchardCore.Contents"
+                       asp-route-contentItemId="@Model.Override.OverrideContentItemId"
+                       asp-route-returnUrl="@Url.Action("Detail", "ManagedSitePortal", new { area = "VendallionCMS.ManagedSites", sourceContentItemId = Model.SourceContentItemId })">
+                        @T["Edit its content"]
+                    </a>
+                </p>
+            }
         }
     </div>
 </div>
 
 <div class="ocat-wrapper">
     <div class="ocat-end-offset">
+        @* Each action is offered only to somebody who holds the clearance it needs. The actions check
+           for themselves too; this is so nobody is invited to do what they will be refused. *@
         @if (Model.Override is null)
         {
-            <form asp-action="Create" asp-route-sourceContentItemId="@Model.SourceContentItemId" method="post">
-                <button type="submit" class="btn btn-primary">@T["Create my version"]</button>
-            </form>
+            @if (Model.CanEdit)
+            {
+                <form asp-action="Create" asp-route-sourceContentItemId="@Model.SourceContentItemId" method="post">
+                    <button type="submit" class="btn btn-primary">@T["Create my version"]</button>
+                </form>
+            }
+            else
+            {
+                <p class="text-muted mb-0">@T["You may see this managed site's content, but not change it."]</p>
+            }
         }
         else
         {
             <div class="d-flex gap-2">
-                @if (Model.Override.Status != "Published")
+                @if (Model.Override.Status != "Published" && Model.CanPublish)
                 {
                     <form asp-action="Publish" asp-route-sourceContentItemId="@Model.SourceContentItemId" method="post">
                         <input type="hidden" name="overrideContentItemId" value="@Model.Override.OverrideContentItemId" />
@@ -94,14 +106,17 @@
                     </form>
                 }
 
-                <form asp-action="Remove" asp-route-sourceContentItemId="@Model.SourceContentItemId" method="post">
-                    <button type="submit" class="btn btn-danger"
-                            data-url-af="RemoveUrl UnsafeUrl"
-                            data-title="@T["Remove your version"]"
-                            data-message="@T["This managed site goes back to the blueprint content. Are you sure?"]">
-                        @T["Remove my version"]
-                    </button>
-                </form>
+                @if (Model.CanEdit)
+                {
+                    <form asp-action="Remove" asp-route-sourceContentItemId="@Model.SourceContentItemId" method="post">
+                        <button type="submit" class="btn btn-danger"
+                                data-url-af="RemoveUrl UnsafeUrl"
+                                data-title="@T["Remove your version"]"
+                                data-message="@T["This managed site goes back to the blueprint content. Are you sure?"]">
+                            @T["Remove my version"]
+                        </button>
+                    </form>
+                }
             </div>
         }
     </div>

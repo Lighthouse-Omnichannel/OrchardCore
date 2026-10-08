@@ -47,6 +47,16 @@ public class ManagedSitePortalListViewModel
     /// Gets or sets the pager shape, which draws the page links the admin draws everywhere else.
     /// </summary>
     public IShape Pager { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the editor may change this Managed Site's content.
+    /// </summary>
+    /// <remarks>
+    /// Clearance to see a Managed Site's content does not carry clearance to change it, so the actions
+    /// that would change it are not offered to somebody holding only the first. The actions check for
+    /// themselves as well; this is so an editor is not invited to do something they will be refused.
+    /// </remarks>
+    public bool CanEdit { get; set; }
 }
 
 /// <summary>
@@ -125,6 +135,20 @@ public sealed class ManagedSitePortalDetailViewModel
     /// Gets or sets the Managed Site's own version, or <see langword="null" /> when it has none.
     /// </summary>
     public ManagedContentOverrideSummary Override { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the editor may change this Managed Site's content.
+    /// </summary>
+    public bool CanEdit { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the editor may publish this Managed Site's content.
+    /// </summary>
+    /// <remarks>
+    /// Separate from editing, so somebody who may draft a version but not put it in front of visitors
+    /// is not offered the button that would.
+    /// </remarks>
+    public bool CanPublish { get; set; }
 
     /// <summary>
     /// Gets or sets the Managed Site's own versions of items stored inside this one.
