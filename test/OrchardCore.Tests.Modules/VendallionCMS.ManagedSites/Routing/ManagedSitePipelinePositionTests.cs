@@ -30,11 +30,11 @@ namespace VendallionCMS.ManagedSites.Tests.Routing;
 public class ManagedSitePipelinePositionTests
 {
     [Fact]
-    public void TheRoutingFeature_AddsTheMiddlewareThroughAStartupFilter()
+    public void TheModule_AddsTheMiddlewareThroughAStartupFilter()
     {
         var services = new ServiceCollection();
 
-        new RoutingStartup().ConfigureServices(services);
+        new Startup().ConfigureServices(services);
 
         Assert.Contains(
             services,
@@ -43,15 +43,15 @@ public class ManagedSitePipelinePositionTests
     }
 
     [Fact]
-    public void TheRoutingFeature_AddsNoMiddlewareOfItsOwn()
+    public void TheModule_AddsNoMiddlewareOfItsOwn()
     {
         // Guards the test above. Adding the middleware from Configure as well would put a second copy
         // after routing, and the one that mattered would be whichever ran first.
-        var configure = typeof(RoutingStartup).GetMethod(
-            nameof(RoutingStartup.Configure),
+        var configure = typeof(Startup).GetMethod(
+            nameof(Startup.Configure),
             [typeof(IApplicationBuilder), typeof(Microsoft.AspNetCore.Routing.IEndpointRouteBuilder), typeof(IServiceProvider)]);
 
-        Assert.NotEqual(typeof(RoutingStartup), configure.DeclaringType);
+        Assert.NotEqual(typeof(Startup), configure.DeclaringType);
     }
 
     [Fact]

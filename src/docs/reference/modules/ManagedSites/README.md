@@ -13,16 +13,14 @@ cheap: adding a managed site costs an address and a row, not a site.
 
 ## Enabling the feature
 
-Four features, in `Content Management`, `Infrastructure` and `Security`:
+One feature, `Vendallion Managed Sites`, in `Content Management`. Enabling it brings the whole module:
+the Managed Content part and the scopes, URL resolution, the permissions and clearance, the admin portal,
+and the composition that serves a managed site its own content.
 
-| Feature | What it adds |
-| --- | --- |
-| `Managed Sites` | The Managed Content part, the scopes and the composition rules |
-| `Managed Sites Routing` | Resolves an incoming URL to a managed site, and keeps the tenant's host names in step |
-| `Managed Sites Permissions` | The two permissions below |
-| `Managed Sites Admin Portal` | The portal editors work in, and the admin screens |
-
-Enabling the portal pulls in the other three.
+There is deliberately no way to enable part of it. Resolving a URL to a managed site decides nothing
+without the content rules that say what it may override, those rules authorize nothing without clearance,
+and clearance is granted from the portal — so every subset short of the whole is a configuration in which
+the module cannot do its job.
 
 ## Permissions
 

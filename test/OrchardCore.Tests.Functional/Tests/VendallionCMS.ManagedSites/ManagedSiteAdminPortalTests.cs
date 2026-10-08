@@ -16,7 +16,7 @@ namespace OrchardCore.Tests.Functional.Tests.ManagedSites;
 /// </summary>
 public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<CmsSetupFixture>
 {
-    private const string AdminPortalFeatureId = "VendallionCMS.ManagedSites.AdminPortal";
+    private const string ManagedSitesFeatureId = "VendallionCMS.ManagedSites";
 
     public ManagedSiteAdminPortalTests(CmsSetupFixture fixture) : base(fixture) { }
 
@@ -221,7 +221,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     {
         var page = await Fixture.CreatePageAsync();
         await AuthHelper.LoginAsync(page, $"/{Tenant.Prefix}");
-        await page.EnableFeatureAsync($"/{Tenant.Prefix}", AdminPortalFeatureId);
+        await page.EnableFeatureAsync($"/{Tenant.Prefix}", ManagedSitesFeatureId);
 
         return page;
     }

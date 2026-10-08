@@ -43,9 +43,6 @@
         "OrchardCore.Widgets",
 
         "VendallionCMS.ManagedSites",
-        "VendallionCMS.ManagedSites.Routing",
-        "VendallionCMS.ManagedSites.Permissions",
-        "VendallionCMS.ManagedSites.AdminPortal",
 
         "TheAdmin",
         "TheTheme"

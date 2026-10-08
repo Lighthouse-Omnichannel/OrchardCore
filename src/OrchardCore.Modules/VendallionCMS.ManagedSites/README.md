@@ -14,14 +14,12 @@ loads, so every consumer sees the right version: Liquid templates, shapes, and d
 See [the documentation](../../docs/reference/modules/ManagedSites/README.md) for addressing rules, the
 two scopes, clearance, preview, and what happens when an override stops rendering.
 
-## Features
+## Feature
 
-| Feature | Provides |
-| --- | --- |
-| `VendallionCMS.ManagedSites` | The Managed Content part, the scopes, and the composition rules |
-| `VendallionCMS.ManagedSites.Routing` | URL resolution and tenant host name synchronization |
-| `VendallionCMS.ManagedSites.Permissions` | The two Managed Sites permissions |
-| `VendallionCMS.ManagedSites.AdminPortal` | The Managed Site Admin Portal and the admin screens |
+One feature, `VendallionCMS.ManagedSites`: the Managed Content part and the scopes, URL resolution and
+tenant host name synchronization, the two permissions and the clearance that carries them, the Managed
+Site Admin Portal, and the composition that puts a Managed Site's own content in front of the Site
+Blueprint's. `Startup.cs` registers them in that order, under a heading each.
 
 ## Developing
 
