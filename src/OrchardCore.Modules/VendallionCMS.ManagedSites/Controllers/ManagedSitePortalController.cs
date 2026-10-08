@@ -1,10 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Localization;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 using OrchardCore.Admin;
 using OrchardCore.ContentManagement;
+using OrchardCore.DisplayManagement;
 using OrchardCore.DisplayManagement.Notify;
+using OrchardCore.Navigation;
 using VendallionCMS.ManagedSites.Models;
 using VendallionCMS.ManagedSites.Services;
 using VendallionCMS.ManagedSites.ViewModels;
@@ -35,6 +39,8 @@ public sealed class ManagedSitePortalController : Controller
     private readonly IManagedContentScopeService _scopeService;
     private readonly IManagedSitePreviewService _previewService;
     private readonly INotifier _notifier;
+    private readonly IShapeFactory _shapeFactory;
+    private readonly PagerOptions _pagerOptions;
 
     private readonly IStringLocalizer S;
     private readonly IHtmlLocalizer H;
@@ -51,6 +57,8 @@ public sealed class ManagedSitePortalController : Controller
     /// <param name="scopeService">The Managed Content scope service.</param>
     /// <param name="previewService">The Managed Site preview service.</param>
     /// <param name="notifier">The notifier.</param>
+    /// <param name="shapeFactory">The shape factory, used to build the pager.</param>
+    /// <param name="pagerOptions">The site's pager options.</param>
     /// <param name="stringLocalizer">The string localizer.</param>
     /// <param name="htmlLocalizer">The HTML localizer.</param>
     public ManagedSitePortalController(
@@ -63,6 +71,8 @@ public sealed class ManagedSitePortalController : Controller
         IManagedContentScopeService scopeService,
         IManagedSitePreviewService previewService,
         INotifier notifier,
+        IShapeFactory shapeFactory,
+        IOptions<PagerOptions> pagerOptions,
         IStringLocalizer<ManagedSitePortalController> stringLocalizer,
         IHtmlLocalizer<ManagedSitePortalController> htmlLocalizer)
     {
@@ -75,6 +85,8 @@ public sealed class ManagedSitePortalController : Controller
         _scopeService = scopeService;
         _previewService = previewService;
         _notifier = notifier;
+        _shapeFactory = shapeFactory;
+        _pagerOptions = pagerOptions.Value;
         S = stringLocalizer;
         H = htmlLocalizer;
     }
@@ -84,14 +96,12 @@ public sealed class ManagedSitePortalController : Controller
     /// </summary>
     /// <param name="contentType">One content type, or nothing for all of them.</param>
     /// <param name="overrideStatus">One override status, or nothing for all of them.</param>
-    /// <param name="page">The one-based page number.</param>
-    /// <param name="pageSize">How many items a page holds.</param>
+    /// <param name="pagerParameters">Which page to show, and how large.</param>
     /// <returns>The list, the Managed Site chooser, or a refusal.</returns>
     public async Task<IActionResult> Index(
-        string contentType = null,
-        string overrideStatus = null,
-        int page = 1,
-        int pageSize = 50)
+        string contentType,
+        string overrideStatus,
+        PagerParameters pagerParameters)
     {
         var scope = await ResolveScopeAsync();
 
@@ -108,17 +118,33 @@ public sealed class ManagedSitePortalController : Controller
             status = parsed;
         }
 
+        var pager = new Pager(pagerParameters, _pagerOptions.GetPageSize());
+
         var listing = await _listService.ListAsync(
             scope.ManagedSite.Id,
-            new ManagedContentListQuery(contentType, status, page, pageSize));
+            new ManagedContentListQuery(contentType, status, pager.Page, pager.PageSize));
+
+        // Carried onto the page links, so paging past the first page does not quietly drop the filter
+        // the editor is looking through.
+        var routeData = new RouteData();
+
+        if (!string.IsNullOrEmpty(contentType))
+        {
+            routeData.Values.TryAdd(nameof(contentType), contentType);
+        }
+
+        if (!string.IsNullOrEmpty(overrideStatus))
+        {
+            routeData.Values.TryAdd(nameof(overrideStatus), overrideStatus);
+        }
 
         return View(new ManagedSitePortalListViewModel
         {
             ManagedSite = scope.ManagedSite,
             Items = listing.Items,
             TotalCount = listing.TotalCount,
-            Page = page,
-            PageSize = pageSize,
+            StartIndex = listing.TotalCount == 0 ? 0 : ((pager.Page - 1) * pager.PageSize) + 1,
+            Pager = await _shapeFactory.PagerAsync(pager, listing.TotalCount, routeData),
             ContentType = contentType,
             OverrideStatus = overrideStatus,
         });

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Security.Claims;
@@ -6,8 +7,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Localization;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 using Moq;
+using OrchardCore.DisplayManagement;
+using OrchardCore.DisplayManagement.Implementation;
 using OrchardCore.DisplayManagement.Notify;
+using OrchardCore.DisplayManagement.Shapes;
+using OrchardCore.Navigation;
 using VendallionCMS.ManagedSites;
 using VendallionCMS.ManagedSites.Controllers;
 using VendallionCMS.ManagedSites.Models;
@@ -39,7 +45,7 @@ public class ManagedSitePortalAccessTests
     {
         var context = new PortalContext(authorized: false);
 
-        Assert.IsType<ForbidResult>(await context.Controller.Index());
+        Assert.IsType<ForbidResult>(await context.Controller.Index(null, null, new PagerParameters()));
     }
 
     [Fact]
@@ -48,7 +54,7 @@ public class ManagedSitePortalAccessTests
         // An empty list reads as "nothing to do here", which sends someone looking for the wrong fault.
         var context = new PortalContext(clearance: []);
 
-        var result = Assert.IsType<ViewResult>(await context.Controller.Index());
+        var result = Assert.IsType<ViewResult>(await context.Controller.Index(null, null, new PagerParameters()));
 
         Assert.Equal("NoClearance", result.ViewName);
     }
@@ -58,7 +64,7 @@ public class ManagedSitePortalAccessTests
     {
         var context = new PortalContext(clearance: ["site-a:view,edit"]);
 
-        var result = Assert.IsType<ViewResult>(await context.Controller.Index());
+        var result = Assert.IsType<ViewResult>(await context.Controller.Index(null, null, new PagerParameters()));
 
         Assert.Equal("site-a", Assert.IsType<ManagedSitePortalListViewModel>(result.Model).ManagedSite.Id);
     }
@@ -70,7 +76,7 @@ public class ManagedSitePortalAccessTests
             clearance: ["site-a:view,edit", "site-b:view,edit"],
             managedSites: [Site("site-a"), Site("site-b")]);
 
-        var result = Assert.IsType<RedirectToActionResult>(await context.Controller.Index());
+        var result = Assert.IsType<RedirectToActionResult>(await context.Controller.Index(null, null, new PagerParameters()));
 
         Assert.Equal(nameof(ManagedSitePortalController.Select), result.ActionName);
     }
@@ -171,7 +177,7 @@ public class ManagedSitePortalAccessTests
         // The same editor returns, now cleared for one of them only.
         context.WithClearance("site-a:view,edit");
 
-        var result = Assert.IsType<ViewResult>(await context.Controller.Index());
+        var result = Assert.IsType<ViewResult>(await context.Controller.Index(null, null, new PagerParameters()));
 
         Assert.Equal("site-a", Assert.IsType<ManagedSitePortalListViewModel>(result.Model).ManagedSite.Id);
     }
@@ -185,7 +191,7 @@ public class ManagedSitePortalAccessTests
 
         foreach (var result in new[]
         {
-            await context.Controller.Index(),
+            await context.Controller.Index(null, null, new PagerParameters()),
             await context.Controller.Suppressed(),
             await context.Controller.Preview(),
         })
@@ -199,12 +205,28 @@ public class ManagedSitePortalAccessTests
     {
         var context = new PortalContext(authorized: false);
 
-        Assert.IsType<ForbidResult>(await context.Controller.Index());
+        Assert.IsType<ForbidResult>(await context.Controller.Index(null, null, new PagerParameters()));
         Assert.IsType<ForbidResult>(await context.Controller.Suppressed());
         Assert.IsType<ForbidResult>(await context.Controller.Preview());
         Assert.IsType<ForbidResult>(await context.Controller.Detail("source-item"));
         Assert.IsType<ForbidResult>(await context.Controller.Create("source-item"));
         Assert.IsType<ForbidResult>(await context.Controller.Remove("source-item"));
+    }
+
+    /// <summary>
+    /// Builds a bare shape, which is all the pager needs here: these tests are about who the list is
+    /// shown to, not what it looks like.
+    /// </summary>
+    private sealed class StubShapeFactory : IShapeFactory
+    {
+        public dynamic New => null;
+
+        public ValueTask<IShape> CreateAsync(
+            string shapeType,
+            Func<ValueTask<IShape>> shapeFactory,
+            Action<ShapeCreatingContext> creating,
+            Action<ShapeCreatedContext> created)
+            => ValueTask.FromResult<IShape>(new Shape());
     }
 
     private static ManagedSite Site(string id) => ManagedSitesTestData.ManagedSite(id);
@@ -239,6 +261,8 @@ public class ManagedSitePortalAccessTests
                 new ManagedContentScopeService(),
                 new ManagedSitePreviewService(Portal.ManagedSiteService),
                 Mock.Of<INotifier>(),
+                new StubShapeFactory(),
+                Options.Create(new PagerOptions()),
                 new StubStringLocalizer<ManagedSitePortalController>(),
                 new StubHtmlLocalizer<ManagedSitePortalController>())
             {

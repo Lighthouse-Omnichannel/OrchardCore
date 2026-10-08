@@ -1,3 +1,4 @@
+using OrchardCore.DisplayManagement;
 using VendallionCMS.ManagedSites.Models;
 
 namespace VendallionCMS.ManagedSites.ViewModels;
@@ -23,14 +24,14 @@ public sealed class ManagedSitePortalListViewModel
     public int TotalCount { get; set; }
 
     /// <summary>
-    /// Gets or sets the one-based page number.
+    /// Gets or sets the one-based position of the first item on this page, or zero when there are none.
     /// </summary>
-    public int Page { get; set; } = 1;
+    public int StartIndex { get; set; }
 
     /// <summary>
-    /// Gets or sets how many items a page holds.
+    /// Gets the one-based position of the last item on this page, or zero when there are none.
     /// </summary>
-    public int PageSize { get; set; } = 50;
+    public int EndIndex => StartIndex == 0 ? 0 : StartIndex + Items.Count - 1;
 
     /// <summary>
     /// Gets or sets the content type the list is narrowed to, if any.
@@ -43,14 +44,9 @@ public sealed class ManagedSitePortalListViewModel
     public string OverrideStatus { get; set; }
 
     /// <summary>
-    /// Gets whether there is a page after this one.
+    /// Gets or sets the pager shape, which draws the page links the admin draws everywhere else.
     /// </summary>
-    public bool HasNextPage => Page * PageSize < TotalCount;
-
-    /// <summary>
-    /// Gets whether there is a page before this one.
-    /// </summary>
-    public bool HasPreviousPage => Page > 1;
+    public IShape Pager { get; set; }
 }
 
 /// <summary>
