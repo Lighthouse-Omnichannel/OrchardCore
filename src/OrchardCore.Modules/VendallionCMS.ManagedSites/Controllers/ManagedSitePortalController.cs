@@ -203,6 +203,89 @@ public sealed class ManagedSitePortalController : Controller
     }
 
     /// <summary>
+    /// Lists what the active Managed Site may customize inside one item.
+    /// </summary>
+    /// <remarks>
+    /// Reached from the container's row rather than from the main list, which holds only items stored
+    /// in their own right. A section is read as part of its page, so it is listed where its page is
+    /// rather than beside it.
+    /// </remarks>
+    /// <param name="sourceContentItemId">The item whose contents to list.</param>
+    /// <param name="contentType">One content type, or nothing for all of them.</param>
+    /// <param name="overrideStatus">One override status, or nothing for all of them.</param>
+    /// <param name="pagerParameters">Which page to show, and how large.</param>
+    /// <returns>The list, or a refusal.</returns>
+    public async Task<IActionResult> Contained(
+        string sourceContentItemId,
+        string contentType,
+        string overrideStatus,
+        PagerParameters pagerParameters)
+    {
+        var scope = await ResolveScopeAsync();
+
+        if (scope.Failure is not null)
+        {
+            return scope.Failure;
+        }
+
+        var location = await _locator.FindAsync(sourceContentItemId, options: VersionOptions.Published);
+        var container = location?.ContentItem;
+
+        // Checked here rather than trusted from the row that linked here, because the scope can be
+        // narrowed between an editor seeing a container and opening it.
+        if (container is null
+            || !container.TryGet<ManagedContentPart>(out var part)
+            || !_scopeService.CanEdit(part, scope.ManagedSite.Id))
+        {
+            return NotFound();
+        }
+
+        ManagedContentOverrideStatus? status = null;
+
+        if (!string.IsNullOrWhiteSpace(overrideStatus)
+            && Enum.TryParse<ManagedContentOverrideStatus>(overrideStatus, ignoreCase: true, out var parsed))
+        {
+            status = parsed;
+        }
+
+        var pager = new Pager(pagerParameters, _pagerOptions.GetPageSize());
+
+        var listing = await _listService.ListContainedAsync(
+            scope.ManagedSite.Id,
+            sourceContentItemId,
+            new ManagedContentListQuery(contentType, status, pager.Page, pager.PageSize));
+
+        var routeData = new RouteData();
+        routeData.Values.TryAdd(nameof(sourceContentItemId), sourceContentItemId);
+
+        if (!string.IsNullOrEmpty(contentType))
+        {
+            routeData.Values.TryAdd(nameof(contentType), contentType);
+        }
+
+        if (!string.IsNullOrEmpty(overrideStatus))
+        {
+            routeData.Values.TryAdd(nameof(overrideStatus), overrideStatus);
+        }
+
+        var containerOverride = await _overrideService.GetAsync(scope.ManagedSite.Id, sourceContentItemId);
+
+        return View(new ManagedSitePortalContainedViewModel
+        {
+            ManagedSite = scope.ManagedSite,
+            SourceContentItemId = sourceContentItemId,
+            ContainerDisplayText = container.DisplayText ?? container.ContentType,
+            ContainerIsOverridden = containerOverride is not null,
+            Items = listing.Items,
+            TotalCount = listing.TotalCount,
+            StartIndex = listing.TotalCount == 0 ? 0 : ((pager.Page - 1) * pager.PageSize) + 1,
+            Pager = await _shapeFactory.PagerAsync(pager, listing.TotalCount, routeData),
+            ContentType = contentType,
+            OverrideStatus = overrideStatus,
+        });
+    }
+
+    /// <summary>
     /// Shows one item, and what the active Managed Site has done with it.
     /// </summary>
     /// <param name="sourceContentItemId">The item being customized.</param>

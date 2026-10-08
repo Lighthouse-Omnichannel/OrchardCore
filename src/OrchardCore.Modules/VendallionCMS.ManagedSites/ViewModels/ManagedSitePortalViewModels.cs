@@ -6,7 +6,7 @@ namespace VendallionCMS.ManagedSites.ViewModels;
 /// <summary>
 /// What the active Managed Site may customize.
 /// </summary>
-public sealed class ManagedSitePortalListViewModel
+public class ManagedSitePortalListViewModel
 {
     /// <summary>
     /// Gets or sets the Managed Site this session is working in.
@@ -47,6 +47,32 @@ public sealed class ManagedSitePortalListViewModel
     /// Gets or sets the pager shape, which draws the page links the admin draws everywhere else.
     /// </summary>
     public IShape Pager { get; set; }
+}
+
+/// <summary>
+/// What the active Managed Site may customize inside one item.
+/// </summary>
+public sealed class ManagedSitePortalContainedViewModel : ManagedSitePortalListViewModel
+{
+    /// <summary>
+    /// Gets or sets the identifier of the item these are stored inside.
+    /// </summary>
+    public string SourceContentItemId { get; set; }
+
+    /// <summary>
+    /// Gets or sets what to call the item these are stored inside.
+    /// </summary>
+    public string ContainerDisplayText { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the Managed Site has its own version of the container.
+    /// </summary>
+    /// <remarks>
+    /// A version of a container carries its own contents, so while one exists nothing listed here is
+    /// being served, whatever its own version says. The screen says so rather than letting an editor
+    /// work on items that cannot reach the site.
+    /// </remarks>
+    public bool ContainerIsOverridden { get; set; }
 }
 
 /// <summary>

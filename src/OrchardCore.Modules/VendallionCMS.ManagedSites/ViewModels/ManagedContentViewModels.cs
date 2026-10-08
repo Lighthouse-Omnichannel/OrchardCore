@@ -23,12 +23,32 @@ public sealed class ManagedContentListItem
     public string DisplayText { get; set; }
 
     /// <summary>
+    /// Gets or sets the identifier of the item this one is stored inside, which is its own when it is
+    /// stored in its own right.
+    /// </summary>
+    public string ContainerContentItemId { get; set; }
+
+    /// <summary>
     /// Gets or sets a value indicating whether the item holds child content of its own.
     /// </summary>
     /// <remarks>
     /// Overriding a container replaces its children, so the portal warns before the editor commits to it.
     /// </remarks>
     public bool IsContainer { get; set; }
+
+    /// <summary>
+    /// Gets or sets how many items stored inside this one the Managed Site may customize.
+    /// </summary>
+    /// <remarks>
+    /// Counted over everything the Managed Site may customize rather than over whatever the list is
+    /// currently narrowed to, because this describes the container and not the search.
+    /// </remarks>
+    public int ContainedItemCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets how many of those the Managed Site has its own version of.
+    /// </summary>
+    public int ContainedOverriddenCount { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the item's display scope reaches the Managed Site.

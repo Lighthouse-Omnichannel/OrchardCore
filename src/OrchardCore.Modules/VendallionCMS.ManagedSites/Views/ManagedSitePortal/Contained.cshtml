@@ -1,11 +1,10 @@
-@model VendallionCMS.ManagedSites.ViewModels.ManagedSitePortalListViewModel
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSitePortalContainedViewModel
 
-<zone Name="Title"><h1>@RenderTitleSegments(T["Content you can customize"])</h1></zone>
+<zone Name="Title"><h1>@RenderTitleSegments(T["Inside {0}", Model.ContainerDisplayText])</h1></zone>
 
-@* Laid out as the content list is, because it is the same job: a filter bar that sticks, a header row
-   that counts what is below it, one row an item, and the admin's own pager. An editor who has used the
-   content list should not have to learn a second way to read a list. *@
-<form asp-action="Index" method="get">
+@* The same list the portal draws everywhere else, narrowed to one container. An editor who has used
+   the main list already knows how to read this one. *@
+<form asp-action="Contained" asp-route-sourceContentItemId="@Model.SourceContentItemId" method="get">
     <div class="card text-bg-theme mb-3 position-sticky action-bar">
         <div class="card-body">
             <div class="row gx-3">
@@ -34,6 +33,22 @@
         </div>
     </div>
 
+    @if (Model.ContainerIsOverridden)
+    {
+        @* Said before the list rather than after it: everything below is unreachable while this holds,
+           and an editor who finds that out by publishing has wasted the work in between. *@
+        <div class="alert alert-warning" role="alert">
+            <p class="mb-1">
+                @T["You have your own version of <strong>{0}</strong>, and it carries its own contents.", Model.ContainerDisplayText]
+            </p>
+            <p class="mb-0">
+                @T["Nothing listed here is being served to this managed site while that version exists, whatever its own version says. Edit the contents of your version instead, or remove it to go back to the blueprint content."]
+                <a asp-action="Detail" asp-route-sourceContentItemId="@Model.SourceContentItemId"
+                   class="alert-link text-decoration-underline">@T["Open your version"]</a>
+            </p>
+        </div>
+    }
+
     <ul class="list-group">
         <li class="list-group-item text-bg-theme">
             <div class="row gx-3">
@@ -43,11 +58,7 @@
                     </span>
                 </div>
                 <div class="col col-md-auto text-end">
-                    <span class="badge ta-badge fw-normal">
-                        <i class="fa-solid fa-sitemap text-secondary" aria-hidden="true"></i>
-                        @T["Editing {0}", Model.ManagedSite.Name]
-                    </span>
-                    <a asp-action="Select" class="ms-2 link-body-emphasis text-decoration-underline">@T["Change"]</a>
+                    <a asp-action="Index" class="link-body-emphasis text-decoration-underline">@T["Back to everything"]</a>
                 </div>
             </div>
         </li>
@@ -59,8 +70,7 @@
                 <li class="list-group-item list-group-item-action">
                     <div class="row">
                         <div class="col-lg col-12 title d-flex align-items-center">
-                            <div class="summary d-flex flex-column">
-                              <div class="d-flex flex-column flex-md-row">
+                            <div class="summary d-flex flex-column flex-md-row">
                                 <div class="contentitem me-2">
                                     <a asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId">@item.DisplayText</a>
                                 </div>
@@ -71,8 +81,6 @@
                                     </span>
                                 </div>
                                 <div class="metadata me-1">
-                                    @* The same badge idiom the content list uses for a content item's own
-                                       status, so "published" reads the same here as it does there. *@
                                     @if (item.Override is null)
                                     {
                                         <span class="badge ta-badge fw-normal" data-bs-toggle="tooltip" title="@T["Status"]">
@@ -107,53 +115,10 @@
                                         </span>
                                     }
                                 </div>
-                              </div>
-
-                              @* What the item holds, said under its name rather than beside it: it is
-                                 about this item's contents, not another badge about the item itself. *@
-                              @if (item.ContainedItemCount > 0)
-                              {
-                                  <span class="hint">
-                                      @if (item.Override is not null)
-                                      {
-                                          @T.Plural(item.ContainedItemCount,
-                                              "Your version of this replaces the {0} item inside it.",
-                                              "Your version of this replaces the {0} items inside it.")
-                                      }
-                                      else if (item.ContainedOverriddenCount > 0)
-                                      {
-                                          @T.Plural(item.ContainedItemCount,
-                                              "{0} item inside it you can customize",
-                                              "{0} items inside it you can customize")
-                                          <text>&nbsp;&middot;&nbsp;</text>
-                                          @T.Plural(item.ContainedOverriddenCount,
-                                              "{0} with a version of your own",
-                                              "{0} with versions of your own")
-                                      }
-                                      else
-                                      {
-                                          @T.Plural(item.ContainedItemCount,
-                                              "{0} item inside it you can customize, none customized yet",
-                                              "{0} items inside it you can customize, none customized yet")
-                                      }
-                                  </span>
-                              }
-                              else if (item.IsContainer)
-                              {
-                                  <span class="hint">@T["Nothing inside it is yours to customize."]</span>
-                              }
                             </div>
                         </div>
                         <div class="col-lg-auto col-12 d-flex justify-content-end">
-                            <div class="actions d-flex gap-2 align-items-start">
-                                @if (item.ContainedItemCount > 0)
-                                {
-                                    <a class="btn btn-secondary btn-sm"
-                                       asp-action="Contained" asp-route-sourceContentItemId="@item.SourceContentItemId"
-                                       aria-label="@T["List what is inside {0}", item.DisplayText]">
-                                        @T["What is inside"]
-                                    </a>
-                                }
+                            <div class="actions">
                                 <a class="btn btn-primary btn-sm"
                                    asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId"
                                    aria-label="@(item.Override is null
@@ -171,7 +136,7 @@
         {
             <li class="list-group-item">
                 <div class="alert alert-info mb-0" role="alert">
-                    @T["<strong>Nothing here!</strong> An item appears once somebody who manages managed sites allows this one to customize it."]
+                    @T["<strong>Nothing here!</strong> Nothing inside this item is yours to customize."]
                 </div>
             </li>
         }

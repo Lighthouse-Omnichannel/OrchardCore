@@ -291,5 +291,11 @@ public class ManagedSitePortalAccessTests
     {
         public ValueTask<ManagedContentListing> ListAsync(string managedSiteId, ManagedContentListQuery query)
             => ValueTask.FromResult(new ManagedContentListing([], 0));
+
+        public ValueTask<ManagedContentListing> ListContainedAsync(
+            string managedSiteId,
+            string containerContentItemId,
+            ManagedContentListQuery query)
+            => ValueTask.FromResult(new ManagedContentListing([], 0));
     }
 }

@@ -84,6 +84,96 @@ public class ManagedContentListQueryTests
         Assert.Equal(expected, listing.Items.Count);
     }
 
+    [Fact]
+    public void NarrowingByContentType_LeavesTheRest()
+    {
+        var listing = ManagedContentListService.ApplyQuery(
+            [Typed("a", "Page"), Typed("b", "Section"), Typed("c", "Page")],
+            new ManagedContentListQuery(ContentType: "page"));
+
+        Assert.Equal(["a", "c"], listing.Items.Select(item => item.SourceContentItemId));
+        Assert.Equal(2, listing.TotalCount);
+    }
+
+    [Fact]
+    public void OnlyItemsStoredInTheirOwnRight_AreListed()
+    {
+        // A section is read as part of its page, so it is listed where its page is rather than beside
+        // it as though the two were peers.
+        var own = ManagedContentListService.InTheirOwnRight(
+            [Contained("page", "page"), Contained("one", "page"), Contained("two", "page")]);
+
+        Assert.Equal(["page"], own.Select(item => item.SourceContentItemId));
+    }
+
+    [Fact]
+    public void AContainer_SaysHowMuchItHoldsAndHowMuchOfThatIsCustomized()
+    {
+        var own = ManagedContentListService.InTheirOwnRight(
+        [
+            Contained("page", "page"),
+            Contained("one", "page", ManagedContentOverrideStatus.Published),
+            Contained("two", "page"),
+            Contained("three", "page", ManagedContentOverrideStatus.Draft),
+        ]);
+
+        var page = Assert.Single(own);
+        Assert.Equal(3, page.ContainedItemCount);
+        Assert.Equal(2, page.ContainedOverriddenCount);
+    }
+
+    [Fact]
+    public void AnItemHoldingNothing_CountsNothing()
+    {
+        var page = Assert.Single(ManagedContentListService.InTheirOwnRight([Contained("page", "page")]));
+
+        Assert.Equal(0, page.ContainedItemCount);
+        Assert.Equal(0, page.ContainedOverriddenCount);
+    }
+
+    [Fact]
+    public void AnItemWhoseContainerIsOutOfScope_IsListedInItsOwnRight()
+    {
+        // The container is not listed, so anything stored inside it would otherwise be reachable from
+        // nowhere: in scope, and invisible.
+        var own = ManagedContentListService.InTheirOwnRight([Contained("orphan", "a-page-nobody-may-edit")]);
+
+        Assert.Equal(["orphan"], own.Select(item => item.SourceContentItemId));
+    }
+
+    [Fact]
+    public void WhatAContainerHolds_IsCountedBeforeTheListIsNarrowed()
+    {
+        // The count describes the container, not the search. Counting after narrowing made a page claim
+        // to hold nothing as soon as the list was filtered to anything but its sections.
+        var own = ManagedContentListService.InTheirOwnRight(
+            [Contained("page", "page"), Contained("one", "page"), Contained("two", "page")]);
+
+        var listing = ManagedContentListService.ApplyQuery(own, new ManagedContentListQuery(ContentType: "Page"));
+
+        Assert.Equal(2, Assert.Single(listing.Items).ContainedItemCount);
+    }
+
+    private static ManagedContentListItem Typed(string id, string contentType)
+    {
+        var item = Item(id);
+        item.ContentType = contentType;
+
+        return item;
+    }
+
+    private static ManagedContentListItem Contained(
+        string id,
+        string containerId,
+        ManagedContentOverrideStatus? status = null)
+    {
+        var item = Item(id, status);
+        item.ContainerContentItemId = containerId;
+        item.ContentType = string.Equals(id, containerId, System.StringComparison.Ordinal) ? "Page" : "Section";
+
+        return item;
+    }
+
     private static ManagedContentListItem[] Items(int count)
         => [.. Enumerable.Range(0, count).Select(index => Item(index.ToString()))];
 
@@ -91,6 +181,7 @@ public class ManagedContentListQueryTests
         => new()
         {
             SourceContentItemId = id,
+            ContainerContentItemId = id,
             ContentType = "Section",
             DisplayText = id,
             Override = status is null ? null : new ManagedContentOverrideSummary { Status = status.ToString() },

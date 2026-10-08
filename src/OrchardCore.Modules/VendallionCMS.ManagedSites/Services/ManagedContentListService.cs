@@ -20,12 +20,29 @@ namespace VendallionCMS.ManagedSites.Services;
 public interface IManagedContentListService
 {
     /// <summary>
-    /// Lists what a Managed Site may customize.
+    /// Lists what a Managed Site may customize, as items stored in their own right.
     /// </summary>
+    /// <remarks>
+    /// Items stored inside another are left to <see cref="ListContainedAsync" />. Listing both together
+    /// put a page and each of its sections side by side as though they were peers, which is not how
+    /// either is reached or what overriding one does to the other.
+    /// </remarks>
     /// <param name="managedSiteId">The Managed Site.</param>
     /// <param name="query">What to list, and which page of it.</param>
     /// <returns>The page, and how many items it was drawn from.</returns>
     ValueTask<ManagedContentListing> ListAsync(string managedSiteId, ManagedContentListQuery query);
+
+    /// <summary>
+    /// Lists what a Managed Site may customize inside one container.
+    /// </summary>
+    /// <param name="managedSiteId">The Managed Site.</param>
+    /// <param name="containerContentItemId">The item the listed items are stored inside.</param>
+    /// <param name="query">What to list, and which page of it.</param>
+    /// <returns>The page, and how many items it was drawn from.</returns>
+    ValueTask<ManagedContentListing> ListContainedAsync(
+        string managedSiteId,
+        string containerContentItemId,
+        ManagedContentListQuery query);
 }
 
 /// <summary>
@@ -104,7 +121,69 @@ public sealed class ManagedContentListService : IManagedContentListService
 
     /// <inheritdoc />
     public async ValueTask<ManagedContentListing> ListAsync(string managedSiteId, ManagedContentListQuery query)
-        => ApplyQuery(await ListEditableAsync(managedSiteId, query.ContentType), query);
+        => ApplyQuery(InTheirOwnRight(await ListEditableAsync(managedSiteId)), query);
+
+    /// <inheritdoc />
+    public async ValueTask<ManagedContentListing> ListContainedAsync(
+        string managedSiteId,
+        string containerContentItemId,
+        ManagedContentListQuery query)
+    {
+        var items = await ListEditableAsync(managedSiteId);
+
+        return ApplyQuery(
+            [.. items.Where(item => IsStoredInside(item, containerContentItemId))],
+            query);
+    }
+
+    /// <summary>
+    /// Picks out the items stored in their own right, and tells each how much it holds.
+    /// </summary>
+    /// <remarks>
+    /// An item whose container the Managed Site may not customize is counted as being in its own right
+    /// too. The container is not listed, so anything stored inside it would otherwise be reachable from
+    /// nowhere: in scope, and invisible.
+    ///
+    /// The counts are taken over everything the Managed Site may customize, before any narrowing, so
+    /// that a container still reports what it holds while the list is filtered to something else.
+    /// </remarks>
+    /// <param name="items">Everything the Managed Site may customize.</param>
+    /// <returns>The items stored in their own right.</returns>
+    internal static IReadOnlyList<ManagedContentListItem> InTheirOwnRight(IReadOnlyList<ManagedContentListItem> items)
+    {
+        var listed = items
+            .Select(item => item.SourceContentItemId)
+            .ToHashSet(StringComparer.Ordinal);
+
+        var contained = items
+            .Where(item => !IsInItsOwnRight(item, listed))
+            .GroupBy(item => item.ContainerContentItemId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
+
+        var own = new List<ManagedContentListItem>();
+
+        foreach (var item in items.Where(candidate => IsInItsOwnRight(candidate, listed)))
+        {
+            if (contained.TryGetValue(item.SourceContentItemId, out var children))
+            {
+                item.ContainedItemCount = children.Length;
+                item.ContainedOverriddenCount = children.Count(child => child.Override is not null);
+            }
+
+            own.Add(item);
+        }
+
+        return own;
+    }
+
+    private static bool IsInItsOwnRight(ManagedContentListItem item, HashSet<string> listed)
+        => string.IsNullOrEmpty(item.ContainerContentItemId)
+            || string.Equals(item.ContainerContentItemId, item.SourceContentItemId, StringComparison.Ordinal)
+            || !listed.Contains(item.ContainerContentItemId);
+
+    private static bool IsStoredInside(ManagedContentListItem item, string containerContentItemId)
+        => string.Equals(item.ContainerContentItemId, containerContentItemId, StringComparison.Ordinal)
+            && !string.Equals(item.SourceContentItemId, containerContentItemId, StringComparison.Ordinal);
 
     /// <summary>
     /// Narrows and pages what a Managed Site may customize.
@@ -117,6 +196,10 @@ public sealed class ManagedContentListService : IManagedContentListService
     /// override status lives on the Managed Site's own content and cannot be joined to the lookup that
     /// found the items. Paging therefore has to follow it: paging first would give short pages, and a
     /// total that counted items the caller asked not to see.
+    ///
+    /// Content type is narrowed here as well, rather than against the index rows, so that it narrows
+    /// what is listed without also narrowing what a container reports holding. Filtering earlier made a
+    /// page claim to hold nothing as soon as the list was narrowed to anything but its sections.
     /// </remarks>
     /// <param name="items">Everything the Managed Site may customize.</param>
     /// <param name="query">What to narrow it to, and which page of it.</param>
@@ -125,6 +208,12 @@ public sealed class ManagedContentListService : IManagedContentListService
         IReadOnlyList<ManagedContentListItem> items,
         ManagedContentListQuery query)
     {
+        if (!string.IsNullOrEmpty(query.ContentType))
+        {
+            items = [.. items.Where(item =>
+                string.Equals(item.ContentType, query.ContentType, StringComparison.OrdinalIgnoreCase))];
+        }
+
         if (query.OverrideStatus is { } status)
         {
             items = [.. items.Where(item => StatusOf(item) == status)];
@@ -146,17 +235,14 @@ public sealed class ManagedContentListService : IManagedContentListService
             ? ManagedContentOverrideStatus.None
             : Enum.Parse<ManagedContentOverrideStatus>(item.Override.Status);
 
-    private async Task<List<ManagedContentListItem>> ListEditableAsync(string managedSiteId, string contentType)
+    private async Task<List<ManagedContentListItem>> ListEditableAsync(string managedSiteId)
     {
         var rows = await _session
             .QueryIndex<ManagedContentEditScopeIndex>(index =>
                 (index.ManagedSiteId == managedSiteId || index.AllManagedSites) && index.Published)
             .ListAsync();
 
-        var candidates = rows
-            .Where(row => string.IsNullOrEmpty(contentType)
-                || string.Equals(row.ContentType, contentType, StringComparison.OrdinalIgnoreCase))
-            .ToArray();
+        var candidates = rows.ToArray();
 
         if (candidates.Length == 0)
         {
@@ -216,6 +302,7 @@ public sealed class ManagedContentListService : IManagedContentListService
             items.Add(new ManagedContentListItem
             {
                 SourceContentItemId = source.ContentItemId,
+                ContainerContentItemId = container.ContentItemId,
                 ContentType = source.ContentType,
                 DisplayText = Describe(source, container),
                 IsContainer = await IsContainerAsync(source.ContentType),
