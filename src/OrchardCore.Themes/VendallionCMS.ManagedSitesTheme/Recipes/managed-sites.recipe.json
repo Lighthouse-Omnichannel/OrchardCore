@@ -260,6 +260,42 @@
         {
           "ContentItemId": "[js:uuid()]",
           "ContentItemVersionId": "[js:uuid()]",
+          "ContentType": "Page",
+          "DisplayText": "About",
+          "Latest": true,
+          "Published": true,
+          "TitlePart": { "Title": "About" },
+          "AutoroutePart": { "Path": "about" },
+          "ManagedContentPart": {
+            // A second page, so the navigation leads somewhere and there is more than one page to
+            // compare a managed site's version against.
+            "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "DisplayInBlueprintContext": true
+          },
+          "Sections": {
+            "ContentItems": [
+              {
+                "ContentItemId": "[js:uuid()]",
+                "ContentItemVersionId": "[js:uuid()]",
+                "ContentType": "Section",
+                "DisplayText": "Who we are",
+                "Latest": true,
+                "Published": true,
+                "TitlePart": { "Title": "Who we are" },
+                "HtmlBodyPart": { "Html": "<p>The same words on every managed site, until one of them says otherwise.</p>" },
+                "ManagedContentPart": {
+                  "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "DisplayInBlueprintContext": true
+                }
+              }
+            ]
+          }
+        },
+        {
+          "ContentItemId": "[js:uuid()]",
+          "ContentItemVersionId": "[js:uuid()]",
           "ContentType": "Menu",
           "DisplayText": "Main Menu",
           "Latest": true,
