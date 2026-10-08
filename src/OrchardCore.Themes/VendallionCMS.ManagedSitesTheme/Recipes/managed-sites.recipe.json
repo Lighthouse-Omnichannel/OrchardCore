@@ -93,7 +93,10 @@
           "ContentTypePartDefinitionRecords": [
             { "PartName": "TitlePart", "Name": "TitlePart", "Settings": {} },
             { "PartName": "AutoroutePart", "Name": "AutoroutePart", "Settings": { "AutoroutePartSettings": { "Pattern": "{{ Model.ContentItem | display_text | slugify }}" } } },
-            { "PartName": "BagPart", "Name": "Sections", "Settings": { "BagPartSettings": { "ContainedContentTypes": [ "Section" ] } } },
+            // Rendered in full rather than as summaries. A summary links its title to the contained
+            // item's own address, and a section has none -- it is stored inside its page -- so the
+            // stock summary gave every section a heading that led to a 404.
+            { "PartName": "BagPart", "Name": "Sections", "Settings": { "BagPartSettings": { "ContainedContentTypes": [ "Section" ], "DisplayType": "Detail" } } },
             {
               // A page is stored in its own right, so overriding one replaces the whole page,
               // sections included.
