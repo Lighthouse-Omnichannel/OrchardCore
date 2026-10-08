@@ -30,11 +30,11 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
             await GotoIndexAsync(page);
             await Assertions.Expect(page.GetByText("No managed sites have been defined yet.")).ToBeVisibleAsync();
 
-            await CreateManagedSiteAsync(page, "Contoso", "/contoso");
+            await CreateManagedSiteAsync(page, "Contoso", "contoso");
 
             var row = page.Locator("tr", new PageLocatorOptions { HasText = "Contoso" }).First;
             await Assertions.Expect(row).ToBeVisibleAsync();
-            await Assertions.Expect(row).ToContainTextAsync("/contoso");
+            await Assertions.Expect(row).ToContainTextAsync("contoso");
 
             // The definition must survive the round trip through site settings, not just the redirect.
             await GotoIndexAsync(page);
@@ -45,7 +45,7 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
             await Assertions.Expect(page.Locator("#Name")).ToHaveValueAsync("Contoso");
-            await Assertions.Expect(page.Locator("#Urls")).ToHaveValueAsync("/contoso");
+            await Assertions.Expect(page.Locator("#UrlPrefix")).ToHaveValueAsync("contoso");
 
             await page.Locator("#Name").FillAsync("Contoso Renamed");
             await page.ClickSaveAsync();
@@ -67,20 +67,20 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
 
         try
         {
-            await CreateManagedSiteAsync(page, "Fabrikam", "/fabrikam");
+            await CreateManagedSiteAsync(page, "Fabrikam", "fabrikam");
 
             await GotoIndexAsync(page);
             await page.ClickCreateAsync();
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
             await page.Locator("#Name").FillAsync("Fabrikam Clone");
-            await page.Locator("#Urls").FillAsync("/fabrikam");
+            await page.Locator("#UrlPrefix").FillAsync("fabrikam");
             await page.ClickSaveAsync();
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
             // The editor stays open with the conflict reported, and the clone is never stored.
             await Assertions.Expect(page.Locator("#Name")).ToHaveValueAsync("Fabrikam Clone");
-            await Assertions.Expect(page.GetByText("already assigned to another active registration")).ToBeVisibleAsync();
+            await Assertions.Expect(page.GetByText("Another managed site already answers on that address.")).ToBeVisibleAsync();
 
             await GotoIndexAsync(page);
             await Assertions.Expect(page.Locator("tr", new PageLocatorOptions { HasText = "Fabrikam Clone" }))
@@ -99,7 +99,7 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
 
         try
         {
-            await CreateManagedSiteAsync(page, "Northwind", "/northwind");
+            await CreateManagedSiteAsync(page, "Northwind", "northwind");
 
             var row = page.Locator("tr", new PageLocatorOptions { HasText = "Northwind" }).First;
             await row.Locator("a:has-text('Delete')").First.ClickAsync();
@@ -110,7 +110,7 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
                 .ToHaveCountAsync(0);
 
             // Deleting must release the URL, otherwise the mapping outlives the Managed Site.
-            await CreateManagedSiteAsync(page, "Northwind Reborn", "/northwind");
+            await CreateManagedSiteAsync(page, "Northwind Reborn", "northwind");
 
             await Assertions.Expect(page.Locator("tr", new PageLocatorOptions { HasText = "Northwind Reborn" }).First)
                 .ToBeVisibleAsync();
@@ -121,15 +121,16 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
         }
     }
 
-    private async Task CreateManagedSiteAsync(IPage page, string name, string url)
+    private async Task CreateManagedSiteAsync(IPage page, string name, string urlPrefix)
     {
         await GotoIndexAsync(page);
         await page.ClickCreateAsync();
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         await page.Locator("#Name").FillAsync(name);
-        await page.Locator("#Urls").FillAsync(url);
-        await page.SelectOptionAsync("#Status", "Enabled");
+        await page.Locator("#UrlPrefix").FillAsync(urlPrefix);
+
+        // Enabled is the status a new managed site opens with, so it is left alone.
         await page.ClickSaveAsync();
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
     }
