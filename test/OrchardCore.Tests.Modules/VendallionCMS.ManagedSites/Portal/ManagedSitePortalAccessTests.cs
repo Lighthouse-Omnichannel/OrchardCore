@@ -130,7 +130,8 @@ public class ManagedSitePortalAccessTests
     {
         var context = new PortalContext(clearance: ["site-a:view,edit,publish"]);
 
-        Assert.IsType<RedirectToActionResult>(await context.Controller.Publish("source-item", "override-item"));
+        // Published, then handed back to where it was asked from rather than to a screen of its own.
+        Assert.IsType<RedirectResult>(await context.Controller.Publish("source-item", "override-item"));
     }
 
     [Fact]
@@ -141,7 +142,7 @@ public class ManagedSitePortalAccessTests
         var context = new PortalContext(clearance: ["site-a:view,edit"]);
         context.WithSource(ManagedContentScope.Selected("site-b"));
 
-        Assert.IsType<NotFoundResult>(await context.Controller.Detail("source-item"));
+        Assert.IsType<NotFoundResult>(await context.Controller.Contained("source-item", null, null, new PagerParameters()));
     }
 
     [Fact]
@@ -151,7 +152,7 @@ public class ManagedSitePortalAccessTests
         // nothing about what the Site Blueprint holds.
         var context = new PortalContext(clearance: ["site-a:view,edit"]);
 
-        Assert.IsType<NotFoundResult>(await context.Controller.Detail("nothing-here"));
+        Assert.IsType<NotFoundResult>(await context.Controller.Contained("nothing-here", null, null, new PagerParameters()));
     }
 
     [Fact]
@@ -161,9 +162,10 @@ public class ManagedSitePortalAccessTests
         var context = new PortalContext(clearance: ["site-a:view,edit"]);
         context.WithSource(ManagedContentScope.All());
 
-        var result = Assert.IsType<ViewResult>(await context.Controller.Detail("source-item"));
+        var result = Assert.IsType<ViewResult>(
+            await context.Controller.Contained("source-item", null, null, new PagerParameters()));
 
-        Assert.Equal("source-item", Assert.IsType<ManagedSitePortalDetailViewModel>(result.Model).SourceContentItemId);
+        Assert.Equal("source-item", Assert.IsType<ManagedSitePortalContainedViewModel>(result.Model).SourceContentItemId);
     }
 
     [Fact]
@@ -209,7 +211,7 @@ public class ManagedSitePortalAccessTests
         Assert.IsType<ForbidResult>(await context.Controller.Index(null, null, new PagerParameters()));
         Assert.IsType<ForbidResult>(await context.Controller.Suppressed());
         Assert.IsType<ForbidResult>(await context.Controller.Preview());
-        Assert.IsType<ForbidResult>(await context.Controller.Detail("source-item"));
+        Assert.IsType<ForbidResult>(await context.Controller.Contained("source-item", null, null, new PagerParameters()));
         Assert.IsType<ForbidResult>(await context.Controller.Create("source-item"));
         Assert.IsType<ForbidResult>(await context.Controller.Remove("source-item"));
     }
@@ -280,8 +282,8 @@ public class ManagedSitePortalAccessTests
         var context = new PortalContext(clearance: ["site-a:view,edit"]);
         context.WithSource(ManagedContentScope.All());
 
-        var result = Assert.IsType<ViewResult>(await context.Controller.Detail("source-item"));
-        var model = Assert.IsType<ManagedSitePortalDetailViewModel>(result.Model);
+        var result = Assert.IsType<ViewResult>(await context.Controller.Index(null, null, new PagerParameters()));
+        var model = Assert.IsType<ManagedSitePortalListViewModel>(result.Model);
 
         Assert.True(model.CanEdit);
         Assert.False(model.CanPublish);

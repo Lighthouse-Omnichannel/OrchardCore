@@ -142,6 +142,7 @@ public sealed class ManagedSitePortalController : Controller
         {
             ManagedSite = scope.ManagedSite,
             CanEdit = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Edit),
+            CanPublish = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Publish),
             Items = listing.Items,
             TotalCount = listing.TotalCount,
             StartIndex = listing.TotalCount == 0 ? 0 : ((pager.Page - 1) * pager.PageSize) + 1,
@@ -275,6 +276,7 @@ public sealed class ManagedSitePortalController : Controller
         {
             ManagedSite = scope.ManagedSite,
             CanEdit = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Edit),
+            CanPublish = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Publish),
             SourceContentItemId = sourceContentItemId,
             ContainerDisplayText = container.DisplayText ?? container.ContentType,
             ContainerIsOverridden = containerOverride is not null,
@@ -284,47 +286,6 @@ public sealed class ManagedSitePortalController : Controller
             Pager = await _shapeFactory.PagerAsync(pager, listing.TotalCount, routeData),
             ContentType = contentType,
             OverrideStatus = overrideStatus,
-        });
-    }
-
-    /// <summary>
-    /// Shows one item, and what the active Managed Site has done with it.
-    /// </summary>
-    /// <param name="sourceContentItemId">The item being customized.</param>
-    /// <returns>The item, or a refusal.</returns>
-    public async Task<IActionResult> Detail(string sourceContentItemId)
-    {
-        var scope = await ResolveScopeAsync();
-
-        if (scope.Failure is not null)
-        {
-            return scope.Failure;
-        }
-
-        var location = await _locator.FindAsync(sourceContentItemId, options: VersionOptions.Published);
-        var source = location?.ContentItem;
-
-        // Checked here and not trusted from the listing, because the scope can be narrowed between an
-        // editor seeing an item and opening it.
-        if (source is null
-            || !source.TryGet<ManagedContentPart>(out var part)
-            || !_scopeService.CanEdit(part, scope.ManagedSite.Id))
-        {
-            return NotFound();
-        }
-
-        return View(new ManagedSitePortalDetailViewModel
-        {
-            ManagedSite = scope.ManagedSite,
-            CanEdit = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Edit),
-            CanPublish = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Publish),
-            SourceContentItemId = sourceContentItemId,
-            ContentType = source.ContentType,
-            DisplayText = source.DisplayText ?? source.ContentType,
-            DisplayScopeIncludesManagedSite = _scopeService.CanDisplay(part, scope.ManagedSite.Id),
-            Override = ManagedContentOverrideSummary.Of(
-                await _overrideService.GetAsync(scope.ManagedSite.Id, sourceContentItemId)),
-            VersionsInsideThisOne = await VersionsInsideAsync(scope.ManagedSite.Id, source),
         });
     }
 
@@ -354,7 +315,7 @@ public sealed class ManagedSitePortalController : Controller
 
         await ReportAsync(result.Error, S["Your version was created as a draft, starting from the blueprint content."]);
 
-        var back = Back(returnUrl, sourceContentItemId);
+        var back = Back(returnUrl);
 
         if (!result.Succeeded)
         {
@@ -391,12 +352,9 @@ public sealed class ManagedSitePortalController : Controller
     /// bounce people to another site.
     /// </remarks>
     /// <param name="returnUrl">Where the caller came from.</param>
-    /// <param name="sourceContentItemId">The item being customized, used when the caller said nothing.</param>
     /// <returns>A local URL.</returns>
-    private string Back(string returnUrl, string sourceContentItemId)
-        => Url.IsLocalUrl(returnUrl)
-            ? returnUrl
-            : Url.Action(nameof(Detail), new { sourceContentItemId });
+    private string Back(string returnUrl)
+        => Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Action(nameof(Index));
 
     /// <summary>
     /// Publishes the Managed Site's own version of an item, so that visitors receive it.
@@ -406,7 +364,10 @@ public sealed class ManagedSitePortalController : Controller
     /// <returns>The item screen, carrying what happened.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Publish(string sourceContentItemId, string overrideContentItemId)
+    public async Task<IActionResult> Publish(
+        string sourceContentItemId,
+        string overrideContentItemId,
+        string returnUrl = null)
     {
         var scope = await ResolveScopeAsync(ManagedSitesConstants.Scopes.Publish);
 
@@ -423,7 +384,7 @@ public sealed class ManagedSitePortalController : Controller
 
         await ReportAsync(result.Error, S["Your version is now being served on this managed site."]);
 
-        return RedirectToAction(nameof(Detail), new { sourceContentItemId });
+        return Redirect(Back(returnUrl));
     }
 
     /// <summary>
@@ -433,7 +394,7 @@ public sealed class ManagedSitePortalController : Controller
     /// <returns>The item screen, carrying what happened.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Remove(string sourceContentItemId)
+    public async Task<IActionResult> Remove(string sourceContentItemId, string returnUrl = null)
     {
         var scope = await ResolveScopeAsync(ManagedSitesConstants.Scopes.Edit);
 
@@ -451,7 +412,7 @@ public sealed class ManagedSitePortalController : Controller
             await _notifier.WarningAsync(H["There was no version of your own to remove."]);
         }
 
-        return RedirectToAction(nameof(Detail), new { sourceContentItemId });
+        return Redirect(Back(returnUrl));
     }
 
     /// <summary>
@@ -513,37 +474,6 @@ public sealed class ManagedSitePortalController : Controller
             PreviewUrl = preview?.PreviewUrl,
             OpensAnotherHost = OpensAnotherHost(scope.ManagedSite),
         });
-    }
-
-    /// <summary>
-    /// Lists the Managed Site's own versions of items stored inside this one.
-    /// </summary>
-    /// <remarks>
-    /// A version of a container replaces everything inside it, so these stop being served as soon as
-    /// one exists. Naming them is what turns a rule an editor meets by accident into one they chose.
-    /// </remarks>
-    /// <param name="managedSiteId">The Managed Site.</param>
-    /// <param name="source">The item being looked at.</param>
-    /// <returns>What to call each version that would be set aside.</returns>
-    private async Task<IReadOnlyList<string>> VersionsInsideAsync(string managedSiteId, ContentItem source)
-    {
-        var contained = ManagedContentContainment.ListContained(source);
-
-        if (contained.Count == 0)
-        {
-            return [];
-        }
-
-        var inside = contained
-            .Select(item => item.ContentItem.ContentItemId)
-            .ToHashSet(StringComparer.Ordinal);
-
-        return
-        [
-            .. (await _overrideService.ListAsync(managedSiteId))
-                .Where(item => inside.Contains(item.SourceContentItemId))
-                .Select(item => item.SourceContentItemId),
-        ];
     }
 
     /// <summary>

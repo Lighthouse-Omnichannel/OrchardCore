@@ -1,0 +1,71 @@
+@model VendallionCMS.ManagedSites.ViewModels.ManagedContentRowActionsViewModel
+@{
+    var item = Model.Item;
+}
+
+@* Everything an editor can do to one item, on the row the item is on. There is no screen between the
+   list and the content: the list already says what state a version is in, and what it would replace. *@
+<div class="actions d-flex gap-2 align-items-start flex-wrap justify-content-end">
+    @if (item.ContainedItemCount > 0)
+    {
+        <a class="btn btn-secondary btn-sm"
+           asp-action="Contained" asp-route-sourceContentItemId="@item.SourceContentItemId"
+           aria-label="@T["List what is inside {0}", item.DisplayText]">
+            @T["What is inside"]
+        </a>
+    }
+
+    @if (item.Override is null)
+    {
+        @if (Model.CanEdit)
+        {
+            @* Creates the version and opens it. The copy an editor is handed is the blueprint content
+               until they change it, so the point of creating one is to start. *@
+            <form asp-action="Create" asp-route-sourceContentItemId="@item.SourceContentItemId" method="post">
+                <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                <button type="submit" class="btn btn-primary btn-sm"
+                        aria-label="@T["Create your version of {0} and edit it", item.DisplayText]">
+                    @T["Create your version"]
+                </button>
+            </form>
+        }
+    }
+    else
+    {
+        @if (item.Override.Status != "Published" && Model.CanPublish)
+        {
+            <form asp-action="Publish" asp-route-sourceContentItemId="@item.SourceContentItemId" method="post">
+                <input type="hidden" name="overrideContentItemId" value="@item.Override.OverrideContentItemId" />
+                <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                <button type="submit" class="btn btn-secondary btn-sm"
+                        aria-label="@T["Publish your version of {0} to this managed site", item.DisplayText]">
+                    @T["Publish"]
+                </button>
+            </form>
+        }
+
+        @if (Model.CanEdit)
+        {
+            <form asp-action="Remove" asp-route-sourceContentItemId="@item.SourceContentItemId" method="post">
+                <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                <button type="submit" class="btn btn-danger btn-sm"
+                        data-url-af="RemoveUrl UnsafeUrl"
+                        data-title="@T["Remove your version"]"
+                        data-message="@T["This managed site goes back to the blueprint content of {0}. Are you sure?", item.DisplayText]"
+                        aria-label="@T["Remove your version of {0}", item.DisplayText]">
+                    @T["Remove"]
+                </button>
+            </form>
+        }
+
+        @* Straight to the content. The editor is the platform's own, and it is handed the way back so
+           that saving does not leave somebody in a screen with no route to the list. *@
+        <a class="btn btn-primary btn-sm"
+           asp-action="Edit" asp-controller="Admin" asp-area="OrchardCore.Contents"
+           asp-route-contentItemId="@item.Override.OverrideContentItemId"
+           asp-route-returnUrl="@Model.ReturnUrl"
+           aria-label="@T["Edit your version of {0}", item.DisplayText]">
+            @T["Open"]
+        </a>
+    }
+</div>

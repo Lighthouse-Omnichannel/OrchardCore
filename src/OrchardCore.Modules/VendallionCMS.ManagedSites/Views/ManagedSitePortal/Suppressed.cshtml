@@ -36,7 +36,9 @@ else
                         <td><span class="badge bg-warning text-dark">@item.SuppressionReason</span></td>
                         <td class="text-end">
                             <a class="btn btn-secondary btn-sm"
-                               asp-action="Detail" asp-route-sourceContentItemId="@item.SourceContentItemId"
+                               asp-action="Edit" asp-controller="Admin" asp-area="OrchardCore.Contents"
+                               asp-route-contentItemId="@item.OverrideContentItemId"
+                               asp-route-returnUrl="@FullRequestPath"
                                aria-label="@T["Open your version of {0}", item.SourceContentItemId]">@T["Open"]</a>
                         </td>
                     </tr>

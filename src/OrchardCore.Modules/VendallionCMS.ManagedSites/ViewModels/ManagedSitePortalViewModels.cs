@@ -57,6 +57,15 @@ public class ManagedSitePortalListViewModel
     /// themselves as well; this is so an editor is not invited to do something they will be refused.
     /// </remarks>
     public bool CanEdit { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the editor may publish this Managed Site's content.
+    /// </summary>
+    /// <remarks>
+    /// Separate from editing, so somebody who may draft a version but not put it in front of visitors
+    /// is not offered the button that would.
+    /// </remarks>
+    public bool CanPublish { get; set; }
 }
 
 /// <summary>
@@ -86,6 +95,36 @@ public sealed class ManagedSitePortalContainedViewModel : ManagedSitePortalListV
 }
 
 /// <summary>
+/// One row's worth of what an editor may do to an item.
+/// </summary>
+/// <remarks>
+/// Carried to the partial that draws the actions, so the list and the contents of a container offer the
+/// same ones rather than two sets that drift apart.
+/// </remarks>
+public sealed class ManagedContentRowActionsViewModel
+{
+    /// <summary>
+    /// Gets or sets the item the actions act on.
+    /// </summary>
+    public ManagedContentListItem Item { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the editor may change this Managed Site's content.
+    /// </summary>
+    public bool CanEdit { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the editor may publish this Managed Site's content.
+    /// </summary>
+    public bool CanPublish { get; set; }
+
+    /// <summary>
+    /// Gets or sets where an action should hand the editor back to.
+    /// </summary>
+    public string ReturnUrl { get; set; }
+}
+
+/// <summary>
 /// The Managed Sites an editor may work in.
 /// </summary>
 public sealed class ManagedSitePortalSelectViewModel
@@ -99,66 +138,6 @@ public sealed class ManagedSitePortalSelectViewModel
     /// Gets or sets the Managed Site already chosen, if any.
     /// </summary>
     public string SelectedManagedSiteId { get; set; }
-}
-
-/// <summary>
-/// One item, and what the active Managed Site has done with it.
-/// </summary>
-public sealed class ManagedSitePortalDetailViewModel
-{
-    /// <summary>
-    /// Gets or sets the Managed Site this session is working in.
-    /// </summary>
-    public ManagedSite ManagedSite { get; set; }
-
-    /// <summary>
-    /// Gets or sets the identifier of the item being customized.
-    /// </summary>
-    public string SourceContentItemId { get; set; }
-
-    /// <summary>
-    /// Gets or sets the content type of the item being customized.
-    /// </summary>
-    public string ContentType { get; set; }
-
-    /// <summary>
-    /// Gets or sets what to call the item being customized.
-    /// </summary>
-    public string DisplayText { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether this Managed Site renders the item at all.
-    /// </summary>
-    public bool DisplayScopeIncludesManagedSite { get; set; }
-
-    /// <summary>
-    /// Gets or sets the Managed Site's own version, or <see langword="null" /> when it has none.
-    /// </summary>
-    public ManagedContentOverrideSummary Override { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether the editor may change this Managed Site's content.
-    /// </summary>
-    public bool CanEdit { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether the editor may publish this Managed Site's content.
-    /// </summary>
-    /// <remarks>
-    /// Separate from editing, so somebody who may draft a version but not put it in front of visitors
-    /// is not offered the button that would.
-    /// </remarks>
-    public bool CanPublish { get; set; }
-
-    /// <summary>
-    /// Gets or sets the Managed Site's own versions of items stored inside this one.
-    /// </summary>
-    /// <remarks>
-    /// A version of a container replaces everything inside it, so these stop being served the moment
-    /// one is created. The rule is deliberate; meeting it by accident is not, so the screen says which
-    /// work it would set aside before anybody loses it.
-    /// </remarks>
-    public IReadOnlyList<string> VersionsInsideThisOne { get; set; } = [];
 }
 
 /// <summary>
