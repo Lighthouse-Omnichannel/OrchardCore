@@ -259,8 +259,8 @@ public sealed class AdminController : Controller
             return NotFound();
         }
 
-        // Granted with every scope. Somebody who wanted less says so on the row afterwards, which is
-        // one decision at a time rather than two before anything happens at all.
+        // Granted the run of the site to read, and nothing more until somebody says so on the row. The
+        // least a clearance can carry is what it starts with.
         if (await _securityService.GrantAsync(id, userId))
         {
             await _notifier.SuccessAsync(H["That user can now work on this managed site."]);
@@ -335,17 +335,6 @@ public sealed class AdminController : Controller
         if (await _managedSiteService.GetAsync(id) is null)
         {
             return NotFound();
-        }
-
-        // A grant allowing nothing is stored as one allowing everything, because an empty set is how
-        // clearance says "every scope". Clearing every box therefore means the opposite of what it
-        // looks like, so it is refused and the way to say it is offered instead.
-        if (ManagedSiteSecurityService.Normalize(scopes).Count == 0)
-        {
-            await _notifier.WarningAsync(
-                H["Choose at least one thing that user may do, or take their access away altogether."]);
-
-            return RedirectToAction(nameof(Security), new { id, available, cleared });
         }
 
         if (await _securityService.GrantAsync(id, userId, scopes))

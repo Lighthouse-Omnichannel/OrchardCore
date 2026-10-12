@@ -501,10 +501,10 @@ public sealed class ManagedSitePortalController : Controller
     /// editor arrives: no permission, no clearance at all, a choice not yet made, or clearance that
     /// does not reach what this action does.
     /// </remarks>
-    /// <param name="requiredScope">What the action needs clearance to do, beyond seeing the site.</param>
+    /// <param name="requiredScope">What the action needs beyond reading, or nothing when reading is all it does.</param>
     /// <returns>The Managed Site, or the result to return instead.</returns>
     private async Task<(ManagedSite ManagedSite, IActionResult Failure)> ResolveScopeAsync(
-        string requiredScope = ManagedSitesConstants.Scopes.View)
+        string requiredScope = null)
     {
         if (!await _authorizationService.AuthorizeAsync(User, Permissions.EditManagedSiteContent))
         {

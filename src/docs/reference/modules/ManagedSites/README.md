@@ -53,22 +53,21 @@ The grant is stored on the user, which is what it is — a grant to a person, re
 built — but it is administered from the site, because the question an administrator arrives with is who
 may work on this site, and answering that one user at a time meant opening every user to find out.
 
-Each grant names what the holder may do:
+**Holding clearance is permission to read.** There is no scope for reading: a user given access to a
+managed site can see its content in the portal, and a scope says what they may do beyond that.
 
-| Scope | Allows |
+| Scope | Allows, on top of reading |
 | --- | --- |
-| `view` | Seeing the managed site's content in the portal |
-| `edit` | Changing it |
+| `edit` | Changing the managed site's content |
 | `publish` | Publishing it |
-| `preview` | Seeing unpublished work |
+| `preview` | Seeing unpublished work, in the portal and through a preview link |
 
-`edit`, `publish` and `preview` each imply `view`: a clearance that let someone change content without
-reading it would list nothing for them to change. The screen shows `view` as granted, and does not offer
-it as something to take away on its own, while any of the others is granted.
+A user given access starts with none of them, which is read-only, and the row is where each is ticked.
+Clearing them all is a real answer rather than a refusal — the holder reads the site and changes
+nothing — and taking the access away is how to say they should not see it at all.
 
-A user given access is granted every scope, and the row is how that is narrowed afterwards. Narrowing it
-to nothing at all is refused rather than stored, because a grant that names no scope is the one that
-allows them all; taking the access away is how to say nobody may do anything.
+Clearance arriving as a signed claim from an external issuer follows the same rule: `site-a` grants
+reading, `site-a:edit,publish` grants those two as well, and `site-a:*` grants every scope.
 
 A user cleared for exactly one managed site is scoped to it automatically. A user cleared for several
 must choose one before any scoped action, and everything they then do applies to that managed site only.

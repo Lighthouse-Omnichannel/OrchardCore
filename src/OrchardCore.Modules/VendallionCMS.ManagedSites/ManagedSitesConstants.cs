@@ -16,11 +16,6 @@ public static class ManagedSitesConstants
     public static class Scopes
     {
         /// <summary>
-        /// Allows reading Managed Site content.
-        /// </summary>
-        public const string View = "view";
-
-        /// <summary>
         /// Allows changing Managed Site content.
         /// </summary>
         public const string Edit = "edit";
@@ -39,10 +34,10 @@ public static class ManagedSitesConstants
         /// Every scope, in the order they are offered.
         /// </summary>
         /// <remarks>
-        /// Ordered from the least a clearance can allow to the most, so a screen listing them reads the
-        /// way the grants build up.
+        /// Reading is not among them. Holding clearance for a Managed Site is what lets somebody read
+        /// it; a scope says what they may do beyond that, so a clearance naming none is read-only.
         /// </remarks>
-        public static readonly string[] All = [View, Edit, Publish, Preview];
+        public static readonly string[] All = [Edit, Publish, Preview];
     }
 
     /// <summary>

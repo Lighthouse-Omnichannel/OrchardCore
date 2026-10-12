@@ -36,9 +36,9 @@ public class ManagedSiteClaimsProviderTests
     [Fact]
     public async Task GenerateAsync_SeveralGrants_EmitsOneClaimEach()
     {
-        var identity = await GenerateAsync(Grant("site-a", "edit"), Grant("site-b", "view"));
+        var identity = await GenerateAsync(Grant("site-a", "edit"), Grant("site-b", "preview"));
 
-        Assert.Equal(["site-a:edit", "site-b:view"], ClearanceClaims(identity));
+        Assert.Equal(["site-a:edit", "site-b:preview"], ClearanceClaims(identity));
     }
 
     [Fact]
@@ -95,7 +95,11 @@ public class ManagedSiteClaimsProviderTests
 
         Assert.True(await authorizationService.AuthorizeAsync(principal, "site-a", "edit"));
         Assert.False(await authorizationService.AuthorizeAsync(principal, "site-a", "publish"));
-        Assert.True(await authorizationService.AuthorizeAsync(principal, "site-b", "publish"));
+
+        // site-b was granted without naming a scope, which allows reading it and nothing else.
+        Assert.True(await authorizationService.AuthorizeAsync(principal, "site-b", null));
+        Assert.False(await authorizationService.AuthorizeAsync(principal, "site-b", "publish"));
+
         Assert.False(await authorizationService.AuthorizeAsync(principal, "site-c", "edit"));
     }
 

@@ -31,9 +31,10 @@ public sealed class ManagedSiteContentAuthorizationHandler : AuthorizationHandle
     /// </remarks>
     private static readonly Dictionary<string, string> _scopesByPermission = new(StringComparer.Ordinal)
     {
-        [CommonPermissions.ViewContent.Name] = ManagedSitesConstants.Scopes.View,
-        [CommonPermissions.ViewOwnContent.Name] = ManagedSitesConstants.Scopes.View,
-        [CommonPermissions.ListContent.Name] = ManagedSitesConstants.Scopes.View,
+        // Reading asks for no scope: holding clearance for the Managed Site is what allows it.
+        [CommonPermissions.ViewContent.Name] = null,
+        [CommonPermissions.ViewOwnContent.Name] = null,
+        [CommonPermissions.ListContent.Name] = null,
         [CommonPermissions.EditContent.Name] = ManagedSitesConstants.Scopes.Edit,
         [CommonPermissions.EditOwnContent.Name] = ManagedSitesConstants.Scopes.Edit,
         [CommonPermissions.DeleteContent.Name] = ManagedSitesConstants.Scopes.Edit,

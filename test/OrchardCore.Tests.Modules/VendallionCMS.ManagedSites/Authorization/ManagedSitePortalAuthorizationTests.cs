@@ -113,10 +113,12 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task HasClearance_WildcardScope_ReturnsTrue()
     {
+        // The wildcard is what an issuer says when it means every scope. A claim naming no scope is
+        // not that: it allows reading the Managed Site and nothing else.
         var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
 
         var result = await context.ClearanceService.HasClearanceAsync(
-            ManagedSitesTestData.User("site-a"),
+            ManagedSitesTestData.User("site-a:*"),
             "site-a",
             "publish");
 

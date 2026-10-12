@@ -16,10 +16,10 @@ namespace VendallionCMS.ManagedSites.Tests.Authorization;
 public class ManagedSiteSecurityTests
 {
     [Fact]
-    public void Granting_WithNoScopesNamed_AllowsEverything()
+    public void Granting_WithNoScopesNamed_AllowsReadingAndNothingElse()
     {
-        // An empty set is the wildcard the clearance claim already uses, so a grant made without saying
-        // otherwise allows every scope rather than none.
+        // Holding the clearance is what allows reading, so a grant naming no scope is read-only rather
+        // than a grant of everything.
         var settings = new ManagedSiteClearanceSettings();
 
         ManagedSiteSecurityService.ApplyGrant(settings, "site-a", null);
@@ -32,7 +32,7 @@ public class ManagedSiteSecurityTests
     {
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [ManagedSitesConstants.Scopes.View]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [ManagedSitesConstants.Scopes.Edit]);
 
         Assert.Equal("site-a", Assert.Single(settings.Grants).ManagedSiteId);
     }
@@ -43,10 +43,10 @@ public class ManagedSiteSecurityTests
         // Two grants for one Managed Site would be two answers to one question.
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [ManagedSitesConstants.Scopes.View]);
         ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [ManagedSitesConstants.Scopes.Edit]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [ManagedSitesConstants.Scopes.Publish]);
 
-        Assert.Equal([ManagedSitesConstants.Scopes.Edit], Assert.Single(settings.Grants).Scopes);
+        Assert.Equal([ManagedSitesConstants.Scopes.Publish], Assert.Single(settings.Grants).Scopes);
     }
 
     [Fact]
@@ -54,15 +54,15 @@ public class ManagedSiteSecurityTests
     {
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [ManagedSitesConstants.Scopes.View]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [ManagedSitesConstants.Scopes.Edit]);
         ManagedSiteSecurityService.ApplyGrant(settings, "site-b", [ManagedSitesConstants.Scopes.Publish]);
 
         Assert.Equal(["site-a", "site-b"], settings.Grants.Select(grant => grant.ManagedSiteId));
     }
 
     [Theory]
-    [InlineData("VIEW", "view")]
-    [InlineData(" edit ", "edit")]
+    [InlineData("EDIT", "edit")]
+    [InlineData(" publish ", "publish")]
     public void Granting_TakesAScopeHoweverItWasWritten(string given, string expected)
     {
         var settings = new ManagedSiteClearanceSettings();
@@ -79,9 +79,9 @@ public class ManagedSiteSecurityTests
         // as a grant that allows something.
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", ["view", "wander-in-freely"]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", ["edit", "wander-in-freely"]);
 
-        Assert.Equal([ManagedSitesConstants.Scopes.View], Assert.Single(settings.Grants).Scopes);
+        Assert.Equal([ManagedSitesConstants.Scopes.Edit], Assert.Single(settings.Grants).Scopes);
     }
 
     [Fact]
@@ -89,21 +89,21 @@ public class ManagedSiteSecurityTests
     {
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", ["publish", "view", "edit", "view"]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", ["preview", "edit", "publish", "edit"]);
 
         Assert.Equal(
-            [ManagedSitesConstants.Scopes.View, ManagedSitesConstants.Scopes.Edit, ManagedSitesConstants.Scopes.Publish],
+            [ManagedSitesConstants.Scopes.Edit, ManagedSitesConstants.Scopes.Publish, ManagedSitesConstants.Scopes.Preview],
             Assert.Single(settings.Grants).Scopes);
     }
 
     [Theory]
-    // An empty set is the wildcard, so replacing it with anything named takes the rest away.
-    [InlineData(new string[0], new[] { "view" }, true)]
-    [InlineData(new[] { "view", "edit" }, new[] { "view" }, true)]
-    [InlineData(new[] { "view" }, new[] { "view", "edit" }, false)]
-    [InlineData(new[] { "view" }, new[] { "view" }, false)]
-    // Nothing named at all is refused before it reaches here, so it is read as taking nothing.
-    [InlineData(new[] { "view" }, new string[0], false)]
+    // Nothing named is read-only, so adding to it only ever widens.
+    [InlineData(new string[0], new[] { "edit" }, false)]
+    [InlineData(new[] { "edit", "publish" }, new[] { "edit" }, true)]
+    [InlineData(new[] { "edit" }, new[] { "edit", "publish" }, false)]
+    [InlineData(new[] { "edit" }, new[] { "edit" }, false)]
+    // Back to reading alone takes away whatever was there.
+    [InlineData(new[] { "edit" }, new string[0], true)]
     public void WhetherAChangeTakesSomethingAway_DecidesIfSessionsHaveToBeTold(
         string[] before,
         string[] after,

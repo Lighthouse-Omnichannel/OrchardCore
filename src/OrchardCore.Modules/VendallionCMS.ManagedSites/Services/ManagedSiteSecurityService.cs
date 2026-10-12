@@ -45,7 +45,7 @@ public interface IManagedSiteSecurityService
     /// </summary>
     /// <param name="managedSiteId">The Managed Site.</param>
     /// <param name="userId">The user.</param>
-    /// <param name="scopes">What the clearance allows, or nothing for the default.</param>
+    /// <param name="scopes">What the clearance allows beyond reading, or nothing for reading alone.</param>
     /// <returns><see langword="true" /> when the user was found and the grant written.</returns>
     ValueTask<bool> GrantAsync(string managedSiteId, string userId, IEnumerable<string> scopes = null);
 
@@ -212,24 +212,17 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
     /// Decides whether a change takes something a clearance previously allowed.
     /// </summary>
     /// <remarks>
-    /// An empty set is the wildcard, so replacing it with anything named takes scopes away, and
-    /// replacing anything named with it only ever adds.
+    /// Reading is not a scope and cannot be taken while the clearance stands, so this is only about
+    /// what the holder may do beyond it.
     /// </remarks>
-    /// <param name="before">What the clearance allowed.</param>
+    /// <param name="before">What the clearance allowed beyond reading.</param>
     /// <param name="after">What it is being asked to allow.</param>
     /// <returns><see langword="true" /> when something is being taken.</returns>
     internal static bool Narrows(IReadOnlyList<string> before, IEnumerable<string> after)
     {
         var requested = Normalize(after);
 
-        if (requested.Count == 0)
-        {
-            return false;
-        }
-
-        var allowed = before.Count == 0 ? ManagedSitesConstants.Scopes.All : [.. before];
-
-        return allowed.Any(scope => !requested.Contains(scope, StringComparer.Ordinal));
+        return before.Any(scope => !requested.Contains(scope, StringComparer.Ordinal));
     }
 
     /// <summary>
@@ -241,7 +234,7 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
     /// </remarks>
     /// <param name="settings">The user's clearance.</param>
     /// <param name="managedSiteId">The Managed Site the grant covers.</param>
-    /// <param name="scopes">What it allows, or nothing for every scope.</param>
+    /// <param name="scopes">What it allows beyond reading, or nothing for reading alone.</param>
     internal static void ApplyGrant(
         ManagedSiteClearanceSettings settings,
         string managedSiteId,
@@ -273,8 +266,7 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
     /// Keeps the scopes that mean something, in a stable order.
     /// </summary>
     /// <remarks>
-    /// An empty set is the wildcard: it grants every scope, which is what a grant made without saying
-    /// otherwise should do.
+    /// An empty set is a real answer: the holder may read the Managed Site and do nothing else to it.
     /// </remarks>
     /// <param name="scopes">What the caller asked for.</param>
     /// <returns>The scopes to store.</returns>

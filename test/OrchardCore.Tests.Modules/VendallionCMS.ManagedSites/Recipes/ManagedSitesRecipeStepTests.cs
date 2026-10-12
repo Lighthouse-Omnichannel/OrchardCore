@@ -104,13 +104,14 @@ public class ManagedSitesRecipeStepTests
     }
 
     [Fact]
-    public void AGrantNamingNoAction_IsViewOnly()
+    public void AGrantNamingNoAction_IsReadOnly()
     {
+        // Holding the clearance is what allows reading, so a grant naming no action names no scope.
         var settings = new ManagedSiteClearanceSettings();
 
         ManagedSiteEditorsStep.ApplyGrants(settings, Editor("Alpha"), Sites(), []);
 
-        Assert.Equal(["view"], Assert.Single(settings.Grants).Scopes);
+        Assert.Empty(Assert.Single(settings.Grants).Scopes);
     }
 
     [Fact]

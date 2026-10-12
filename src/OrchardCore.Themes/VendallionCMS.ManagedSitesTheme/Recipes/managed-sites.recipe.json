@@ -178,7 +178,8 @@
           "RoleNames": [ "Managed Site Content Editor" ],
           "Grants": [
             { "ManagedSite": "Beta", "Scopes": [ "edit", "publish", "preview" ] },
-            { "ManagedSite": "Gamma", "Scopes": [ "view" ] }
+            // No scope named: betaUser may read Gamma and change nothing on it.
+            { "ManagedSite": "Gamma", "Scopes": [] }
           ]
         },
         {

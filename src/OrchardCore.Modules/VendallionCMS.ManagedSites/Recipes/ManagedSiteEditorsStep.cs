@@ -136,7 +136,7 @@ public sealed class ManagedSiteEditorsStep : NamedRecipeStepHandler
                 // a Managed Site selected with nothing ticked.
                 Scopes = grant.Scopes is { Length: > 0 }
                     ? [.. grant.Scopes]
-                    : [ManagedSitesConstants.Scopes.View],
+                    : [],
             });
         }
     }

@@ -136,34 +136,18 @@ public sealed class ManagedSiteClearanceService : IManagedSiteClearanceService
     /// Determines whether a clearance carries a scope.
     /// </summary>
     /// <remarks>
-    /// Changing or previewing a Managed Site's content implies being able to read it. Without that, a
-    /// clearance granting edit but not view leaves the portal with nothing to list, so the user it was
-    /// meant to empower cannot reach a single item.
+    /// Asking for no scope asks only whether the clearance exists, which is what reading a Managed
+    /// Site's content takes: holding clearance for a site is permission to read it, and a scope says
+    /// what the holder may do beyond reading.
     ///
-    /// The rule lives here rather than where a grant is saved, so clearance arriving as a signed claim
-    /// from an external issuer follows it too, and so grants already stored without view are corrected
-    /// without anyone re-saving them.
+    /// The wildcard is honoured for clearance arriving as a signed claim from an external issuer that
+    /// means every scope. Nothing here writes one.
     /// </remarks>
     /// <param name="clearance">The clearance.</param>
-    /// <param name="scope">The scope being asked for.</param>
+    /// <param name="scope">The scope being asked for, or nothing to ask only that it exists.</param>
     /// <returns><see langword="true" /> when the clearance carries the scope.</returns>
     private static bool HasScope(ManagedSiteClearance clearance, string scope)
-    {
-        if (string.IsNullOrWhiteSpace(scope)
+        => string.IsNullOrWhiteSpace(scope)
             || clearance.Scopes.Contains(scope)
-            || clearance.Scopes.Contains("*"))
-        {
-            return true;
-        }
-
-        return string.Equals(scope, ManagedSitesConstants.Scopes.View, StringComparison.Ordinal)
-            && s_impliesView.Any(implying => clearance.Scopes.Contains(implying));
-    }
-
-    private static readonly string[] s_impliesView =
-    [
-        ManagedSitesConstants.Scopes.Edit,
-        ManagedSitesConstants.Scopes.Publish,
-        ManagedSitesConstants.Scopes.Preview,
-    ];
+            || clearance.Scopes.Contains("*");
 }

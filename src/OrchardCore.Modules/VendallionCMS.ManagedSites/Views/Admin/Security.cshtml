@@ -6,7 +6,7 @@
 </zone>
 
 <p class="text-muted">
-    @T["Clearance is granted here, on the managed site it covers. A user granted one can open the admin portal and work on this site, and on no other unless they are granted that too."]
+    @T["Clearance is granted here, on the managed site it covers. A user granted one can open the admin portal and read this site's content, and no other site's unless they are granted that too. What they may do beyond reading is ticked on their row."]
     <a asp-action="Index" class="text-decoration-underline">@T["Back to managed sites"]</a>
 </p>
 
@@ -124,38 +124,25 @@
                                     </form>
                                 </div>
 
-                                @* An empty set of scopes is the wildcard, so a grant made without saying
-                                   otherwise shows every box ticked, which is what it allows.
-
-                                   Anything that changes a managed site's content carries the right to
-                                   see it, so viewing is shown as granted, and not offered as something
-                                   to take away on its own, while any of the others is granted. *@
-                                @{
-                                    var allows = user.Scopes.Count == 0
-                                        ? ManagedSitesConstants.Scopes.All
-                                        : [.. user.Scopes];
-
-                                    var viewIsImplied = allows.Any(scope =>
-                                        !string.Equals(scope, ManagedSitesConstants.Scopes.View, StringComparison.Ordinal));
-                                }
+                                @* Reading is not among them: holding the clearance is what allows that.
+                                   Every box clear means the holder may read this managed site and do
+                                   nothing else to it. *@
                                 <form asp-action="Scopes" asp-route-id="@Model.ManagedSite.Id" method="post"
                                       class="d-flex flex-wrap align-items-center gap-3 mt-2">
                                     <input type="hidden" name="userId" value="@user.UserId" />
                                     <input type="hidden" name="available" value="@Model.AvailableSearch" />
                                     <input type="hidden" name="cleared" value="@Model.ClearedSearch" />
 
+                                    <span class="hint me-1">@T["May also"]</span>
+
                                     @foreach (var scope in ManagedSitesConstants.Scopes.All)
                                     {
                                         var inputId = $"{user.UserId}-{scope}";
-                                        var isView = string.Equals(scope, ManagedSitesConstants.Scopes.View, StringComparison.Ordinal);
-                                        var implied = isView && viewIsImplied;
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="scopes"
                                                    id="@inputId" value="@scope"
-                                                   checked="@(implied || allows.Contains(scope, StringComparer.Ordinal))"
-                                                   disabled="@implied" />
-                                            <label class="form-check-label @(implied ? "text-muted" : null)" for="@inputId"
-                                                   title="@(implied ? T["Carried by the others, so it cannot be taken away on its own."].Value : null)">@scope</label>
+                                                   checked="@user.Scopes.Contains(scope, StringComparer.Ordinal)" />
+                                            <label class="form-check-label" for="@inputId">@scope</label>
                                         </div>
                                     }
 

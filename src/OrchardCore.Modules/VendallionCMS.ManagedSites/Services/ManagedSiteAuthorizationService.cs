@@ -56,9 +56,10 @@ public sealed class ManagedSiteAuthorizationService : IManagedSiteAuthorizationS
             ManagedSiteId = parts[0],
         };
 
+        // A claim naming no scope grants reading and nothing else. An issuer meaning every scope says
+        // so with the wildcard, which is still honoured below.
         if (parts.Length == 1)
         {
-            clearance.Scopes.Add("*");
             return clearance;
         }
 
