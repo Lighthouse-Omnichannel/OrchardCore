@@ -54,6 +54,8 @@ else
                         }
                     </td>
                     <td class="text-end">
+                        <a asp-action="Security" asp-route-id="@managedSite.Id" class="btn btn-sm btn-secondary"
+                           aria-label="@T["Choose who can work on {0}", managedSite.Name]">@T["Security"]</a>
                         <a asp-action="Edit" asp-route-id="@managedSite.Id" class="btn btn-sm btn-secondary">@T["Edit"]</a>
                         @* RemoveUrl raises the admin confirmation modal; UnsafeUrl posts it with an antiforgery token. *@
                         <a asp-action="Delete" asp-route-id="@managedSite.Id" class="btn btn-sm btn-danger"

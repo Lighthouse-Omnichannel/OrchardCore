@@ -49,7 +49,7 @@
             <form asp-action="Remove" asp-route-sourceContentItemId="@item.SourceContentItemId" method="post">
                 <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
                 <button type="submit" class="btn btn-danger btn-sm"
-                        data-url-af="RemoveUrl UnsafeUrl"
+                        data-url-af="RemoveUrl"
                         data-title="@T["Remove your version"]"
                         data-message="@T["This managed site goes back to the blueprint content of {0}. Are you sure?", item.DisplayText]"
                         aria-label="@T["Remove your version of {0}", item.DisplayText]">

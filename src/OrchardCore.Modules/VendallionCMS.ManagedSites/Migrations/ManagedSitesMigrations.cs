@@ -31,8 +31,9 @@ public sealed class ManagedSitesMigrations : DataMigration
     {
         await AddManagedContentPartAsync();
         await AddManagedContentOverridesAsync();
+        await AddManagedSiteClearanceIndexAsync();
 
-        return 4;
+        return 5;
     }
 
     /// <summary>
@@ -82,6 +83,17 @@ public sealed class ManagedSitesMigrations : DataMigration
         return 4;
     }
 
+    /// <summary>
+    /// Adds the index that answers which users hold clearance for a Managed Site.
+    /// </summary>
+    /// <returns>The current schema version.</returns>
+    public async Task<int> UpdateFrom4Async()
+    {
+        await AddManagedSiteClearanceIndexAsync();
+
+        return 5;
+    }
+
     private async Task AddManagedContentPartAsync()
     {
         await _contentDefinitionManager.AlterPartDefinitionAsync(nameof(ManagedContentPart), builder => builder
@@ -106,6 +118,21 @@ public sealed class ManagedSitesMigrations : DataMigration
                 "AllManagedSites",
                 "Latest",
                 "Published"));
+    }
+
+    private async Task AddManagedSiteClearanceIndexAsync()
+    {
+        await SchemaBuilder.CreateMapIndexTableAsync<ManagedSiteClearanceIndex>(table => table
+            .Column<string>("ManagedSiteId", column => column.WithLength(26))
+            .Column<string>("UserId", column => column.WithLength(26))
+            .Column<string>("NormalizedUserName", column => column.WithLength(255)));
+
+        await SchemaBuilder.AlterIndexTableAsync<ManagedSiteClearanceIndex>(table => table
+            .CreateIndex(
+                "IDX_ManagedSiteClearanceIndex_ManagedSiteId",
+                "DocumentId",
+                "ManagedSiteId",
+                "NormalizedUserName"));
     }
 
     private async Task AddManagedContentOverridesAsync()

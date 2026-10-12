@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using VendallionCMS.ManagedSites.Models;
+using VendallionCMS.ManagedSites.Services;
 
 namespace VendallionCMS.ManagedSites.ViewModels;
 
@@ -66,4 +67,44 @@ public class ManagedSiteEditViewModel
         Hostname = managedSite.Hostname,
         UrlPrefix = managedSite.UrlPrefix,
     };
+}
+
+/// <summary>
+/// Who may work on one Managed Site, and who could be given leave to.
+/// </summary>
+public sealed class ManagedSiteSecurityViewModel
+{
+    /// <summary>
+    /// Gets or sets the Managed Site whose security is being administered.
+    /// </summary>
+    public ManagedSite ManagedSite { get; set; }
+
+    /// <summary>
+    /// Gets or sets the users holding clearance for it, and what each may do.
+    /// </summary>
+    public IReadOnlyList<ManagedSiteUserClearance> Cleared { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the users holding none, who could be given it.
+    /// </summary>
+    public IReadOnlyList<ManagedSiteUserClearance> Available { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets whether more users matched than are listed.
+    /// </summary>
+    /// <remarks>
+    /// A tenant can hold more users than anyone wants listed, so the list stops and says so rather than
+    /// growing without end. Narrowing it is how the rest are reached.
+    /// </remarks>
+    public bool MoreAvailable { get; set; }
+
+    /// <summary>
+    /// Gets or sets what the users without clearance are narrowed by.
+    /// </summary>
+    public string AvailableSearch { get; set; }
+
+    /// <summary>
+    /// Gets or sets what the users with clearance are narrowed by.
+    /// </summary>
+    public string ClearedSearch { get; set; }
 }

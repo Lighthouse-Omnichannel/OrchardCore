@@ -42,8 +42,18 @@ The portal is hosted in the admin, so an editor also needs `AccessAdminPanel`.
 
 ## Clearance
 
-Clearance is granted per user, per managed site, on the user's edit screen. Each grant names what the
-holder may do:
+Clearance is granted per user, per managed site, from **Security** on the managed site's row in the
+managed sites list. The screen has two lists — the users who can work on the site and the users who
+cannot — and either can be searched, so a tenant with more users than fit on a screen is worked through
+by narrowing rather than by scrolling. Granting it needs **Manage Managed Sites**, the same permission
+as defining the site: deciding who may work on a site is the same kind of decision as deciding what the
+site is.
+
+The grant is stored on the user, which is what it is — a grant to a person, read when their principal is
+built — but it is administered from the site, because the question an administrator arrives with is who
+may work on this site, and answering that one user at a time meant opening every user to find out.
+
+Each grant names what the holder may do:
 
 | Scope | Allows |
 | --- | --- |
@@ -53,8 +63,12 @@ holder may do:
 | `preview` | Seeing unpublished work |
 
 `edit`, `publish` and `preview` each imply `view`: a clearance that let someone change content without
-reading it would list nothing for them to change. A managed site selected with no action ticked grants
-`view` alone.
+reading it would list nothing for them to change. The screen shows `view` as granted, and does not offer
+it as something to take away on its own, while any of the others is granted.
+
+A user given access is granted every scope, and the row is how that is narrowed afterwards. Narrowing it
+to nothing at all is refused rather than stored, because a grant that names no scope is the one that
+allows them all; taking the access away is how to say nobody may do anything.
 
 A user cleared for exactly one managed site is scoped to it automatically. A user cleared for several
 must choose one before any scoped action, and everything they then do applies to that managed site only.

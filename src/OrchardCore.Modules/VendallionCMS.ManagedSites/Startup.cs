@@ -17,7 +17,6 @@ using OrchardCore.Navigation;
 using OrchardCore.Recipes;
 using OrchardCore.Security.Permissions;
 using OrchardCore.Settings;
-using OrchardCore.Users.Models;
 using OrchardCore.Users.Services;
 using VendallionCMS.ManagedSites.Drivers;
 using VendallionCMS.ManagedSites.Handlers;
@@ -50,12 +49,14 @@ public sealed class Startup : StartupBase
         services.AddDataMigration<ManagedSitesMigrations>();
         services.AddIndexProvider<ManagedContentEditScopeIndexProvider>();
         services.AddIndexProvider<ManagedContentOverrideIndexProvider>();
+        services.AddIndexProvider<ManagedSiteClearanceIndexProvider>();
 
         // ---- Managed sites ----
 
         services.AddScoped<IManagedSiteService, ManagedSiteService>();
         services.AddScoped<IManagedSiteAuthorizationService, ManagedSiteAuthorizationService>();
         services.AddScoped<IManagedSiteClearanceService, ManagedSiteClearanceService>();
+        services.AddScoped<IManagedSiteSecurityService, ManagedSiteSecurityService>();
         services.AddScoped<IShellUrlSynchronizationService, ShellUrlSynchronizationService>();
 
         // ---- Managed content ----
@@ -124,7 +125,6 @@ public sealed class Startup : StartupBase
         // ---- Permissions ----
 
         services.AddPermissionProvider<Permissions>();
-        services.AddDisplayDriver<User, ManagedSiteClearanceDisplayDriver>();
         services.AddScoped<IUserClaimsProvider, ManagedSiteClaimsProvider>();
 
         // FR-011a: a Managed Site's clearance authorizes content actions on that Managed Site's own

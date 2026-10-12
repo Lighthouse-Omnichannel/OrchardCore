@@ -1,10 +1,14 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Localization;
 using Microsoft.Extensions.Localization;
 using OrchardCore.Admin;
 using OrchardCore.DisplayManagement.Notify;
 using OrchardCore.Entities;
+using OrchardCore.Users;
+using OrchardCore.Users.Services;
 using VendallionCMS.ManagedSites.Models;
 using VendallionCMS.ManagedSites.Services;
 using VendallionCMS.ManagedSites.ViewModels;
@@ -18,6 +22,9 @@ namespace VendallionCMS.ManagedSites.Controllers;
 public sealed class AdminController : Controller
 {
     private readonly IManagedSiteService _managedSiteService;
+    private readonly IManagedSiteSecurityService _securityService;
+    private readonly SignInManager<IUser> _signInManager;
+    private readonly IUserService _userService;
     private readonly IAuthorizationService _authorizationService;
     private readonly IIdGenerator _idGenerator;
     private readonly INotifier _notifier;
@@ -29,6 +36,9 @@ public sealed class AdminController : Controller
     /// Initializes a new instance of the <see cref="AdminController" /> class.
     /// </summary>
     /// <param name="managedSiteService">The Managed Site service.</param>
+    /// <param name="securityService">The Managed Site security service.</param>
+    /// <param name="signInManager">The sign-in manager, used to rebuild the caller's own principal.</param>
+    /// <param name="userService">The user service.</param>
     /// <param name="authorizationService">The authorization service.</param>
     /// <param name="idGenerator">The identifier generator.</param>
     /// <param name="notifier">The admin notifier.</param>
@@ -36,6 +46,9 @@ public sealed class AdminController : Controller
     /// <param name="htmlLocalizer">The HTML localizer used for admin notifications.</param>
     public AdminController(
         IManagedSiteService managedSiteService,
+        IManagedSiteSecurityService securityService,
+        SignInManager<IUser> signInManager,
+        IUserService userService,
         IAuthorizationService authorizationService,
         IIdGenerator idGenerator,
         INotifier notifier,
@@ -43,6 +56,9 @@ public sealed class AdminController : Controller
         IHtmlLocalizer<AdminController> htmlLocalizer)
     {
         _managedSiteService = managedSiteService;
+        _securityService = securityService;
+        _signInManager = signInManager;
+        _userService = userService;
         _authorizationService = authorizationService;
         _idGenerator = idGenerator;
         _notifier = notifier;
@@ -188,6 +204,209 @@ public sealed class AdminController : Controller
         await _notifier.SuccessAsync(H["Managed site deleted successfully."]);
 
         return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// Shows who may work on a Managed Site, and lets that be changed.
+    /// </summary>
+    /// <remarks>
+    /// Clearance is administered from the Managed Site rather than from each user, because the question
+    /// an administrator arrives with is who may work on this site, and answering it one user at a time
+    /// meant opening every user to find out.
+    ///
+    /// Governing a Managed Site is what this needs, not editing its content: deciding who may work on a
+    /// site is the same kind of decision as deciding what the site is.
+    /// </remarks>
+    /// <param name="id">The Managed Site identifier.</param>
+    /// <param name="available">Part of a name to narrow the users without clearance by.</param>
+    /// <param name="cleared">Part of a name to narrow the users with clearance by.</param>
+    /// <returns>The security view, or a refusal.</returns>
+    public async Task<IActionResult> Security(string id, string available, string cleared)
+    {
+        if (!await _authorizationService.AuthorizeAsync(User, Permissions.ManageManagedSites))
+        {
+            return Forbid();
+        }
+
+        var managedSite = await _managedSiteService.GetAsync(id);
+
+        if (managedSite is null)
+        {
+            return NotFound();
+        }
+
+        return View(await BuildSecurityAsync(managedSite, available, cleared));
+    }
+
+    /// <summary>
+    /// Gives a user clearance for a Managed Site.
+    /// </summary>
+    /// <param name="id">The Managed Site identifier.</param>
+    /// <param name="userId">The user to give it to.</param>
+    /// <param name="available">The search the administrator had on the users without clearance.</param>
+    /// <param name="cleared">The search the administrator had on the users with clearance.</param>
+    /// <returns>A redirect back to the security view.</returns>
+    [HttpPost]
+    public async Task<IActionResult> Grant(string id, string userId, string available, string cleared)
+    {
+        if (!await _authorizationService.AuthorizeAsync(User, Permissions.ManageManagedSites))
+        {
+            return Forbid();
+        }
+
+        if (await _managedSiteService.GetAsync(id) is null)
+        {
+            return NotFound();
+        }
+
+        // Granted with every scope. Somebody who wanted less says so on the row afterwards, which is
+        // one decision at a time rather than two before anything happens at all.
+        if (await _securityService.GrantAsync(id, userId))
+        {
+            await _notifier.SuccessAsync(H["That user can now work on this managed site."]);
+
+            await RefreshOwnPrincipalAsync(userId);
+        }
+        else
+        {
+            await _notifier.WarningAsync(H["That user could not be found."]);
+        }
+
+        return RedirectToAction(nameof(Security), new { id, available, cleared });
+    }
+
+    /// <summary>
+    /// Takes a user's clearance for a Managed Site away.
+    /// </summary>
+    /// <param name="id">The Managed Site identifier.</param>
+    /// <param name="userId">The user to take it from.</param>
+    /// <param name="available">The search the administrator had on the users without clearance.</param>
+    /// <param name="cleared">The search the administrator had on the users with clearance.</param>
+    /// <returns>A redirect back to the security view.</returns>
+    [HttpPost]
+    public async Task<IActionResult> Revoke(string id, string userId, string available, string cleared)
+    {
+        if (!await _authorizationService.AuthorizeAsync(User, Permissions.ManageManagedSites))
+        {
+            return Forbid();
+        }
+
+        if (await _managedSiteService.GetAsync(id) is null)
+        {
+            return NotFound();
+        }
+
+        if (await _securityService.RevokeAsync(id, userId))
+        {
+            await _notifier.SuccessAsync(H["That user can no longer work on this managed site."]);
+
+            await RefreshOwnPrincipalAsync(userId);
+        }
+        else
+        {
+            await _notifier.WarningAsync(H["That user held no clearance for this managed site."]);
+        }
+
+        return RedirectToAction(nameof(Security), new { id, available, cleared });
+    }
+
+    /// <summary>
+    /// Changes what a user's clearance for a Managed Site allows.
+    /// </summary>
+    /// <param name="id">The Managed Site identifier.</param>
+    /// <param name="userId">The user whose clearance to change.</param>
+    /// <param name="scopes">What it should allow.</param>
+    /// <param name="available">The search the administrator had on the users without clearance.</param>
+    /// <param name="cleared">The search the administrator had on the users with clearance.</param>
+    /// <returns>A redirect back to the security view.</returns>
+    [HttpPost]
+    public async Task<IActionResult> Scopes(
+        string id,
+        string userId,
+        string[] scopes,
+        string available,
+        string cleared)
+    {
+        if (!await _authorizationService.AuthorizeAsync(User, Permissions.ManageManagedSites))
+        {
+            return Forbid();
+        }
+
+        if (await _managedSiteService.GetAsync(id) is null)
+        {
+            return NotFound();
+        }
+
+        // A grant allowing nothing is stored as one allowing everything, because an empty set is how
+        // clearance says "every scope". Clearing every box therefore means the opposite of what it
+        // looks like, so it is refused and the way to say it is offered instead.
+        if (ManagedSiteSecurityService.Normalize(scopes).Count == 0)
+        {
+            await _notifier.WarningAsync(
+                H["Choose at least one thing that user may do, or take their access away altogether."]);
+
+            return RedirectToAction(nameof(Security), new { id, available, cleared });
+        }
+
+        if (await _securityService.GrantAsync(id, userId, scopes))
+        {
+            await _notifier.SuccessAsync(H["What that user may do on this managed site was changed."]);
+
+            await RefreshOwnPrincipalAsync(userId);
+        }
+        else
+        {
+            await _notifier.WarningAsync(H["That user could not be found."]);
+        }
+
+        return RedirectToAction(nameof(Security), new { id, available, cleared });
+    }
+
+    /// <summary>
+    /// Rebuilds the caller's principal when they changed their own clearance.
+    /// </summary>
+    /// <remarks>
+    /// Clearance is carried as claims on the signed principal, settled when the session was signed in,
+    /// so changing the record alone leaves the session believing what it believed before. The platform
+    /// does the same wherever an administrator edits their own user.
+    ///
+    /// Only for the caller: somebody else's session is reached by the security stamp instead, which the
+    /// security service moves when a change takes something away.
+    /// </remarks>
+    /// <param name="userId">The user whose clearance changed.</param>
+    private async Task RefreshOwnPrincipalAsync(string userId)
+    {
+        if (!string.Equals(User.FindFirstValue(ClaimTypes.NameIdentifier), userId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (await _userService.GetUserByUniqueIdAsync(userId) is IUser user)
+        {
+            await _signInManager.RefreshSignInAsync(user);
+        }
+    }
+
+    private async Task<ManagedSiteSecurityViewModel> BuildSecurityAsync(
+        ManagedSite managedSite,
+        string available,
+        string cleared)
+    {
+        const int Take = 25;
+
+        // One more than the screen shows, so it can say the list was cut short without counting every
+        // user in the tenant.
+        var candidates = await _securityService.ListAvailableAsync(managedSite.Id, available, Take);
+
+        return new ManagedSiteSecurityViewModel
+        {
+            ManagedSite = managedSite,
+            Cleared = await _securityService.ListClearedAsync(managedSite.Id, cleared),
+            Available = [.. candidates.Take(Take)],
+            MoreAvailable = candidates.Count > Take,
+            AvailableSearch = available,
+            ClearedSearch = cleared,
+        };
     }
 
     private async Task<bool> TrySaveAsync(ManagedSiteEditViewModel model)

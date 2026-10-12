@@ -195,35 +195,69 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     }
 
     /// <summary>
-    /// Clearance is granted on the user entity and carried into the signed principal as claims, so the
-    /// grant editor must be reachable from the standard user admin screen.
+    /// Clearance is granted from the managed site it covers, so the screen has to say who can work on
+    /// the site and who cannot, and move a user between the two.
     /// </summary>
     [Fact]
-    public async Task UserEditor_AuthorizedAdministrator_ShowsManagedSiteClearanceEditor()
+    public async Task Security_AuthorizedAdministrator_MovesAUserBetweenTheTwoLists()
     {
         var page = await CreateAuthenticatedPageAsync();
+        var administrator = TestUtils.DefaultConfig.Username;
 
         try
         {
-            await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/Users/Edit");
-
-            await Assertions.Expect(page.Locator("legend", new PageLocatorOptions { HasText = "Managed Sites" }).First)
-                .ToBeVisibleAsync();
-            await Assertions.Expect(page.GetByText("No managed sites have been defined yet."))
-                .ToBeVisibleAsync();
-
-            // Once one exists, it is offered with an action per scope rather than as a single grant.
             await CreateManagedSiteAsync(page, "Contoso", "contoso");
-            await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/Users/Edit");
+            await GotoSecurityAsync(page, "Contoso");
 
-            await Assertions.Expect(page.GetByLabel("Allow viewing Contoso")).ToBeVisibleAsync();
-            await Assertions.Expect(page.GetByLabel("Allow editing Contoso")).ToBeVisibleAsync();
-            await Assertions.Expect(page.GetByLabel("Allow publishing Contoso")).ToBeVisibleAsync();
-            await Assertions.Expect(page.GetByLabel("Allow previewing Contoso")).ToBeVisibleAsync();
+            await Assertions.Expect(page.GetByText("Nobody can work on this managed site yet."))
+                .ToBeVisibleAsync();
+
+            await page.GetByRole(AriaRole.Button,
+                new PageGetByRoleOptions { Name = $"Give {administrator} access" }).ClickAsync();
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+            // Now on the other side, with what they may do offered a scope at a time.
+            var cleared = page.Locator(".card", new PageLocatorOptions { HasText = "Users with access" });
+            await Assertions.Expect(cleared.GetByText(administrator).First).ToBeVisibleAsync();
+            await Assertions.Expect(page.GetByRole(AriaRole.Checkbox,
+                new PageGetByRoleOptions { Name = "publish" }).First).ToBeVisibleAsync();
+
+            // And the clearance is real: the portal opens in the site it was granted for.
+            await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Portal/Index");
+            await Assertions.Expect(page.GetByText("Editing Contoso")).ToBeVisibleAsync();
         }
         finally
         {
             await page.CloseAsync();
+        }
+    }
+
+    /// <summary>
+    /// Deciding who may work on a managed site is the same kind of decision as deciding what the site
+    /// is, so it takes the permission that governs managed sites rather than the one that edits their
+    /// content.
+    /// </summary>
+    [Fact]
+    public async Task Security_AnonymousVisitor_IsNotServedTheScreen()
+    {
+        var page = await CreateAuthenticatedPageAsync();
+        await CreateManagedSiteAsync(page, "Contoso", "contoso");
+        var id = await ReadManagedSiteIdAsync(page, "Contoso");
+        await page.CloseAsync();
+
+        var anonymousPage = await Fixture.CreatePageAsync();
+
+        try
+        {
+            var response = await anonymousPage.APIRequest.GetAsync(
+                $"{Fixture.BaseUrl}/{Tenant.Prefix}/Admin/ManagedSites/Security/{id}",
+                new APIRequestContextOptions { MaxRedirects = 0 });
+
+            Assert.NotEqual(200, response.Status);
+        }
+        finally
+        {
+            await anonymousPage.CloseAsync();
         }
     }
 
@@ -234,21 +268,26 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     /// Grants the signed-in administrator view and edit clearance for each named managed site, through
     /// the same editor an administrator would use.
     /// </summary>
+    /// <summary>
+    /// Gives the signed-in administrator the run of each named managed site, from the screen an
+    /// administrator would use: the managed site's own.
+    /// </summary>
     private async Task GrantClearanceAsync(IPage page, params string[] managedSiteNames)
     {
-        // Without an identifier this edits the signed-in user, which is the account under test.
-        await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/Users/Edit");
-
         foreach (var name in managedSiteNames)
         {
-            await page.GetByLabel(name, new PageGetByLabelOptions { Exact = true }).CheckAsync();
-            await page.GetByLabel($"Allow viewing {name}").CheckAsync();
-            await page.GetByLabel($"Allow editing {name}").CheckAsync();
-        }
+            await GotoSecurityAsync(page, name);
 
-        await page.ClickSaveAsync();
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await page.GetByRole(AriaRole.Button,
+                new PageGetByRoleOptions { Name = $"Give {TestUtils.DefaultConfig.Username} access" }).ClickAsync();
+
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        }
     }
+
+    private async Task GotoSecurityAsync(IPage page, string managedSiteName)
+        => await page.GotoAndAssertOkAsync(
+            $"/{Tenant.Prefix}/Admin/ManagedSites/Security/{await ReadManagedSiteIdAsync(page, managedSiteName)}");
 
     private async Task CreateManagedSiteAsync(IPage page, string name, string urlPrefix)
     {

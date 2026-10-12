@@ -34,6 +34,15 @@ public static class ManagedSitesConstants
         /// Allows previewing composed Managed Site output.
         /// </summary>
         public const string Preview = "preview";
+
+        /// <summary>
+        /// Every scope, in the order they are offered.
+        /// </summary>
+        /// <remarks>
+        /// Ordered from the least a clearance can allow to the most, so a screen listing them reads the
+        /// way the grants build up.
+        /// </remarks>
+        public static readonly string[] All = [View, Edit, Publish, Preview];
     }
 
     /// <summary>
