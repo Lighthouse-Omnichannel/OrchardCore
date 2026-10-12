@@ -23,16 +23,49 @@ namespace VendallionCMS.ManagedSites.Tests.Routing;
 public class ShellUrlSynchronizationTests
 {
     [Fact]
-    public void Synchronize_DeclaredHost_IsAddedEvenWhenTheTenantHadNone()
+    public void Synchronize_TenantNamingNoHost_IsLeftNamingNone()
     {
+        // It answers on every host already, the Managed Site's included. Naming one would narrow the
+        // tenant to that host alone, and every other address it answered on -- the one the
+        // administrator is using among them -- would stop resolving and answer nothing at all.
         var (service, shellSettings) = CreateService(requestUrlHost: string.Empty);
         var document = Document(ManagedSitesTestData.ManagedSite("a", hostname: "contoso.com"));
 
         var changed = service.Synchronize(document);
 
-        Assert.True(changed);
-        Assert.Equal("contoso.com", shellSettings.RequestUrlHost);
-        Assert.Equal(["contoso.com"], document.AppliedShellHosts);
+        Assert.False(changed);
+        Assert.Equal(string.Empty, shellSettings.RequestUrlHost);
+        Assert.Empty(document.AppliedShellHosts);
+    }
+
+    [Fact]
+    public void Synchronize_HostTheTenantAlreadyNamed_IsNotClaimedAsOurs()
+    {
+        // Recording it would let a later withdrawal take away a host name the operator configured.
+        var (service, _) = CreateService(requestUrlHost: "contoso.com");
+        var document = Document(ManagedSitesTestData.ManagedSite("a", hostname: "contoso.com"));
+
+        service.Synchronize(document);
+
+        Assert.Empty(document.AppliedShellHosts);
+    }
+
+    [Fact]
+    public void Synchronize_WithdrawingEveryHostWeAdded_RestoresTheTenantToNamingNone()
+    {
+        // Exactly the state the tenant was found in, which is the way back for a tenant narrowed by an
+        // earlier version of this.
+        var (service, shellSettings) = CreateService(requestUrlHost: "tenant.example");
+        var document = Document(ManagedSitesTestData.ManagedSite("a", hostname: "contoso.com"));
+        service.Synchronize(document);
+
+        Assert.Equal("tenant.example,contoso.com", shellSettings.RequestUrlHost);
+
+        shellSettings.RequestUrlHost = "contoso.com";
+        document.ManagedSites = [];
+
+        Assert.True(service.Synchronize(document));
+        Assert.Equal(string.Empty, shellSettings.RequestUrlHost);
     }
 
     [Fact]
@@ -72,9 +105,10 @@ public class ShellUrlSynchronizationTests
     }
 
     [Fact]
-    public void Synchronize_ClearingTheLastHostWithNoPrefix_IsRefused()
+    public void Synchronize_HostTheOperatorConfigured_IsNeverWithdrawn()
     {
-        // The tenant would become a catch-all and could answer for addresses meant for other tenants.
+        // The Managed Site names the same host the tenant already named. Withdrawing the Managed Site
+        // must leave the tenant naming it, because this module did not put it there.
         var (service, shellSettings) = CreateService(requestUrlHost: "contoso.com");
         var document = Document(ManagedSitesTestData.ManagedSite("a", hostname: "contoso.com"));
         service.Synchronize(document);
@@ -87,17 +121,21 @@ public class ShellUrlSynchronizationTests
     }
 
     [Fact]
-    public void Synchronize_ClearingTheLastHostWithAPrefixSet_IsAllowed()
+    public void Synchronize_WithdrawingOurHostFromATenantWithAPrefix_LeavesItNamingNone()
     {
-        // The prefix still distinguishes the tenant, so it does not become a catch-all.
-        var (service, shellSettings) = CreateService(requestUrlHost: "contoso.com", requestUrlPrefix: "site");
+        // The tenant named a host of its own, a Managed Site added another, and withdrawing the Managed
+        // Site takes back only what it added. Here the operator's host is gone by other means, so what
+        // is left is ours alone and goes with it.
+        var (service, shellSettings) = CreateService(requestUrlHost: "tenant.example", requestUrlPrefix: "site");
         var document = Document(ManagedSitesTestData.ManagedSite("a", hostname: "contoso.com"));
         service.Synchronize(document);
 
-        document.ManagedSites = [];
-        var changed = service.Synchronize(document);
+        Assert.Equal(["contoso.com"], document.AppliedShellHosts);
 
-        Assert.True(changed);
+        shellSettings.RequestUrlHost = "contoso.com";
+        document.ManagedSites = [];
+
+        Assert.True(service.Synchronize(document));
         Assert.Equal(string.Empty, shellSettings.RequestUrlHost);
     }
 

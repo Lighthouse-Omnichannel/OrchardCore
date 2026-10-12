@@ -74,14 +74,15 @@ generated links carry the prefix back.
 
 An address no managed site claims renders Site Blueprint content.
 
-!!! warning "Declaring a host name narrows the tenant"
-    A tenant whose Hostname setting is empty answers on every host. Giving a managed site a host name
-    adds it to the tenant's own host names, and from then on the tenant answers only on the host names
-    it declares — including, no longer, the one the admin was reached on. Declare the tenant's own host
-    alongside the managed site's, or the Site Blueprint's address stops answering.
+**Host names reach the tenant without being declared on it.** A tenant whose own Hostname setting is
+empty answers on every host, so a managed site's host already arrives; nothing is added to the tenant
+and the addresses it answered on before — the admin's among them — keep answering. A tenant that does
+name host names of its own is extended with the ones managed sites name, because there that is the only
+way the address reaches the tenant at all. Either way the module takes back exactly what it added and
+leaves host names an operator configured alone.
 
-URL prefixes avoid this entirely, need no host file entries or certificates, and are the better choice
-for development.
+URL prefixes still need no host file entries or certificates, which makes them the simpler choice for
+development.
 
 ## Managed Content
 

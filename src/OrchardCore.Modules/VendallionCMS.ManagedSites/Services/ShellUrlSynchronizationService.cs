@@ -28,16 +28,20 @@ public interface IShellUrlSynchronizationService
 /// Only host names are synchronized. A tenant carries one URL prefix for all of its content, so a
 /// Managed Site prefix is resolved inside the tenant and never becomes the tenant prefix.
 ///
-/// Host names this module previously added are recorded, so synchronization withdraws exactly those and
-/// leaves any host name an operator configured on the tenant in place.
+/// This module confines itself to the host names it added. Those are recorded, so synchronization
+/// withdraws exactly those and leaves any host name an operator configured on the tenant in place.
 ///
-/// Declaring a host name narrows a tenant that previously answered on every host, which is the intended
-/// model: a tenant serving Managed Sites answers on the host names it declares. Any other address the
-/// tenant must serve has to be declared alongside them.
+/// A tenant that declares no host of its own already answers on every host, the ones Managed Sites
+/// name included, so nothing is added to it. Adding one would narrow the tenant to that host alone and
+/// every other address it answered on would stop resolving -- including the one the administrator was
+/// using, which is how filling in a host name blanked the site they were looking at. A tenant that does
+/// declare host names is extended with the ones Managed Sites name, because there it is the only way
+/// the Managed Site's address reaches the tenant at all.
 ///
-/// The one case refused is clearing the hostname while the tenant URL prefix is also empty, because the
-/// tenant would become a catch-all and could answer for addresses meant for other tenants. With a
-/// prefix set the tenant stays addressable, so clearing the hostname is allowed.
+/// Withdrawing leaves the tenant with nothing only when every host name present was one this module
+/// added, which restores the tenant to how it was found. That is not the tenant becoming a catch-all at
+/// anyone's expense: a tenant naming a host is matched before the fallback, so the fallback answers
+/// only for addresses nothing else claims.
 /// </remarks>
 public sealed class ShellUrlSynchronizationService : IShellUrlSynchronizationService
 {
@@ -85,35 +89,30 @@ public sealed class ShellUrlSynchronizationService : IShellUrlSynchronizationSer
             .Where(host => !string.IsNullOrEmpty(host))
             .ToHashSet(StringComparer.Ordinal);
 
-        // Start from the host names the tenant already serves, drop the ones this module added last
-        // time, then append the current set. Operator-configured host names survive because they were
-        // never applied here.
+        // Start from the host names the tenant already serves, dropping the ones this module added last
+        // time. Operator-configured host names survive because they were never added here.
         var retained = currentHosts
             .Where(host => !previouslyApplied.Contains(host))
             .ToList();
 
-        foreach (var host in declaredHosts)
+        // A tenant naming nothing answers on every host already, so there is nothing to add and adding
+        // anything would take away every address but the one added.
+        var tenantNamesItsOwnHosts = retained.Count > 0;
+
+        var added = new List<string>();
+
+        if (tenantNamesItsOwnHosts)
         {
-            if (!retained.Contains(host, StringComparer.Ordinal))
+            foreach (var host in declaredHosts.Where(host => !retained.Contains(host, StringComparer.Ordinal)))
             {
                 retained.Add(host);
+                added.Add(host);
             }
         }
 
-        if (retained.Count == 0
-            && currentHosts.Length > 0
-            && string.IsNullOrEmpty(_shellSettings.RequestUrlPrefix))
-        {
-            // Clearing the hostname with no prefix set would make this tenant a catch-all, so the host
-            // names are kept and reported instead. With a prefix the tenant stays addressable.
-            _logger.LogWarning(
-                "Managed Sites left the hostname for tenant '{TenantName}' unchanged because clearing it with no URL prefix set would make the tenant answer on every host.",
-                _shellSettings.Name);
-
-            return false;
-        }
-
-        document.AppliedShellHosts = [.. declaredHosts];
+        // Only what this module put there, so that withdrawing it later takes back exactly that and the
+        // record never claims a host name the operator had configured all along.
+        document.AppliedShellHosts = [.. added];
 
         var updated = string.Join(',', retained);
         var current = string.Join(',', currentHosts);
