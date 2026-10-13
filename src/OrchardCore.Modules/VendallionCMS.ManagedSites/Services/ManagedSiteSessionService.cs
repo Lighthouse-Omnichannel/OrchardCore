@@ -71,9 +71,9 @@ public interface IManagedSiteSessionService
     /// Selects a Managed Site as the active scope for the user's session.
     /// </summary>
     /// <param name="user">The user principal.</param>
-    /// <param name="managedSiteId">The Managed Site to select.</param>
+    /// <param name="managedSiteCode">The Managed Site to select.</param>
     /// <returns>The session selection result.</returns>
-    ValueTask<ManagedSiteSessionResult> SelectAsync(ClaimsPrincipal user, string managedSiteId);
+    ValueTask<ManagedSiteSessionResult> SelectAsync(ClaimsPrincipal user, string managedSiteCode);
 }
 
 /// <summary>
@@ -119,7 +119,7 @@ public sealed class ManagedSiteSessionService : IManagedSiteSessionService
         var stored = await _sessionStore.GetAsync(userId);
 
         // A stored selection stays valid only while clearance still covers it and the site is enabled.
-        if (stored != null && authorized.Any(managedSite => string.Equals(managedSite.Id, stored.ManagedSiteId, StringComparison.Ordinal)))
+        if (stored != null && authorized.Any(managedSite => string.Equals(managedSite.Code, stored.ManagedSiteCode, StringComparison.Ordinal)))
         {
             return new ManagedSiteSessionResult
             {
@@ -136,7 +136,7 @@ public sealed class ManagedSiteSessionService : IManagedSiteSessionService
 
         if (authorized.Count == 1)
         {
-            var scope = await RecordAsync(userId, authorized[0].Id);
+            var scope = await RecordAsync(userId, authorized[0].Code);
 
             return new ManagedSiteSessionResult
             {
@@ -154,7 +154,7 @@ public sealed class ManagedSiteSessionService : IManagedSiteSessionService
     }
 
     /// <inheritdoc />
-    public async ValueTask<ManagedSiteSessionResult> SelectAsync(ClaimsPrincipal user, string managedSiteId)
+    public async ValueTask<ManagedSiteSessionResult> SelectAsync(ClaimsPrincipal user, string managedSiteCode)
     {
         var clearances = await _clearanceService.GetEffectiveClearancesAsync(user);
         if (clearances.Count == 0)
@@ -164,8 +164,8 @@ public sealed class ManagedSiteSessionService : IManagedSiteSessionService
 
         var authorized = await _clearanceService.GetAuthorizedManagedSitesAsync(user);
 
-        if (string.IsNullOrWhiteSpace(managedSiteId)
-            || !clearances.Any(clearance => string.Equals(clearance.ManagedSiteId, managedSiteId, StringComparison.Ordinal)))
+        if (string.IsNullOrWhiteSpace(managedSiteCode)
+            || !clearances.Any(clearance => string.Equals(clearance.ManagedSiteCode, managedSiteCode, StringComparison.Ordinal)))
         {
             return new ManagedSiteSessionResult
             {
@@ -174,7 +174,7 @@ public sealed class ManagedSiteSessionService : IManagedSiteSessionService
             };
         }
 
-        var managedSite = await _managedSiteService.GetAsync(managedSiteId);
+        var managedSite = await _managedSiteService.GetAsync(managedSiteCode);
         if (managedSite == null || managedSite.Status != ManagedSiteStatus.Enabled)
         {
             return new ManagedSiteSessionResult
@@ -184,7 +184,7 @@ public sealed class ManagedSiteSessionService : IManagedSiteSessionService
             };
         }
 
-        var scope = await RecordAsync(GetUserId(user), managedSiteId);
+        var scope = await RecordAsync(GetUserId(user), managedSiteCode);
 
         return new ManagedSiteSessionResult
         {
@@ -194,12 +194,12 @@ public sealed class ManagedSiteSessionService : IManagedSiteSessionService
         };
     }
 
-    private async ValueTask<ActiveManagedSiteSessionScope> RecordAsync(string userId, string managedSiteId)
+    private async ValueTask<ActiveManagedSiteSessionScope> RecordAsync(string userId, string managedSiteCode)
     {
         var scope = new ActiveManagedSiteSessionScope
         {
             UserId = userId,
-            ManagedSiteId = managedSiteId,
+            ManagedSiteCode = managedSiteCode,
             SelectedAt = _timeProvider.GetUtcNow(),
         };
 

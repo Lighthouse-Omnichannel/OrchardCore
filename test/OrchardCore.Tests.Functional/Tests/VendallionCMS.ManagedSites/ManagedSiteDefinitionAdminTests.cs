@@ -73,6 +73,8 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
             await page.ClickCreateAsync();
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
+            // A code of its own, so what is refused is the address rather than the code.
+            await page.Locator("#Code").FillAsync("fabrikamclone");
             await page.Locator("#Name").FillAsync("Fabrikam Clone");
             await page.Locator("#UrlPrefix").FillAsync("fabrikam");
             await page.ClickSaveAsync();
@@ -127,6 +129,8 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
         await page.ClickCreateAsync();
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
+        // The code names the managed site everywhere else and is asked for only here.
+        await page.Locator("#Code").FillAsync(name.ToLowerInvariant().Replace(" ", string.Empty));
         await page.Locator("#Name").FillAsync(name);
         await page.Locator("#UrlPrefix").FillAsync(urlPrefix);
 

@@ -14,16 +14,16 @@ public sealed class ManagedSiteAuthorizationService : IManagedSiteAuthorizationS
     public const string ManagedSiteClaimType = "managed_site";
 
     /// <inheritdoc />
-    public ValueTask<bool> AuthorizeAsync(ClaimsPrincipal user, string managedSiteId, string scope)
+    public ValueTask<bool> AuthorizeAsync(ClaimsPrincipal user, string managedSiteCode, string scope)
     {
-        if (user?.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(managedSiteId))
+        if (user?.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(managedSiteCode))
         {
             return ValueTask.FromResult(false);
         }
 
         var isAuthorized = user.FindAll(ManagedSiteClaimType)
             .Select(ParseClearance)
-            .Any(clearance => clearance.ManagedSiteId == managedSiteId && HasScope(clearance, scope));
+            .Any(clearance => clearance.ManagedSiteCode == managedSiteCode && HasScope(clearance, scope));
 
         return ValueTask.FromResult(isAuthorized);
     }
@@ -38,7 +38,7 @@ public sealed class ManagedSiteAuthorizationService : IManagedSiteAuthorizationS
 
         var clearances = user.FindAll(ManagedSiteClaimType)
             .Select(ParseClearance)
-            .Where(clearance => !string.IsNullOrEmpty(clearance.ManagedSiteId))
+            .Where(clearance => !string.IsNullOrEmpty(clearance.ManagedSiteCode))
             .ToArray();
 
         return ValueTask.FromResult<IReadOnlyList<ManagedSiteClearance>>(clearances);
@@ -53,7 +53,7 @@ public sealed class ManagedSiteAuthorizationService : IManagedSiteAuthorizationS
         var clearance = new ManagedSiteClearance
         {
             UserId = claim.Subject?.FindFirst(ClaimTypes.NameIdentifier)?.Value,
-            ManagedSiteId = parts[0],
+            ManagedSiteCode = parts[0],
         };
 
         // A claim naming no scope grants reading and nothing else. An issuer meaning every scope says

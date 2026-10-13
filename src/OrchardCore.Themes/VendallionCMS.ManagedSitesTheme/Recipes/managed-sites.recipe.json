@@ -140,19 +140,19 @@
         {
           // Prefixes rather than host names on purpose: no host file entries, no certificates, no
           // second sign-in, and draft preview works through them, which it cannot across hosts.
-          "Id": "alpha",
+          "Code": "alpha",
           "Name": "Alpha",
           "UrlPrefix": "alpha",
           "Status": "Enabled"
         },
         {
-          "Id": "beta",
+          "Code": "beta",
           "Name": "Beta",
           "UrlPrefix": "beta",
           "Status": "Enabled"
         },
         {
-          "Id": "gamma",
+          "Code": "gamma",
           "Name": "Gamma",
           "UrlPrefix": "gamma",
           "Status": "Enabled"
@@ -207,8 +207,8 @@
           "ManagedContentPart": {
             // Open to every managed site: overriding this replaces the whole page, its sections
             // included, which is worth seeing once.
-            "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
-            "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "EditScope": { "Mode": "All", "ManagedSiteCodes": [] },
+            "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },
             "DisplayInBlueprintContext": true
           },
           "Sections": {
@@ -223,8 +223,8 @@
                 "TitlePart": { "Title": "What we do" },
                 "HtmlBodyPart": { "Html": "<p>The Site Blueprint's words. Every managed site may replace this one.</p>" },
                 "ManagedContentPart": {
-                  "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
-                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "EditScope": { "Mode": "All", "ManagedSiteCodes": [] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },
                   "DisplayInBlueprintContext": true
                 }
               },
@@ -238,8 +238,8 @@
                 "TitlePart": { "Title": "Where we are" },
                 "HtmlBodyPart": { "Html": "<p>Only Alpha may replace this one, so Beta and Gamma will not see it in their portal.</p>" },
                 "ManagedContentPart": {
-                  "EditScope": { "Mode": "Selected", "ManagedSiteIds": [ "alpha" ] },
-                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "EditScope": { "Mode": "Selected", "ManagedSiteCodes": [ "alpha" ] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },
                   "DisplayInBlueprintContext": true
                 }
               },
@@ -253,8 +253,8 @@
                 "TitlePart": { "Title": "Not for anybody" },
                 "HtmlBodyPart": { "Html": "<p>Nobody may replace this one. It is here so the portal has something it does not list, which is the first question the portal raises.</p>" },
                 "ManagedContentPart": {
-                  "EditScope": { "Mode": "None", "ManagedSiteIds": [] },
-                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "EditScope": { "Mode": "None", "ManagedSiteCodes": [] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },
                   "DisplayInBlueprintContext": true
                 }
               }
@@ -273,8 +273,8 @@
           "ManagedContentPart": {
             // A second page, so the navigation leads somewhere and there is more than one page to
             // compare a managed site's version against.
-            "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
-            "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "EditScope": { "Mode": "All", "ManagedSiteCodes": [] },
+            "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },
             "DisplayInBlueprintContext": true
           },
           "Sections": {
@@ -289,8 +289,8 @@
                 "TitlePart": { "Title": "Who we are" },
                 "HtmlBodyPart": { "Html": "<p>The same words on every managed site, until one of them says otherwise.</p>" },
                 "ManagedContentPart": {
-                  "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
-                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "EditScope": { "Mode": "All", "ManagedSiteCodes": [] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },
                   "DisplayInBlueprintContext": true
                 }
               }
@@ -307,8 +307,8 @@
           "TitlePart": { "Title": "Main Menu" },
           "AliasPart": { "Alias": "main-menu" },
           "ManagedContentPart": {
-            "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
-            "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "EditScope": { "Mode": "All", "ManagedSiteCodes": [] },
+            "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },
             "DisplayInBlueprintContext": true
           },
           "MenuItemsListPart": {
@@ -321,8 +321,8 @@
                 "ManagedContentPart": {
                   // An entry nested in a menu: overriding this changes one link for one managed
                   // site, leaving the rest of the navigation alone.
-                  "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
-                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "EditScope": { "Mode": "All", "ManagedSiteCodes": [] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },
                   "DisplayInBlueprintContext": true
                 }
               },
@@ -332,8 +332,8 @@
                 "DisplayText": "About",
                 "LinkMenuItemPart": { "Name": "About", "Url": "~/about" },
                 "ManagedContentPart": {
-                  "EditScope": { "Mode": "None", "ManagedSiteIds": [] },
-                  "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+                  "EditScope": { "Mode": "None", "ManagedSiteCodes": [] },
+                  "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },
                   "DisplayInBlueprintContext": true
                 }
               }
@@ -350,8 +350,8 @@
           "RawHtml": { "Content": { "Html": "<p>The Site Blueprint's footer, drawn on every page by a layer.</p>" } },
           "LayerMetadata": { "Layer": "Always", "Zone": "Footer", "Position": "1", "RenderTitle": false },
           "ManagedContentPart": {
-            "EditScope": { "Mode": "All", "ManagedSiteIds": [] },
-            "DisplayScope": { "Mode": "All", "ManagedSiteIds": [] },
+            "EditScope": { "Mode": "All", "ManagedSiteCodes": [] },
+            "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },
             "DisplayInBlueprintContext": true
           }
         }

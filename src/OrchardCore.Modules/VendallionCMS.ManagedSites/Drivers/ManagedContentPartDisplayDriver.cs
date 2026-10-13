@@ -55,17 +55,17 @@ public sealed class ManagedContentPartDisplayDriver : ContentPartDisplayDriver<M
                 .OrderBy(managedSite => managedSite.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(managedSite =>
                 {
-                    var canEdit = editIds.Contains(managedSite.Id, StringComparer.Ordinal);
+                    var canEdit = editIds.Contains(managedSite.Code, StringComparer.Ordinal);
 
                     return new ManagedContentScopeEntryViewModel
                     {
-                        ManagedSiteId = managedSite.Id,
+                        ManagedSiteCode = managedSite.Code,
                         Name = managedSite.Name,
                         CanEdit = canEdit,
 
                         // A Managed Site that may override the item always renders it, so the row shows
                         // the state the form will save rather than one the update would overrule.
-                        CanDisplay = canEdit || displayIds.Contains(managedSite.Id, StringComparer.Ordinal),
+                        CanDisplay = canEdit || displayIds.Contains(managedSite.Code, StringComparer.Ordinal),
                     };
                 })
                 .ToArray();
@@ -84,7 +84,7 @@ public sealed class ManagedContentPartDisplayDriver : ContentPartDisplayDriver<M
         await context.Updater.TryUpdateModelAsync(model, Prefix);
 
         var known = (await _managedSiteService.ListAsync())
-            .Select(managedSite => managedSite.Id)
+            .Select(managedSite => managedSite.Code)
             .ToHashSet(StringComparer.Ordinal);
 
         part.EditScope = BuildScope(
@@ -119,12 +119,12 @@ public sealed class ManagedContentPartDisplayDriver : ContentPartDisplayDriver<M
         => part?.ContentItem?.Has(nameof(ManagedContentOverridePart)) == true;
 
     private static List<string> NamedManagedSites(ManagedContentScope scope)
-        => scope?.Mode == ManagedContentScopeMode.Selected ? scope.ManagedSiteIds : [];
+        => scope?.Mode == ManagedContentScopeMode.Selected ? scope.ManagedSiteCodes : [];
 
     private static ManagedContentScope BuildScope(
         ManagedContentScopeMode mode,
         IEnumerable<ManagedContentScopeEntryViewModel> selected,
-        HashSet<string> knownManagedSiteIds)
+        HashSet<string> knownManagedSiteCodes)
     {
         if (mode != ManagedContentScopeMode.Selected)
         {
@@ -133,16 +133,16 @@ public sealed class ManagedContentPartDisplayDriver : ContentPartDisplayDriver<M
 
         // A Managed Site that no longer exists is dropped rather than stored, so a stale identifier
         // cannot silently come back into scope if that identifier is reused later.
-        var managedSiteIds = (selected ?? [])
-            .Select(entry => entry.ManagedSiteId)
-            .Where(managedSiteId => !string.IsNullOrEmpty(managedSiteId) && knownManagedSiteIds.Contains(managedSiteId))
+        var managedSiteCodes = (selected ?? [])
+            .Select(entry => entry.ManagedSiteCode)
+            .Where(managedSiteCode => !string.IsNullOrEmpty(managedSiteCode) && knownManagedSiteCodes.Contains(managedSiteCode))
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
         return new ManagedContentScope
         {
             Mode = ManagedContentScopeMode.Selected,
-            ManagedSiteIds = managedSiteIds,
+            ManagedSiteCodes = managedSiteCodes,
         };
     }
 }

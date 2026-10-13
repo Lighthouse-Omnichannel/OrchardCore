@@ -12,25 +12,25 @@ public interface IManagedContentScopeService
     /// Determines whether a Managed Site may override an item.
     /// </summary>
     /// <param name="part">The Managed Content part, or <see langword="null" /> when the item carries none.</param>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <returns><see langword="true" /> when the Managed Site may override the item.</returns>
-    bool CanEdit(ManagedContentPart part, string managedSiteId);
+    bool CanEdit(ManagedContentPart part, string managedSiteCode);
 
     /// <summary>
     /// Determines whether an item renders for a request context.
     /// </summary>
     /// <param name="part">The Managed Content part, or <see langword="null" /> when the item carries none.</param>
-    /// <param name="managedSiteId">The resolved Managed Site, or <see langword="null" /> for the Site Blueprint context.</param>
+    /// <param name="managedSiteCode">The resolved Managed Site, or <see langword="null" /> for the Site Blueprint context.</param>
     /// <returns><see langword="true" /> when the item renders.</returns>
-    bool CanDisplay(ManagedContentPart part, string managedSiteId);
+    bool CanDisplay(ManagedContentPart part, string managedSiteCode);
 
     /// <summary>
     /// Determines whether a content item renders for a request context.
     /// </summary>
     /// <param name="contentItem">The content item.</param>
-    /// <param name="managedSiteId">The resolved Managed Site, or <see langword="null" /> for the Site Blueprint context.</param>
+    /// <param name="managedSiteCode">The resolved Managed Site, or <see langword="null" /> for the Site Blueprint context.</param>
     /// <returns><see langword="true" /> when the item renders.</returns>
-    bool CanDisplay(ContentItem contentItem, string managedSiteId);
+    bool CanDisplay(ContentItem contentItem, string managedSiteCode);
 }
 
 /// <summary>
@@ -43,36 +43,36 @@ public interface IManagedContentScopeService
 public sealed class ManagedContentScopeService : IManagedContentScopeService
 {
     /// <inheritdoc />
-    public bool CanEdit(ManagedContentPart part, string managedSiteId)
+    public bool CanEdit(ManagedContentPart part, string managedSiteCode)
     {
         // Only a Managed Site can hold an override, so the Site Blueprint context never "edits" here.
         // Blueprint administrators change the original item through the standard admin UI instead.
-        if (part is null || string.IsNullOrEmpty(managedSiteId))
+        if (part is null || string.IsNullOrEmpty(managedSiteCode))
         {
             return false;
         }
 
-        return part.EditScope?.Includes(managedSiteId) == true;
+        return part.EditScope?.Includes(managedSiteCode) == true;
     }
 
     /// <inheritdoc />
-    public bool CanDisplay(ManagedContentPart part, string managedSiteId)
+    public bool CanDisplay(ManagedContentPart part, string managedSiteCode)
     {
         if (part is null)
         {
             return true;
         }
 
-        if (string.IsNullOrEmpty(managedSiteId))
+        if (string.IsNullOrEmpty(managedSiteCode))
         {
             return part.DisplayInBlueprintContext;
         }
 
-        return part.DisplayScope?.Includes(managedSiteId) == true;
+        return part.DisplayScope?.Includes(managedSiteCode) == true;
     }
 
     /// <inheritdoc />
-    public bool CanDisplay(ContentItem contentItem, string managedSiteId)
+    public bool CanDisplay(ContentItem contentItem, string managedSiteCode)
     {
         if (contentItem is null || !contentItem.TryGet<ManagedContentPart>(out var part))
         {
@@ -80,6 +80,6 @@ public sealed class ManagedContentScopeService : IManagedContentScopeService
             return true;
         }
 
-        return CanDisplay(part, managedSiteId);
+        return CanDisplay(part, managedSiteCode);
     }
 }

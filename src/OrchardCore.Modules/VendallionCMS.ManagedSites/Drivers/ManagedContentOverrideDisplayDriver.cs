@@ -53,9 +53,9 @@ public sealed class ManagedContentOverrideDisplayDriver : ContentDisplayDriver
 
         return Initialize<ManagedContentOverrideLinkViewModel>("ManagedContentOverrideLink", async model =>
         {
-            var managedSite = await _managedSiteService.GetAsync(part.ManagedSiteId);
+            var managedSite = await _managedSiteService.GetAsync(part.ManagedSiteCode);
 
-            model.ManagedSiteId = part.ManagedSiteId;
+            model.ManagedSiteCode = part.ManagedSiteCode;
             model.ManagedSiteName = managedSite?.Name;
             model.SourceContentItemId = part.SourceContentItemId;
             model.SourceContainerContentItemId = part.SourceContainerContentItemId;

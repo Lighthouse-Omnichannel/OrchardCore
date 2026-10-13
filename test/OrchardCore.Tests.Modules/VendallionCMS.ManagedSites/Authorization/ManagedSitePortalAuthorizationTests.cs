@@ -16,14 +16,14 @@ public class ManagedSitePortalAuthorizationTests
     public async Task Authorized_UserClearedForOneSite_ReturnsOnlyThatSite()
     {
         var context = new ManagedSitePortalTestContext(
-            ManagedSitesTestData.ManagedSite("site-a", name: "Site A", hostname: "contoso.com", urlPrefix: "shop"),
-            ManagedSitesTestData.ManagedSite("site-b", name: "Site B"));
+            ManagedSitesTestData.ManagedSite("sitea", name: "Site A", hostname: "contoso.com", urlPrefix: "shop"),
+            ManagedSitesTestData.ManagedSite("siteb", name: "Site B"));
 
         var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(
-            ManagedSitesTestData.User("site-a:edit"));
+            ManagedSitesTestData.User("sitea:edit"));
 
         var managedSite = Assert.Single(authorized);
-        Assert.Equal("site-a", managedSite.Id);
+        Assert.Equal("sitea", managedSite.Code);
         Assert.Equal("Site A", managedSite.Name);
         Assert.Equal(ManagedSiteStatus.Enabled, managedSite.Status);
         Assert.Equal("contoso.com", managedSite.Hostname);
@@ -34,11 +34,11 @@ public class ManagedSitePortalAuthorizationTests
     public async Task Authorized_UserClearedForSeveralSites_ReturnsAllOrderedByName()
     {
         var context = new ManagedSitePortalTestContext(
-            ManagedSitesTestData.ManagedSite("site-b", name: "Zulu"),
-            ManagedSitesTestData.ManagedSite("site-a", name: "Alpha"));
+            ManagedSitesTestData.ManagedSite("siteb", name: "Zulu"),
+            ManagedSitesTestData.ManagedSite("sitea", name: "Alpha"));
 
         var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(
-            ManagedSitesTestData.User("site-a:edit", "site-b:edit"));
+            ManagedSitesTestData.User("sitea:edit", "siteb:edit"));
 
         Assert.Equal(["Alpha", "Zulu"], authorized.Select(managedSite => managedSite.Name));
     }
@@ -46,7 +46,7 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task Authorized_UserWithoutClearance_ReturnsEmptyList()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(ManagedSitesTestData.User());
 
@@ -56,7 +56,7 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task Authorized_AnonymousUser_ReturnsEmptyList()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(ManagedSitesTestData.AnonymousUser());
 
@@ -67,9 +67,9 @@ public class ManagedSitePortalAuthorizationTests
     public async Task Authorized_ClearanceForDisabledSite_ExcludesSite()
     {
         var context = new ManagedSitePortalTestContext(
-            ManagedSitesTestData.ManagedSite("site-a", ManagedSiteStatus.Disabled));
+            ManagedSitesTestData.ManagedSite("sitea", ManagedSiteStatus.Disabled));
 
-        var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(ManagedSitesTestData.User("site-a:edit"));
+        var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(ManagedSitesTestData.User("sitea:edit"));
 
         Assert.Empty(authorized);
     }
@@ -77,7 +77,7 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task Authorized_ClearanceForUnknownSite_ExcludesSite()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(ManagedSitesTestData.User("site-removed:edit"));
 
@@ -87,24 +87,24 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task GetAuthorizedManagedSites_ClearanceExpired_ExcludesSite()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         // The claim format carries no validity window, so an expired clearance is modelled directly.
         var clearances = await context.ClearanceService.GetEffectiveClearancesAsync(
-            ManagedSitesTestData.User("site-a:edit"));
+            ManagedSitesTestData.User("sitea:edit"));
 
         Assert.Single(clearances);
-        Assert.Equal("site-a", clearances[0].ManagedSiteId);
+        Assert.Equal("sitea", clearances[0].ManagedSiteCode);
     }
 
     [Fact]
     public async Task HasClearance_ScopeNotGranted_ReturnsFalse()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var result = await context.ClearanceService.HasClearanceAsync(
-            ManagedSitesTestData.User("site-a:view"),
-            "site-a",
+            ManagedSitesTestData.User("sitea:view"),
+            "sitea",
             "publish");
 
         Assert.False(result);
@@ -115,11 +115,11 @@ public class ManagedSitePortalAuthorizationTests
     {
         // The wildcard is what an issuer says when it means every scope. A claim naming no scope is
         // not that: it allows reading the Managed Site and nothing else.
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var result = await context.ClearanceService.HasClearanceAsync(
-            ManagedSitesTestData.User("site-a:*"),
-            "site-a",
+            ManagedSitesTestData.User("sitea:*"),
+            "sitea",
             "publish");
 
         Assert.True(result);

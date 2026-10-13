@@ -88,7 +88,7 @@ public class OverrideIdentityTests
                 new Mock<ISession> { DefaultValue = DefaultValue.Mock }.Object,
                 contentManager.Object,
                 new FakeManagedContentLocator().WithPublished(source),
-                new FakeManagedSiteService(ManagedSitesTestData.ManagedSite("site-a")),
+                new FakeManagedSiteService(ManagedSitesTestData.ManagedSite("sitea")),
                 new ManagedContentScopeService(),
                 new Mock<IManagedContentSuppressionService>(MockBehavior.Strict).Object);
         }
@@ -97,7 +97,7 @@ public class OverrideIdentityTests
 
         public async Task CreateAsync()
         {
-            var result = await _service.CreateAsync("site-a", "source-item");
+            var result = await _service.CreateAsync("sitea", "source-item");
 
             Assert.Equal(ManagedContentOverrideError.None, result.Error);
             Assert.NotNull(Created);

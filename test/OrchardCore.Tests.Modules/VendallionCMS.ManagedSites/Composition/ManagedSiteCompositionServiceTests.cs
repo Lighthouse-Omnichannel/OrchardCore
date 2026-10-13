@@ -70,7 +70,7 @@ public class ManagedSiteCompositionServiceTests
         // Reached through the Managed Site's own host, and still the tenant's own content.
         var context = await ComposeAsync("costis.localhost", "/Admin/Contents/ContentItems");
 
-        Assert.Null(context.ManagedSiteId);
+        Assert.Null(context.ManagedSiteCode);
         Assert.False(context.Resolution.IsOverride);
     }
 
@@ -110,9 +110,9 @@ public class ManagedSiteCompositionServiceTests
         var source = ManagedContentTestContent.Source(SourceId, ManagedContentScope.All());
 
         return new CompositionOutcome(
-            accessor.Current?.ManagedSiteId,
-            await resolution.ResolveAsync(source, accessor.Current?.ManagedSiteId));
+            accessor.Current?.ManagedSiteCode,
+            await resolution.ResolveAsync(source, accessor.Current?.ManagedSiteCode));
     }
 
-    private sealed record CompositionOutcome(string ManagedSiteId, ManagedContentResolution Resolution);
+    private sealed record CompositionOutcome(string ManagedSiteCode, ManagedContentResolution Resolution);
 }

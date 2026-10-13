@@ -23,7 +23,7 @@ public sealed class ManagedSiteClearanceIndex : MapIndex
     /// <summary>
     /// Gets or sets the Managed Site the grant covers.
     /// </summary>
-    public string ManagedSiteId { get; set; }
+    public string ManagedSiteCode { get; set; }
 
     /// <summary>
     /// Gets or sets the identifier of the user holding it.
@@ -54,12 +54,12 @@ public sealed class ManagedSiteClearanceIndexProvider : IndexProvider<User>
                 }
 
                 return settings.Grants
-                    .Where(grant => !string.IsNullOrEmpty(grant.ManagedSiteId))
-                    .Select(grant => grant.ManagedSiteId)
+                    .Where(grant => !string.IsNullOrEmpty(grant.ManagedSiteCode))
+                    .Select(grant => grant.ManagedSiteCode)
                     .Distinct(StringComparer.Ordinal)
-                    .Select(managedSiteId => new ManagedSiteClearanceIndex
+                    .Select(managedSiteCode => new ManagedSiteClearanceIndex
                     {
-                        ManagedSiteId = managedSiteId,
+                        ManagedSiteCode = managedSiteCode,
                         UserId = user.UserId,
                         NormalizedUserName = user.NormalizedUserName,
                     });

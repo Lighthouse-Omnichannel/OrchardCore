@@ -73,6 +73,25 @@ A user cleared for exactly one managed site is scoped to it automatically. A use
 must choose one before any scoped action, and everything they then do applies to that managed site only.
 Managed sites they hold no clearance for are neither listed nor reachable.
 
+## The code
+
+Every managed site has a **code**, chosen when it is created and fixed from then on. It is lowercase
+letters and digits, beginning with a letter, up to 50 characters: `alpha`, `contoso`, `shop2`.
+
+Everything that refers to a managed site refers to it by the code — the clearance a user holds, the rows
+recording which items the site may override and what it has overridden, the session an editor works in,
+and the address of its own admin screens. That is why it cannot be changed: changing it would detach all
+of that at once. The editor shows it after creation but does not offer it.
+
+It is chosen rather than generated because people read it. It names the site in a URL
+(`/Admin/ManagedSites/Security/alpha`), in a recipe, and in a signed clearance claim — and a claim packs
+the code and its scopes into one value separated by colons and commas, which is why punctuation is
+refused rather than escaped.
+
+A recipe must declare one. The later steps of the same recipe name the managed site by it, and a second
+run finds the same site again by it, so a declaration without a code is reported and skipped rather than
+creating a site nothing can refer to.
+
 ## Addressing
 
 A managed site is addressed by a host name, a URL prefix, or both.

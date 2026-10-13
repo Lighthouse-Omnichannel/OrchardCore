@@ -134,7 +134,7 @@ public sealed class ManagedSiteRequestMiddleware
     /// </remarks>
     private static void Rebase(HttpRequest request, ManagedSiteRequestContext context)
     {
-        if (string.IsNullOrEmpty(context.ManagedSiteId) || string.IsNullOrEmpty(context.UrlPrefix))
+        if (string.IsNullOrEmpty(context.ManagedSiteCode) || string.IsNullOrEmpty(context.UrlPrefix))
         {
             return;
         }
@@ -178,7 +178,7 @@ public sealed class ManagedSiteRequestMiddleware
     /// <returns>The path without the Managed Site's prefix, or the path itself when there is none.</returns>
     private static PathString PathWithoutPrefix(PathString path, ManagedSiteRequestContext context)
     {
-        if (string.IsNullOrEmpty(context.ManagedSiteId) || string.IsNullOrEmpty(context.UrlPrefix))
+        if (string.IsNullOrEmpty(context.ManagedSiteCode) || string.IsNullOrEmpty(context.UrlPrefix))
         {
             return path;
         }

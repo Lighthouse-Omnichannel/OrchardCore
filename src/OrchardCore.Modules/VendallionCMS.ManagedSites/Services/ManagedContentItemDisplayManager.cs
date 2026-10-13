@@ -70,7 +70,7 @@ public sealed class ManagedContentItemDisplayManager : IContentItemDisplayManage
             return await _inner.BuildDisplayAsync(content, updater, displayType, groupId);
         }
 
-        var resolution = await _resolutionService.ResolveAsync(content, _contextAccessor.Current?.ManagedSiteId);
+        var resolution = await _resolutionService.ResolveAsync(content, _contextAccessor.Current?.ManagedSiteCode);
 
         if (!resolution.ShouldRender)
         {

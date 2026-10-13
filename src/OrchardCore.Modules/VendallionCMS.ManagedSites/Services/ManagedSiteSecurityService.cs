@@ -23,39 +23,39 @@ public interface IManagedSiteSecurityService
     /// <summary>
     /// Lists the users holding clearance for a Managed Site.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site.</param>
+    /// <param name="managedSiteCode">The Managed Site.</param>
     /// <param name="search">Part of a user name to narrow by, or nothing for all of them.</param>
     /// <returns>The users, and the clearance each holds.</returns>
-    ValueTask<IReadOnlyList<ManagedSiteUserClearance>> ListClearedAsync(string managedSiteId, string search = null);
+    ValueTask<IReadOnlyList<ManagedSiteUserClearance>> ListClearedAsync(string managedSiteCode, string search = null);
 
     /// <summary>
     /// Lists the users who hold no clearance for a Managed Site and could be given it.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site.</param>
+    /// <param name="managedSiteCode">The Managed Site.</param>
     /// <param name="search">Part of a user name to narrow by, or nothing for all of them.</param>
     /// <param name="take">How many to return.</param>
     /// <returns>The users.</returns>
     ValueTask<IReadOnlyList<ManagedSiteUserClearance>> ListAvailableAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string search = null,
         int take = 50);
 
     /// <summary>
     /// Grants a user clearance for a Managed Site.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site.</param>
+    /// <param name="managedSiteCode">The Managed Site.</param>
     /// <param name="userId">The user.</param>
     /// <param name="scopes">What the clearance allows beyond reading, or nothing for reading alone.</param>
     /// <returns><see langword="true" /> when the user was found and the grant written.</returns>
-    ValueTask<bool> GrantAsync(string managedSiteId, string userId, IEnumerable<string> scopes = null);
+    ValueTask<bool> GrantAsync(string managedSiteCode, string userId, IEnumerable<string> scopes = null);
 
     /// <summary>
     /// Takes a user's clearance for a Managed Site away.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site.</param>
+    /// <param name="managedSiteCode">The Managed Site.</param>
     /// <param name="userId">The user.</param>
     /// <returns><see langword="true" /> when the user held clearance and it was taken away.</returns>
-    ValueTask<bool> RevokeAsync(string managedSiteId, string userId);
+    ValueTask<bool> RevokeAsync(string managedSiteCode, string userId);
 }
 
 /// <summary>
@@ -90,16 +90,16 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<ManagedSiteUserClearance>> ListClearedAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string search = null)
     {
-        if (string.IsNullOrEmpty(managedSiteId))
+        if (string.IsNullOrEmpty(managedSiteCode))
         {
             return [];
         }
 
         var rows = await _session
-            .QueryIndex<ManagedSiteClearanceIndex>(index => index.ManagedSiteId == managedSiteId)
+            .QueryIndex<ManagedSiteClearanceIndex>(index => index.ManagedSiteCode == managedSiteCode)
             .ListAsync();
 
         var userIds = rows.Select(row => row.UserId).ToArray();
@@ -113,17 +113,17 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
             .Query<User, UserIndex>(index => index.UserId.IsIn(userIds))
             .ListAsync();
 
-        return Describe(users, managedSiteId, search);
+        return Describe(users, managedSiteCode, search);
     }
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<ManagedSiteUserClearance>> ListAvailableAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string search = null,
         int take = 50)
     {
         var cleared = await _session
-            .QueryIndex<ManagedSiteClearanceIndex>(index => index.ManagedSiteId == managedSiteId)
+            .QueryIndex<ManagedSiteClearanceIndex>(index => index.ManagedSiteCode == managedSiteCode)
             .ListAsync();
 
         var exclude = cleared.Select(row => row.UserId).ToHashSet(StringComparer.Ordinal);
@@ -155,19 +155,19 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
     }
 
     /// <inheritdoc />
-    public async ValueTask<bool> GrantAsync(string managedSiteId, string userId, IEnumerable<string> scopes = null)
+    public async ValueTask<bool> GrantAsync(string managedSiteCode, string userId, IEnumerable<string> scopes = null)
     {
         var user = await FindAsync(userId);
 
-        if (user is null || string.IsNullOrEmpty(managedSiteId))
+        if (user is null || string.IsNullOrEmpty(managedSiteCode))
         {
             return false;
         }
 
         var settings = user.GetOrCreate<ManagedSiteClearanceSettings>();
-        var narrowed = Narrows(ScopesOf(user, managedSiteId), scopes);
+        var narrowed = Narrows(ScopesOf(user, managedSiteCode), scopes);
 
-        ApplyGrant(settings, managedSiteId, scopes);
+        ApplyGrant(settings, managedSiteCode, scopes);
 
         user.Put(settings);
         await _userManager.UpdateAsync(user);
@@ -184,7 +184,7 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
     }
 
     /// <inheritdoc />
-    public async ValueTask<bool> RevokeAsync(string managedSiteId, string userId)
+    public async ValueTask<bool> RevokeAsync(string managedSiteCode, string userId)
     {
         var user = await FindAsync(userId);
 
@@ -193,7 +193,7 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
             return false;
         }
 
-        if (!RemoveGrant(settings, managedSiteId))
+        if (!RemoveGrant(settings, managedSiteCode))
         {
             return false;
         }
@@ -233,19 +233,19 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
     /// a second grant beside the first, which would leave two answers to one question.
     /// </remarks>
     /// <param name="settings">The user's clearance.</param>
-    /// <param name="managedSiteId">The Managed Site the grant covers.</param>
+    /// <param name="managedSiteCode">The Managed Site the grant covers.</param>
     /// <param name="scopes">What it allows beyond reading, or nothing for reading alone.</param>
     internal static void ApplyGrant(
         ManagedSiteClearanceSettings settings,
-        string managedSiteId,
+        string managedSiteCode,
         IEnumerable<string> scopes)
     {
         var grant = settings.Grants.Find(candidate =>
-            string.Equals(candidate.ManagedSiteId, managedSiteId, StringComparison.Ordinal));
+            string.Equals(candidate.ManagedSiteCode, managedSiteCode, StringComparison.Ordinal));
 
         if (grant is null)
         {
-            grant = new ManagedSiteClearanceGrant { ManagedSiteId = managedSiteId };
+            grant = new ManagedSiteClearanceGrant { ManagedSiteCode = managedSiteCode };
             settings.Grants.Add(grant);
         }
 
@@ -256,11 +256,11 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
     /// Takes a Managed Site's grant out of a user's clearance.
     /// </summary>
     /// <param name="settings">The user's clearance.</param>
-    /// <param name="managedSiteId">The Managed Site to take it for.</param>
+    /// <param name="managedSiteCode">The Managed Site to take it for.</param>
     /// <returns><see langword="true" /> when a grant was there to take.</returns>
-    internal static bool RemoveGrant(ManagedSiteClearanceSettings settings, string managedSiteId)
+    internal static bool RemoveGrant(ManagedSiteClearanceSettings settings, string managedSiteCode)
         => settings.Grants.RemoveAll(grant =>
-            string.Equals(grant.ManagedSiteId, managedSiteId, StringComparison.Ordinal)) > 0;
+            string.Equals(grant.ManagedSiteCode, managedSiteCode, StringComparison.Ordinal)) > 0;
 
     /// <summary>
     /// Keeps the scopes that mean something, in a stable order.
@@ -282,7 +282,7 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
 
     private static IReadOnlyList<ManagedSiteUserClearance> Describe(
         IEnumerable<User> users,
-        string managedSiteId,
+        string managedSiteCode,
         string search)
     {
         var normalized = search?.Trim();
@@ -297,12 +297,12 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
                     user.UserId,
                     user.UserName,
                     user.Email,
-                    ScopesOf(user, managedSiteId)))
+                    ScopesOf(user, managedSiteCode)))
                 .OrderBy(entry => entry.UserName, StringComparer.OrdinalIgnoreCase),
         ];
     }
 
-    private static List<string> ScopesOf(User user, string managedSiteId)
+    private static List<string> ScopesOf(User user, string managedSiteCode)
     {
         if (!user.TryGet<ManagedSiteClearanceSettings>(out var settings))
         {
@@ -310,7 +310,7 @@ public sealed class ManagedSiteSecurityService : IManagedSiteSecurityService
         }
 
         return settings.Grants
-            .Find(grant => string.Equals(grant.ManagedSiteId, managedSiteId, StringComparison.Ordinal))
+            .Find(grant => string.Equals(grant.ManagedSiteCode, managedSiteCode, StringComparison.Ordinal))
             ?.Scopes ?? [];
     }
 

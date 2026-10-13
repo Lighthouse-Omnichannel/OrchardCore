@@ -26,9 +26,9 @@ public class ManagedSiteDefinitionTests
     {
         var service = CreateService();
 
-        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com", "shop"));
+        await service.SaveAsync(Definition("sitea", "Site A", "contoso.com", "shop"));
 
-        var stored = await service.GetAsync("site-a");
+        var stored = await service.GetAsync("sitea");
         Assert.NotNull(stored);
         Assert.Equal("Site A", stored.Name);
         Assert.Equal("contoso.com", stored.Hostname);
@@ -40,21 +40,21 @@ public class ManagedSiteDefinitionTests
     {
         var service = CreateService();
 
-        await service.SaveAsync(Definition("site-a", "Site A", "a.example"));
-        await service.SaveAsync(Definition("site-b", "Site B", "b.example"));
+        await service.SaveAsync(Definition("sitea", "Site A", "a.example"));
+        await service.SaveAsync(Definition("siteb", "Site B", "b.example"));
 
         var all = await service.ListAsync();
 
-        Assert.Equal(["site-a", "site-b"], all.Select(managedSite => managedSite.Id).Order());
+        Assert.Equal(["sitea", "siteb"], all.Select(managedSite => managedSite.Code).Order());
     }
 
     [Fact]
     public async Task SaveAsync_ExistingDefinition_ReplacesItRatherThanDuplicating()
     {
         var service = CreateService();
-        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com"));
+        await service.SaveAsync(Definition("sitea", "Site A", "contoso.com"));
 
-        await service.SaveAsync(Definition("site-a", "Renamed", "contoso.com"));
+        await service.SaveAsync(Definition("sitea", "Renamed", "contoso.com"));
 
         var stored = Assert.Single(await service.ListAsync());
         Assert.Equal("Renamed", stored.Name);
@@ -64,9 +64,9 @@ public class ManagedSiteDefinitionTests
     public async Task SaveAsync_AddressChanged_ReplacesTheOldOne()
     {
         var service = CreateService();
-        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com", null));
+        await service.SaveAsync(Definition("sitea", "Site A", "contoso.com", null));
 
-        await service.SaveAsync(Definition("site-a", "Site A", "fabrikam.com", null));
+        await service.SaveAsync(Definition("sitea", "Site A", "fabrikam.com", null));
 
         Assert.NotNull(await service.FindByAddressAsync("fabrikam.com", "/"));
         Assert.Null(await service.FindByAddressAsync("contoso.com", "/"));
@@ -76,11 +76,11 @@ public class ManagedSiteDefinitionTests
     public async Task SaveAsync_UnchangedAddressOnEdit_IsNotTreatedAsAConflict()
     {
         var service = CreateService();
-        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com", "shop"));
+        await service.SaveAsync(Definition("sitea", "Site A", "contoso.com", "shop"));
 
-        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com", "shop"));
+        await service.SaveAsync(Definition("sitea", "Site A", "contoso.com", "shop"));
 
-        var stored = await service.GetAsync("site-a");
+        var stored = await service.GetAsync("sitea");
         Assert.Equal("contoso.com", stored.Hostname);
     }
 
@@ -88,10 +88,10 @@ public class ManagedSiteDefinitionTests
     public async Task SaveAsync_AddressOwnedByAnotherManagedSite_IsRejected()
     {
         var service = CreateService();
-        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com", "shop"));
+        await service.SaveAsync(Definition("sitea", "Site A", "contoso.com", "shop"));
 
         var exception = await Assert.ThrowsAsync<ManagedSiteValidationException>(
-            async () => await service.SaveAsync(Definition("site-b", "Site B", "contoso.com", "shop")));
+            async () => await service.SaveAsync(Definition("siteb", "Site B", "contoso.com", "shop")));
 
         Assert.Equal(ManagedSitesConstants.ErrorCodes.UrlConflict, exception.Code);
     }
@@ -100,10 +100,10 @@ public class ManagedSiteDefinitionTests
     public async Task SaveAsync_NameAlreadyUsedByAnotherManagedSite_IsRejected()
     {
         var service = CreateService();
-        await service.SaveAsync(Definition("site-a", "Shared name", "a.example"));
+        await service.SaveAsync(Definition("sitea", "Shared name", "a.example"));
 
         var exception = await Assert.ThrowsAsync<ManagedSiteValidationException>(
-            async () => await service.SaveAsync(Definition("site-b", "shared NAME", "b.example")));
+            async () => await service.SaveAsync(Definition("siteb", "shared NAME", "b.example")));
 
         Assert.Equal(ManagedSitesConstants.ErrorCodes.NameConflict, exception.Code);
     }
@@ -114,7 +114,7 @@ public class ManagedSiteDefinitionTests
         var service = CreateService();
 
         var exception = await Assert.ThrowsAsync<ManagedSiteValidationException>(
-            async () => await service.SaveAsync(Definition("site-a", "  ")));
+            async () => await service.SaveAsync(Definition("sitea", "  ")));
 
         Assert.Equal(ManagedSitesConstants.ErrorCodes.InvalidName, exception.Code);
     }
@@ -123,25 +123,25 @@ public class ManagedSiteDefinitionTests
     public async Task SaveAsync_RejectedDefinition_LeavesStoredStateUnchanged()
     {
         var service = CreateService();
-        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com", "shop"));
+        await service.SaveAsync(Definition("sitea", "Site A", "contoso.com", "shop"));
 
         await Assert.ThrowsAsync<ManagedSiteValidationException>(
-            async () => await service.SaveAsync(Definition("site-b", "Site B", "contoso.com", "shop")));
+            async () => await service.SaveAsync(Definition("siteb", "Site B", "contoso.com", "shop")));
 
         var stored = Assert.Single(await service.ListAsync());
-        Assert.Equal("site-a", stored.Id);
+        Assert.Equal("sitea", stored.Code);
     }
 
     [Fact]
     public async Task DeleteAsync_RemovesDefinitionAndItsAddress()
     {
         var service = CreateService();
-        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com"));
+        await service.SaveAsync(Definition("sitea", "Site A", "contoso.com"));
 
-        var removed = await service.DeleteAsync("site-a");
+        var removed = await service.DeleteAsync("sitea");
 
         Assert.True(removed);
-        Assert.Null(await service.GetAsync("site-a"));
+        Assert.Null(await service.GetAsync("sitea"));
         Assert.Null(await service.FindByAddressAsync("contoso.com", "/"));
     }
 
@@ -157,22 +157,102 @@ public class ManagedSiteDefinitionTests
     public async Task DeleteAsync_FreesTheAddressForAnotherManagedSite()
     {
         var service = CreateService();
-        await service.SaveAsync(Definition("site-a", "Site A", "contoso.com", "shop"));
-        await service.DeleteAsync("site-a");
+        await service.SaveAsync(Definition("sitea", "Site A", "contoso.com", "shop"));
+        await service.DeleteAsync("sitea");
 
-        await service.SaveAsync(Definition("site-b", "Site B", "contoso.com", "shop"));
+        await service.SaveAsync(Definition("siteb", "Site B", "contoso.com", "shop"));
 
-        var stored = await service.GetAsync("site-b");
+        var stored = await service.GetAsync("siteb");
         Assert.Equal("contoso.com", stored.Hostname);
     }
 
     private static ManagedSiteService CreateService()
         => new(new FakeSiteService(), new FakeShellUrlSynchronizationService());
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task SaveAsync_WithoutACode_IsRejected(string code)
+    {
+        var service = CreateService();
+
+        var exception = await Assert.ThrowsAsync<ManagedSiteValidationException>(
+            async () => await service.SaveAsync(Definition(code, "Alpha")));
+
+        Assert.Equal(ManagedSitesConstants.ErrorCodes.InvalidCode, exception.Code);
+    }
+
+    [Theory]
+    [InlineData("Alpha")]          // not lowercase
+    [InlineData("alpha site")]     // a space
+    [InlineData("alpha-site")]     // punctuation
+    [InlineData("1alpha")]         // begins with a digit
+    [InlineData("alpha_site")]
+    [InlineData("alpha.site")]
+    public async Task SaveAsync_ACodeThatBreaksTheRule_IsRejected(string code)
+    {
+        // The code is written into a URL path, a recipe, and a claim whose parts are separated by
+        // colons and commas, so anything but lowercase letters and digits is refused at the door.
+        var service = CreateService();
+
+        var exception = await Assert.ThrowsAsync<ManagedSiteValidationException>(
+            async () => await service.SaveAsync(Definition(code, "Alpha")));
+
+        Assert.Equal(ManagedSitesConstants.ErrorCodes.InvalidCode, exception.Code);
+    }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("alpha")]
+    [InlineData("alpha2")]
+    [InlineData("a1b2c3")]
+    public async Task SaveAsync_ACodeThatFollowsTheRule_IsAccepted(string code)
+    {
+        var service = CreateService();
+
+        await service.SaveAsync(Definition(code, "Alpha"));
+
+        Assert.Equal(code, Assert.Single(await service.ListAsync()).Code);
+    }
+
+    [Fact]
+    public async Task SaveAsync_ACodeLongerThanAllowed_IsRejected()
+    {
+        var service = CreateService();
+        var code = "a" + new string('b', ManagedSitesConstants.Code.MaximumLength);
+
+        var exception = await Assert.ThrowsAsync<ManagedSiteValidationException>(
+            async () => await service.SaveAsync(Definition(code, "Alpha")));
+
+        Assert.Equal(ManagedSitesConstants.ErrorCodes.InvalidCode, exception.Code);
+    }
+
+    [Fact]
+    public async Task SaveAsync_ACodeOfExactlyTheLengthAllowed_IsAccepted()
+    {
+        var service = CreateService();
+        var code = "a" + new string('b', ManagedSitesConstants.Code.MaximumLength - 1);
+
+        await service.SaveAsync(Definition(code, "Alpha"));
+
+        Assert.Equal(code, Assert.Single(await service.ListAsync()).Code);
+    }
+
+    [Fact]
+    public async Task SaveAsync_ACodeWithSpaceAroundIt_IsStoredTrimmed()
+    {
+        var service = CreateService();
+
+        await service.SaveAsync(Definition("  alpha  ", "Alpha"));
+
+        Assert.Equal("alpha", Assert.Single(await service.ListAsync()).Code);
+    }
+
     private static ManagedSite Definition(string id, string name, string hostname = null, string urlPrefix = null)
         => new()
         {
-            Id = id,
+            Code = id,
             Name = name,
             Status = ManagedSiteStatus.Enabled,
             Hostname = hostname,

@@ -64,7 +64,7 @@ public class DuplicateOverrideTests
     private static ManagedContentOverrideIndex Row(string overrideContentItemId)
         => new()
         {
-            ManagedSiteId = "site-a",
+            ManagedSiteCode = "sitea",
             SourceContentItemId = "source-item",
             OverrideContentItemId = overrideContentItemId,
         };

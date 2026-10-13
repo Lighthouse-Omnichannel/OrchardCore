@@ -47,9 +47,9 @@ public sealed class ManagedSiteCompositionInvalidationHandler : ContentHandlerBa
         }
 
         if (contentItem.TryGet<ManagedContentOverridePart>(out var overridePart)
-            && !string.IsNullOrEmpty(overridePart.ManagedSiteId))
+            && !string.IsNullOrEmpty(overridePart.ManagedSiteCode))
         {
-            await _cacheService.InvalidateAsync(overridePart.ManagedSiteId, ManagedSiteCompositionArea.Override);
+            await _cacheService.InvalidateAsync(overridePart.ManagedSiteCode, ManagedSiteCompositionArea.Override);
 
             return;
         }
@@ -59,10 +59,10 @@ public sealed class ManagedSiteCompositionInvalidationHandler : ContentHandlerBa
             // The item is customizable, so its scopes decide who sees it and its content decides what
             // they see. Both reach every Managed Site.
             await _cacheService.InvalidateAsync(
-                managedSiteId: null,
+                managedSiteCode: null,
                 ManagedSiteCompositionArea.ManagedContentScope);
         }
 
-        await _cacheService.InvalidateAsync(managedSiteId: null, ManagedSiteCompositionArea.Content);
+        await _cacheService.InvalidateAsync(managedSiteCode: null, ManagedSiteCompositionArea.Content);
     }
 }

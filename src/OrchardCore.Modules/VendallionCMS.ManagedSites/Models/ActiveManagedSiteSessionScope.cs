@@ -13,7 +13,7 @@ public sealed class ActiveManagedSiteSessionScope
     /// <summary>
     /// Gets or sets the selected Managed Site identifier.
     /// </summary>
-    public string ManagedSiteId { get; set; }
+    public string ManagedSiteCode { get; set; }
 
     /// <summary>
     /// Gets or sets when the Managed Site was selected.

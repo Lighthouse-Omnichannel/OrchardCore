@@ -33,7 +33,7 @@ public class ManagedContentOverrideAuthorizationTests
     [Fact]
     public async Task SwitchedOffManagedSite_IsRejected()
     {
-        var context = Context(ManagedSitesTestData.ManagedSite("site-a", ManagedSiteStatus.Disabled));
+        var context = Context(ManagedSitesTestData.ManagedSite("sitea", ManagedSiteStatus.Disabled));
 
         Assert.Equal(ManagedContentOverrideError.ManagedSiteUnavailable, await context.SaveAsync());
     }
@@ -60,7 +60,7 @@ public class ManagedContentOverrideAuthorizationTests
     public async Task ManagedSiteOutsideTheEditScope_IsRejected()
     {
         var context = Context();
-        context.WithSource(ManagedContentScope.Selected("site-b"));
+        context.WithSource(ManagedContentScope.Selected("siteb"));
 
         Assert.Equal(ManagedContentOverrideError.EditScopeExcluded, await context.SaveAsync());
     }
@@ -78,7 +78,7 @@ public class ManagedContentOverrideAuthorizationTests
     public async Task MissingOverrideContentItem_IsRejected()
     {
         var context = Context();
-        context.WithSource(ManagedContentScope.Selected("site-a"));
+        context.WithSource(ManagedContentScope.Selected("sitea"));
 
         Assert.Equal(ManagedContentOverrideError.OverrideNotFound, await context.SaveAsync());
     }
@@ -89,7 +89,7 @@ public class ManagedContentOverrideAuthorizationTests
         // An override stands in for its source, so the platform has to be able to validate and render
         // it as the same type.
         var context = Context();
-        context.WithSource(ManagedContentScope.Selected("site-a"));
+        context.WithSource(ManagedContentScope.Selected("sitea"));
         context.WithOverrideContentItem(contentType: "Article");
 
         Assert.Equal(ManagedContentOverrideError.ContentTypeMismatch, await context.SaveAsync());
@@ -101,7 +101,7 @@ public class ManagedContentOverrideAuthorizationTests
         // Order matters for what a refusal leaks. A Managed Site with no right to override must be
         // turned away on the scope, not told whether the content item it named exists.
         var context = Context();
-        context.WithSource(ManagedContentScope.Selected("site-b"));
+        context.WithSource(ManagedContentScope.Selected("siteb"));
         context.WithOverrideContentItem(contentType: "Article");
 
         Assert.Equal(ManagedContentOverrideError.EditScopeExcluded, await context.SaveAsync());
@@ -113,7 +113,7 @@ public class ManagedContentOverrideAuthorizationTests
     /// <param name="managedSite">The Managed Site, defaulting to an enabled one.</param>
     /// <returns>The context.</returns>
     private static OverrideAuthorizationContext Context(ManagedSite managedSite = null)
-        => new(managedSite ?? ManagedSitesTestData.ManagedSite("site-a"));
+        => new(managedSite ?? ManagedSitesTestData.ManagedSite("sitea"));
 
     /// <summary>
     /// Builds a context where the requested Managed Site was never defined.
@@ -158,7 +158,7 @@ public class ManagedContentOverrideAuthorizationTests
 
         public async Task<ManagedContentOverrideError> SaveAsync()
         {
-            var result = await _service.SaveAsync("site-a", "source-item", "override-item", publish: false);
+            var result = await _service.SaveAsync("sitea", "source-item", "override-item", publish: false);
 
             return result.Error;
         }

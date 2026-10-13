@@ -150,7 +150,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
             await CreateManagedSiteAsync(page, "Fabrikam", "fabrikam");
             await GrantClearanceAsync(page, "Contoso");
 
-            var unclearedId = await ReadManagedSiteIdAsync(page, "Fabrikam");
+            var unclearedId = await ReadManagedSiteCodeAsync(page, "Fabrikam");
 
             await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Portal/Select");
 
@@ -182,7 +182,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
             await CreateManagedSiteAsync(page, "Contoso", "contoso");
             await GrantClearanceAsync(page, "Contoso");
 
-            var contosoId = await ReadManagedSiteIdAsync(page, "Contoso");
+            var contosoId = await ReadManagedSiteCodeAsync(page, "Contoso");
 
             var response = await PostSelectAsync(page, contosoId, antiforgeryToken: null);
 
@@ -242,7 +242,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     {
         var page = await CreateAuthenticatedPageAsync();
         await CreateManagedSiteAsync(page, "Contoso", "contoso");
-        var id = await ReadManagedSiteIdAsync(page, "Contoso");
+        var id = await ReadManagedSiteCodeAsync(page, "Contoso");
         await page.CloseAsync();
 
         var anonymousPage = await Fixture.CreatePageAsync();
@@ -287,7 +287,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
 
     private async Task GotoSecurityAsync(IPage page, string managedSiteName)
         => await page.GotoAndAssertOkAsync(
-            $"/{Tenant.Prefix}/Admin/ManagedSites/Security/{await ReadManagedSiteIdAsync(page, managedSiteName)}");
+            $"/{Tenant.Prefix}/Admin/ManagedSites/Security/{await ReadManagedSiteCodeAsync(page, managedSiteName)}");
 
     private async Task CreateManagedSiteAsync(IPage page, string name, string urlPrefix)
     {
@@ -295,6 +295,8 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
         await page.ClickCreateAsync();
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
+        // The code names the managed site everywhere else and is asked for only here.
+        await page.Locator("#Code").FillAsync(name.ToLowerInvariant().Replace(" ", string.Empty));
         await page.Locator("#Name").FillAsync(name);
         await page.Locator("#UrlPrefix").FillAsync(urlPrefix);
 
@@ -307,7 +309,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     /// Reads a managed site's generated identifier out of its row, since the admin assigns one rather
     /// than deriving it from the name.
     /// </summary>
-    private async Task<string> ReadManagedSiteIdAsync(IPage page, string name)
+    private async Task<string> ReadManagedSiteCodeAsync(IPage page, string name)
     {
         await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Index");
 
@@ -323,9 +325,9 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     private static async Task<string> ReadAntiforgeryTokenAsync(IPage page)
         => await page.Locator("input[name='__RequestVerificationToken']").First.GetAttributeAsync("value");
 
-    private Task<IAPIResponse> PostSelectAsync(IPage page, string managedSiteId, string antiforgeryToken)
+    private Task<IAPIResponse> PostSelectAsync(IPage page, string managedSiteCode, string antiforgeryToken)
     {
-        var form = $"managedSiteId={Uri.EscapeDataString(managedSiteId)}";
+        var form = $"managedSiteCode={Uri.EscapeDataString(managedSiteCode)}";
 
         if (!string.IsNullOrEmpty(antiforgeryToken))
         {

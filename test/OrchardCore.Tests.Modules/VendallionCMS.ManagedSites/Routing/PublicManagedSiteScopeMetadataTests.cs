@@ -22,32 +22,32 @@ public class PublicManagedSiteScopeMetadataTests
     public async Task ScopeHeader_DoesNotChangeWhichManagedSiteIsResolved()
     {
         var context = Request("contoso.com", "/");
-        context.Request.Headers[ManagedSitesConstants.Headers.ManagedSiteId] = "site-b";
+        context.Request.Headers[ManagedSitesConstants.Headers.ManagedSiteCode] = "siteb";
 
         var accessor = await InvokeAsync(context);
 
-        Assert.Equal("site-a", accessor.Current.ManagedSiteId);
+        Assert.Equal("sitea", accessor.Current.ManagedSiteCode);
     }
 
     [Fact]
     public async Task ScopeHeader_CannotInventAManagedSiteForAnUnclaimedHost()
     {
         var context = Request("fabrikam.com", "/");
-        context.Request.Headers[ManagedSitesConstants.Headers.ManagedSiteId] = "site-a";
+        context.Request.Headers[ManagedSitesConstants.Headers.ManagedSiteCode] = "sitea";
 
         var accessor = await InvokeAsync(context);
 
-        Assert.Null(accessor.Current.ManagedSiteId);
+        Assert.Null(accessor.Current.ManagedSiteCode);
     }
 
     [Fact]
     public async Task ScopeQueryValue_IsIgnoredToo()
     {
-        var context = Request("fabrikam.com", "/", queryString: "?managedSiteId=site-a");
+        var context = Request("fabrikam.com", "/", queryString: "?managedSiteCode=sitea");
 
         var accessor = await InvokeAsync(context);
 
-        Assert.Null(accessor.Current.ManagedSiteId);
+        Assert.Null(accessor.Current.ManagedSiteCode);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class PublicManagedSiteScopeMetadataTests
     {
         var accessor = await InvokeAsync(Request("contoso.com", "/"));
 
-        Assert.Equal("site-a", accessor.Current.ManagedSiteId);
+        Assert.Equal("sitea", accessor.Current.ManagedSiteCode);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class PublicManagedSiteScopeMetadataTests
         // is routed, so it would match and then serve nothing.
         var context = Request("localhost", "/shop/about");
 
-        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"));
 
         Assert.Equal("/shop", context.Request.PathBase);
         Assert.Equal("/about", context.Request.Path);
@@ -104,7 +104,7 @@ public class PublicManagedSiteScopeMetadataTests
         // prefix leaves behind too, and it is what routes to the home page.
         var context = Request("localhost", "/shop");
 
-        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"));
 
         Assert.Equal("/shop", context.Request.PathBase);
         Assert.Equal(string.Empty, context.Request.Path.ToString());
@@ -117,7 +117,7 @@ public class PublicManagedSiteScopeMetadataTests
         var context = Request("localhost", "/shop/about");
         context.Request.PathBase = "/tenant";
 
-        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"));
 
         Assert.Equal("/tenant/shop", context.Request.PathBase);
     }
@@ -138,7 +138,7 @@ public class PublicManagedSiteScopeMetadataTests
     {
         var context = Request("fabrikam.com", "/shop/about");
 
-        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", hostname: "contoso.com", urlPrefix: "shop"));
+        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("sitea", hostname: "contoso.com", urlPrefix: "shop"));
 
         Assert.Equal(string.Empty, context.Request.PathBase.ToString());
         Assert.Equal("/shop/about", context.Request.Path);
@@ -153,7 +153,7 @@ public class PublicManagedSiteScopeMetadataTests
         // address, and saving wrote one site's content over the content every site is served.
         var context = Request("localhost", "/shop/Admin/Contents/ContentItems");
 
-        var accessor = await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+        var accessor = await InvokeAsync(context, ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"));
 
         Assert.Null(accessor.Current);
     }
@@ -166,7 +166,7 @@ public class PublicManagedSiteScopeMetadataTests
         // of every Managed Site pointing at nothing.
         var context = Request("localhost", "/shop/Admin/Contents/ContentItems", queryString: "?page=2");
 
-        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"));
 
         Assert.Equal(StatusCodes.Status307TemporaryRedirect, context.Response.StatusCode);
         Assert.Equal("/Admin/Contents/ContentItems?page=2", context.Response.Headers.Location);
@@ -179,7 +179,7 @@ public class PublicManagedSiteScopeMetadataTests
         var context = Request("localhost", "/shop/Admin/Contents/ContentItems");
         context.Request.Method = HttpMethods.Post;
 
-        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"));
 
         Assert.Equal(StatusCodes.Status307TemporaryRedirect, context.Response.StatusCode);
     }
@@ -192,7 +192,7 @@ public class PublicManagedSiteScopeMetadataTests
         var context = Request("localhost", "/shop/Admin");
         context.Request.PathBase = "/tenant";
 
-        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+        await InvokeAsync(context, ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"));
 
         Assert.Equal("/tenant/Admin", context.Response.Headers.Location);
     }
@@ -210,7 +210,7 @@ public class PublicManagedSiteScopeMetadataTests
             return Task.CompletedTask;
         }).InvokeAsync(
             context,
-            new ManagedSiteUrlResolver(new FakeManagedSiteService(ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"))),
+            new ManagedSiteUrlResolver(new FakeManagedSiteService(ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"))),
             new ManagedSiteCompositionContextAccessor(),
             AdminOptions());
 
@@ -222,7 +222,7 @@ public class PublicManagedSiteScopeMetadataTests
     {
         var context = Request("localhost", "/shop/api/content");
 
-        var accessor = await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+        var accessor = await InvokeAsync(context, ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"));
 
         Assert.Null(accessor.Current);
         Assert.Equal("/api/content", context.Response.Headers.Location);
@@ -235,9 +235,9 @@ public class PublicManagedSiteScopeMetadataTests
         // that would stop a Managed Site serving any page whose first segment starts with "Admin".
         var context = Request("localhost", "/shop/Administration");
 
-        var accessor = await InvokeAsync(context, ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+        var accessor = await InvokeAsync(context, ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"));
 
-        Assert.Equal("site-a", accessor.Current.ManagedSiteId);
+        Assert.Equal("sitea", accessor.Current.ManagedSiteCode);
         Assert.Equal("/shop", context.Request.PathBase);
         Assert.Equal("/Administration", context.Request.Path);
     }
@@ -269,7 +269,7 @@ public class PublicManagedSiteScopeMetadataTests
     private static ManagedSiteRequestMiddleware Middleware(RequestDelegate next) => new(next);
 
     private static ManagedSiteUrlResolver Resolver()
-        => new(new FakeManagedSiteService(ManagedSitesTestData.ManagedSite("site-a", hostname: "contoso.com")));
+        => new(new FakeManagedSiteService(ManagedSitesTestData.ManagedSite("sitea", hostname: "contoso.com")));
 
     private static IOptions<AdminOptions> AdminOptions() => Options.Create(new AdminOptions());
 

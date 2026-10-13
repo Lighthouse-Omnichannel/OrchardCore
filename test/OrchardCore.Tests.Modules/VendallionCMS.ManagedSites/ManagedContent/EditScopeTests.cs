@@ -11,30 +11,30 @@ public class EditScopeTests
 {
     [Fact]
     public void ScopeNone_AllowsNobody()
-        => Assert.False(Service.CanEdit(Part(ManagedContentScope.None()), "site-a"));
+        => Assert.False(Service.CanEdit(Part(ManagedContentScope.None()), "sitea"));
 
     [Fact]
     public void ScopeAll_AllowsAnyManagedSite()
     {
-        Assert.True(Service.CanEdit(Part(ManagedContentScope.All()), "site-a"));
-        Assert.True(Service.CanEdit(Part(ManagedContentScope.All()), "site-b"));
+        Assert.True(Service.CanEdit(Part(ManagedContentScope.All()), "sitea"));
+        Assert.True(Service.CanEdit(Part(ManagedContentScope.All()), "siteb"));
     }
 
     [Fact]
     public void ScopeSelected_AllowsOnlyTheNamedManagedSites()
     {
-        var part = Part(ManagedContentScope.Selected("site-a", "site-b"));
+        var part = Part(ManagedContentScope.Selected("sitea", "siteb"));
 
-        Assert.True(Service.CanEdit(part, "site-a"));
-        Assert.True(Service.CanEdit(part, "site-b"));
-        Assert.False(Service.CanEdit(part, "site-c"));
+        Assert.True(Service.CanEdit(part, "sitea"));
+        Assert.True(Service.CanEdit(part, "siteb"));
+        Assert.False(Service.CanEdit(part, "sitec"));
     }
 
     [Fact]
     public void ScopeSelected_IsCaseSensitiveOnIdentifiers()
     {
         // Identifiers are generated, so a case-insensitive match would only ever widen the scope.
-        var part = Part(ManagedContentScope.Selected("site-a"));
+        var part = Part(ManagedContentScope.Selected("sitea"));
 
         Assert.False(Service.CanEdit(part, "SITE-A"));
     }
@@ -43,13 +43,13 @@ public class EditScopeTests
     public void BlueprintContext_NeverEdits()
     {
         // Only a Managed Site holds an override; blueprint administrators change the original item.
-        Assert.False(Service.CanEdit(Part(ManagedContentScope.All()), managedSiteId: null));
+        Assert.False(Service.CanEdit(Part(ManagedContentScope.All()), managedSiteCode: null));
         Assert.False(Service.CanEdit(Part(ManagedContentScope.All()), string.Empty));
     }
 
     [Fact]
     public void ItemWithoutThePart_IsNotEditableByAnyManagedSite()
-        => Assert.False(Service.CanEdit(part: null, "site-a"));
+        => Assert.False(Service.CanEdit(part: null, "sitea"));
 
     [Fact]
     public void EditScope_IsIndependentOfDisplayScope()
@@ -59,12 +59,12 @@ public class EditScopeTests
         // Keeping the two answers coupled is the editor's job, covered by ManagedContentScopeCoherenceTests.
         var part = new ManagedContentPart
         {
-            EditScope = ManagedContentScope.Selected("site-a"),
+            EditScope = ManagedContentScope.Selected("sitea"),
             DisplayScope = ManagedContentScope.None(),
         };
 
-        Assert.True(Service.CanEdit(part, "site-a"));
-        Assert.False(Service.CanDisplay(part, "site-a"));
+        Assert.True(Service.CanEdit(part, "sitea"));
+        Assert.False(Service.CanDisplay(part, "sitea"));
     }
 
     private static ManagedContentScopeService Service => new();

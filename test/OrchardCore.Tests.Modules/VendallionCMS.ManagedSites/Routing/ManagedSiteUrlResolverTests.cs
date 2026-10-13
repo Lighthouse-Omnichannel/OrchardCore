@@ -17,39 +17,39 @@ public class ManagedSiteUrlResolverTests
     [Fact]
     public async Task HostName_ResolvesTheManagedSiteThatClaimsIt()
     {
-        var resolver = Resolver(ManagedSitesTestData.ManagedSite("site-a", hostname: "contoso.com"));
+        var resolver = Resolver(ManagedSitesTestData.ManagedSite("sitea", hostname: "contoso.com"));
 
         var context = await resolver.ResolveAsync("contoso.com", "/");
 
-        Assert.Equal("site-a", context.ManagedSiteId);
+        Assert.Equal("sitea", context.ManagedSiteCode);
     }
 
     [Fact]
     public async Task UnclaimedHostName_ResolvesToTheSiteBlueprint()
     {
-        var resolver = Resolver(ManagedSitesTestData.ManagedSite("site-a", hostname: "contoso.com"));
+        var resolver = Resolver(ManagedSitesTestData.ManagedSite("sitea", hostname: "contoso.com"));
 
         var context = await resolver.ResolveAsync("fabrikam.com", "/");
 
-        Assert.Null(context.ManagedSiteId);
+        Assert.Null(context.ManagedSiteCode);
     }
 
     [Fact]
     public async Task UrlPrefix_ResolvesOnAnyHostWhenNoHostNameIsClaimed()
     {
         // An empty Hostname answers on every host the tenant serves, exactly as it does for a tenant.
-        var resolver = Resolver(ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+        var resolver = Resolver(ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"));
 
-        Assert.Equal("site-a", (await resolver.ResolveAsync("contoso.com", "/shop")).ManagedSiteId);
-        Assert.Equal("site-a", (await resolver.ResolveAsync("fabrikam.com", "/shop/basket")).ManagedSiteId);
+        Assert.Equal("sitea", (await resolver.ResolveAsync("contoso.com", "/shop")).ManagedSiteCode);
+        Assert.Equal("sitea", (await resolver.ResolveAsync("fabrikam.com", "/shop/basket")).ManagedSiteCode);
     }
 
     [Fact]
     public async Task UrlPrefix_DoesNotMatchAPathThatMerelyStartsWithIt()
     {
-        var resolver = Resolver(ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"));
+        var resolver = Resolver(ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"));
 
-        Assert.Null((await resolver.ResolveAsync("contoso.com", "/shopping")).ManagedSiteId);
+        Assert.Null((await resolver.ResolveAsync("contoso.com", "/shopping")).ManagedSiteCode);
     }
 
     [Fact]
@@ -60,8 +60,8 @@ public class ManagedSiteUrlResolverTests
             ManagedSitesTestData.ManagedSite("everywhere", urlPrefix: "shop"),
             ManagedSitesTestData.ManagedSite("named", hostname: "contoso.com", urlPrefix: "shop"));
 
-        Assert.Equal("named", (await resolver.ResolveAsync("contoso.com", "/shop")).ManagedSiteId);
-        Assert.Equal("everywhere", (await resolver.ResolveAsync("fabrikam.com", "/shop")).ManagedSiteId);
+        Assert.Equal("named", (await resolver.ResolveAsync("contoso.com", "/shop")).ManagedSiteCode);
+        Assert.Equal("everywhere", (await resolver.ResolveAsync("fabrikam.com", "/shop")).ManagedSiteCode);
     }
 
     [Fact]
@@ -71,24 +71,24 @@ public class ManagedSiteUrlResolverTests
             ManagedSitesTestData.ManagedSite("shallow", urlPrefix: "shop"),
             ManagedSitesTestData.ManagedSite("deep", urlPrefix: "shop/outlet"));
 
-        Assert.Equal("deep", (await resolver.ResolveAsync("contoso.com", "/shop/outlet/socks")).ManagedSiteId);
-        Assert.Equal("shallow", (await resolver.ResolveAsync("contoso.com", "/shop/socks")).ManagedSiteId);
+        Assert.Equal("deep", (await resolver.ResolveAsync("contoso.com", "/shop/outlet/socks")).ManagedSiteCode);
+        Assert.Equal("shallow", (await resolver.ResolveAsync("contoso.com", "/shop/socks")).ManagedSiteCode);
     }
 
     [Fact]
     public async Task DisabledManagedSite_AnswersNothing()
     {
         var resolver = Resolver(
-            ManagedSitesTestData.ManagedSite("site-a", ManagedSiteStatus.Disabled, hostname: "contoso.com"));
+            ManagedSitesTestData.ManagedSite("sitea", ManagedSiteStatus.Disabled, hostname: "contoso.com"));
 
-        Assert.Null((await resolver.ResolveAsync("contoso.com", "/")).ManagedSiteId);
+        Assert.Null((await resolver.ResolveAsync("contoso.com", "/")).ManagedSiteCode);
     }
 
     [Fact]
     public async Task ResolvedContext_CarriesTheAddressItWasResolvedFrom()
     {
         // Kept so a consumer can say why it decided as it did, without re-reading the request.
-        var resolver = Resolver(ManagedSitesTestData.ManagedSite("site-a", hostname: "contoso.com"));
+        var resolver = Resolver(ManagedSitesTestData.ManagedSite("sitea", hostname: "contoso.com"));
 
         var context = await resolver.ResolveAsync("contoso.com", "/about");
 
@@ -99,7 +99,7 @@ public class ManagedSiteUrlResolverTests
     [Fact]
     public async Task NoManagedSitesDefined_ResolvesToTheSiteBlueprint()
     {
-        Assert.Null((await Resolver().ResolveAsync("contoso.com", "/")).ManagedSiteId);
+        Assert.Null((await Resolver().ResolveAsync("contoso.com", "/")).ManagedSiteCode);
     }
 
     private static ManagedSiteUrlResolver Resolver(params ManagedSite[] managedSites)

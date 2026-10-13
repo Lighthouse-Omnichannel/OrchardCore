@@ -72,7 +72,7 @@ public sealed class ManagedSiteContentAuthorizationHandler : AuthorizationHandle
 
         if (context.Resource is not ContentItem contentItem
             || !contentItem.TryGet<ManagedContentOverridePart>(out var part)
-            || string.IsNullOrEmpty(part.ManagedSiteId))
+            || string.IsNullOrEmpty(part.ManagedSiteCode))
         {
             return;
         }
@@ -82,7 +82,7 @@ public sealed class ManagedSiteContentAuthorizationHandler : AuthorizationHandle
             return;
         }
 
-        if (await _clearanceService.HasClearanceAsync(context.User, part.ManagedSiteId, scope))
+        if (await _clearanceService.HasClearanceAsync(context.User, part.ManagedSiteCode, scope))
         {
             context.Succeed(requirement);
         }

@@ -17,12 +17,12 @@ public class OverrideRenderingTests
     [Fact]
     public async Task OwningManagedSite_ReceivesTheOverride()
     {
-        var source = ManagedContentTestContent.Source(editScope: ManagedContentScope.Selected("site-a"));
+        var source = ManagedContentTestContent.Source(editScope: ManagedContentScope.Selected("sitea"));
         var overrideContent = ManagedContentTestContent.Override();
         var service = Resolution(new FakeManagedContentOverrideService()
-            .WithPublished("site-a", source.ContentItemId, overrideContent));
+            .WithPublished("sitea", source.ContentItemId, overrideContent));
 
-        var resolution = await service.ResolveAsync(source, "site-a");
+        var resolution = await service.ResolveAsync(source, "sitea");
 
         Assert.True(resolution.ShouldRender);
         Assert.True(resolution.IsOverride);
@@ -34,12 +34,12 @@ public class OverrideRenderingTests
     {
         // Two Managed Sites may both override an item; only the one that did receives its own version.
         var source = ManagedContentTestContent.Source(
-            editScope: ManagedContentScope.Selected("site-a", "site-b"));
+            editScope: ManagedContentScope.Selected("sitea", "siteb"));
 
         var service = Resolution(new FakeManagedContentOverrideService()
-            .WithPublished("site-a", source.ContentItemId, ManagedContentTestContent.Override()));
+            .WithPublished("sitea", source.ContentItemId, ManagedContentTestContent.Override()));
 
-        var resolution = await service.ResolveAsync(source, "site-b");
+        var resolution = await service.ResolveAsync(source, "siteb");
 
         Assert.True(resolution.ShouldRender);
         Assert.False(resolution.IsOverride);
@@ -51,9 +51,9 @@ public class OverrideRenderingTests
     {
         var source = ManagedContentTestContent.Source(editScope: ManagedContentScope.All());
         var service = Resolution(new FakeManagedContentOverrideService()
-            .WithPublished("site-a", source.ContentItemId, ManagedContentTestContent.Override()));
+            .WithPublished("sitea", source.ContentItemId, ManagedContentTestContent.Override()));
 
-        var resolution = await service.ResolveAsync(source, managedSiteId: null);
+        var resolution = await service.ResolveAsync(source, managedSiteCode: null);
 
         Assert.True(resolution.ShouldRender);
         Assert.False(resolution.IsOverride);
@@ -65,7 +65,7 @@ public class OverrideRenderingTests
     {
         var source = ManagedContentTestContent.Source(editScope: ManagedContentScope.All());
 
-        var resolution = await Resolution().ResolveAsync(source, "site-a");
+        var resolution = await Resolution().ResolveAsync(source, "sitea");
 
         Assert.True(resolution.ShouldRender);
         Assert.False(resolution.IsOverride);
@@ -79,7 +79,7 @@ public class OverrideRenderingTests
         var plain = ManagedContentTestContent.Item();
         var overrides = new FakeManagedContentOverrideService();
 
-        var resolution = await Resolution(overrides).ResolveAsync(plain, "site-a");
+        var resolution = await Resolution(overrides).ResolveAsync(plain, "sitea");
 
         Assert.True(resolution.ShouldRender);
         Assert.False(resolution.IsOverride);
@@ -90,7 +90,7 @@ public class OverrideRenderingTests
     [Fact]
     public async Task NoContentItem_RendersNothing()
     {
-        var resolution = await Resolution().ResolveAsync(contentItem: null, "site-a");
+        var resolution = await Resolution().ResolveAsync(contentItem: null, "sitea");
 
         Assert.False(resolution.ShouldRender);
         Assert.Null(resolution.Content);

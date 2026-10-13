@@ -39,16 +39,16 @@ public sealed class ManagedContentScope
     /// Gets or sets the Managed Sites the scope names when its mode is
     /// <see cref="ManagedContentScopeMode.Selected" />.
     /// </summary>
-    public List<string> ManagedSiteIds { get; set; } = [];
+    public List<string> ManagedSiteCodes { get; set; } = [];
 
     /// <summary>
     /// Determines whether the scope covers a Managed Site.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <returns><see langword="true" /> when the scope covers the Managed Site.</returns>
-    public bool Includes(string managedSiteId)
+    public bool Includes(string managedSiteCode)
     {
-        if (string.IsNullOrEmpty(managedSiteId))
+        if (string.IsNullOrEmpty(managedSiteCode))
         {
             return false;
         }
@@ -56,7 +56,7 @@ public sealed class ManagedContentScope
         return Mode switch
         {
             ManagedContentScopeMode.All => true,
-            ManagedContentScopeMode.Selected => ManagedSiteIds.Contains(managedSiteId, StringComparer.Ordinal),
+            ManagedContentScopeMode.Selected => ManagedSiteCodes.Contains(managedSiteCode, StringComparer.Ordinal),
             _ => false,
         };
     }
@@ -76,11 +76,11 @@ public sealed class ManagedContentScope
     /// <summary>
     /// Creates a scope covering the named Managed Sites.
     /// </summary>
-    /// <param name="managedSiteIds">The Managed Sites the scope names.</param>
+    /// <param name="managedSiteCodes">The Managed Sites the scope names.</param>
     /// <returns>The scope.</returns>
-    public static ManagedContentScope Selected(params string[] managedSiteIds) => new()
+    public static ManagedContentScope Selected(params string[] managedSiteCodes) => new()
     {
         Mode = ManagedContentScopeMode.Selected,
-        ManagedSiteIds = [.. managedSiteIds],
+        ManagedSiteCodes = [.. managedSiteCodes],
     };
 }

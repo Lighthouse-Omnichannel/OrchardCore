@@ -60,16 +60,16 @@ public sealed class ManagedSiteClaimsProvider : IUserClaimsProvider
 
     private string BuildClaimValue(ManagedSiteClearanceGrant grant)
     {
-        var managedSiteId = grant?.ManagedSiteId?.Trim();
+        var managedSiteCode = grant?.ManagedSiteCode?.Trim();
 
-        if (string.IsNullOrEmpty(managedSiteId))
+        if (string.IsNullOrEmpty(managedSiteCode))
         {
             return null;
         }
 
         // The claim packs the Managed Site and its scopes into one value separated by a colon, so an
         // identifier containing a separator would silently widen or misdirect the grant when parsed back.
-        if (managedSiteId.Contains(':', StringComparison.Ordinal) || managedSiteId.Contains(',', StringComparison.Ordinal))
+        if (managedSiteCode.Contains(':', StringComparison.Ordinal) || managedSiteCode.Contains(',', StringComparison.Ordinal))
         {
             _logger.LogWarning(
                 "Skipping Managed Site clearance claim because the Managed Site identifier contains a reserved separator.");
@@ -86,7 +86,7 @@ public sealed class ManagedSiteClaimsProvider : IUserClaimsProvider
 
         // No scopes means every scope, which the clearance parser represents as the wildcard form.
         return scopes.Length == 0
-            ? managedSiteId
-            : $"{managedSiteId}:{string.Join(',', scopes)}";
+            ? managedSiteCode
+            : $"{managedSiteCode}:{string.Join(',', scopes)}";
     }
 }

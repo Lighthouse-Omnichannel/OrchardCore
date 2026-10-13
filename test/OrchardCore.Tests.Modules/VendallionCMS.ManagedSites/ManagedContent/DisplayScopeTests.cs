@@ -17,21 +17,21 @@ public class DisplayScopeTests
     [Fact]
     public void ScopeAll_RendersForEveryManagedSite()
     {
-        Assert.True(Service.CanDisplay(Part(ManagedContentScope.All()), "site-a"));
-        Assert.True(Service.CanDisplay(Part(ManagedContentScope.All()), "site-b"));
+        Assert.True(Service.CanDisplay(Part(ManagedContentScope.All()), "sitea"));
+        Assert.True(Service.CanDisplay(Part(ManagedContentScope.All()), "siteb"));
     }
 
     [Fact]
     public void ScopeNone_RendersForNoManagedSite()
-        => Assert.False(Service.CanDisplay(Part(ManagedContentScope.None()), "site-a"));
+        => Assert.False(Service.CanDisplay(Part(ManagedContentScope.None()), "sitea"));
 
     [Fact]
     public void ScopeSelected_RendersOnlyForTheNamedManagedSites()
     {
-        var part = Part(ManagedContentScope.Selected("site-a"));
+        var part = Part(ManagedContentScope.Selected("sitea"));
 
-        Assert.True(Service.CanDisplay(part, "site-a"));
-        Assert.False(Service.CanDisplay(part, "site-b"));
+        Assert.True(Service.CanDisplay(part, "sitea"));
+        Assert.False(Service.CanDisplay(part, "siteb"));
     }
 
     [Fact]
@@ -49,11 +49,11 @@ public class DisplayScopeTests
             DisplayInBlueprintContext = true,
         };
 
-        Assert.False(Service.CanDisplay(hidden, managedSiteId: null));
-        Assert.True(Service.CanDisplay(hidden, "site-a"));
+        Assert.False(Service.CanDisplay(hidden, managedSiteCode: null));
+        Assert.True(Service.CanDisplay(hidden, "sitea"));
 
-        Assert.True(Service.CanDisplay(shown, managedSiteId: null));
-        Assert.False(Service.CanDisplay(shown, "site-a"));
+        Assert.True(Service.CanDisplay(shown, managedSiteCode: null));
+        Assert.False(Service.CanDisplay(shown, "sitea"));
     }
 
     [Fact]
@@ -67,8 +67,8 @@ public class DisplayScopeTests
     [Fact]
     public void ItemWithoutThePart_RendersEverywhere()
     {
-        Assert.True(Service.CanDisplay(part: null, "site-a"));
-        Assert.True(Service.CanDisplay(part: null, managedSiteId: null));
+        Assert.True(Service.CanDisplay(part: null, "sitea"));
+        Assert.True(Service.CanDisplay(part: null, managedSiteCode: null));
     }
 
     [Fact]
@@ -81,8 +81,8 @@ public class DisplayScopeTests
             DisplayScope = ManagedContentScope.All(),
         };
 
-        Assert.True(Service.CanDisplay(part, "site-a"));
-        Assert.False(Service.CanEdit(part, "site-a"));
+        Assert.True(Service.CanDisplay(part, "sitea"));
+        Assert.False(Service.CanEdit(part, "sitea"));
     }
 
     private static ManagedContentScopeService Service => new();

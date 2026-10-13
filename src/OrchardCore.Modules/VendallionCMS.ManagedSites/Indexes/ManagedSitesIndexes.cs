@@ -11,7 +11,7 @@ public sealed class ManagedSiteIndex : MapIndex
     /// <summary>
     /// Gets or sets the Managed Site identifier.
     /// </summary>
-    public string ManagedSiteId { get; set; }
+    public string ManagedSiteCode { get; set; }
 
     /// <summary>
     /// Gets or sets the Managed Site name.

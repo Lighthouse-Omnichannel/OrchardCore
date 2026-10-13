@@ -19,7 +19,7 @@
                 <strong>@T["Users without access"]</strong>
             </div>
             <div class="card-body">
-                <form asp-action="Security" asp-route-id="@Model.ManagedSite.Id" method="get" class="mb-3">
+                <form asp-action="Security" asp-route-code="@Model.ManagedSite.Code" method="get" class="mb-3">
                     <input type="hidden" name="cleared" value="@Model.ClearedSearch" />
                     <div class="input-group">
                         <label for="available" class="visually-hidden">@T["Search users without access"]</label>
@@ -50,7 +50,7 @@
                                         <span class="hint d-block">@user.Email</span>
                                     }
                                 </span>
-                                <form asp-action="Grant" asp-route-id="@Model.ManagedSite.Id" method="post">
+                                <form asp-action="Grant" asp-route-code="@Model.ManagedSite.Code" method="post">
                                     <input type="hidden" name="userId" value="@user.UserId" />
                                     <input type="hidden" name="available" value="@Model.AvailableSearch" />
                                     <input type="hidden" name="cleared" value="@Model.ClearedSearch" />
@@ -78,7 +78,7 @@
                 <strong>@T["Users with access"]</strong>
             </div>
             <div class="card-body">
-                <form asp-action="Security" asp-route-id="@Model.ManagedSite.Id" method="get" class="mb-3">
+                <form asp-action="Security" asp-route-code="@Model.ManagedSite.Code" method="get" class="mb-3">
                     <input type="hidden" name="available" value="@Model.AvailableSearch" />
                     <div class="input-group">
                         <label for="cleared" class="visually-hidden">@T["Search users with access"]</label>
@@ -110,7 +110,7 @@
                                             <span class="hint d-block">@user.Email</span>
                                         }
                                     </span>
-                                    <form asp-action="Revoke" asp-route-id="@Model.ManagedSite.Id" method="post">
+                                    <form asp-action="Revoke" asp-route-code="@Model.ManagedSite.Code" method="post">
                                         <input type="hidden" name="userId" value="@user.UserId" />
                                         <input type="hidden" name="available" value="@Model.AvailableSearch" />
                                         <input type="hidden" name="cleared" value="@Model.ClearedSearch" />
@@ -127,7 +127,7 @@
                                 @* Reading is not among them: holding the clearance is what allows that.
                                    Every box clear means the holder may read this managed site and do
                                    nothing else to it. *@
-                                <form asp-action="Scopes" asp-route-id="@Model.ManagedSite.Id" method="post"
+                                <form asp-action="Scopes" asp-route-code="@Model.ManagedSite.Code" method="post"
                                       class="d-flex flex-wrap align-items-center gap-3 mt-2">
                                     <input type="hidden" name="userId" value="@user.UserId" />
                                     <input type="hidden" name="available" value="@Model.AvailableSearch" />

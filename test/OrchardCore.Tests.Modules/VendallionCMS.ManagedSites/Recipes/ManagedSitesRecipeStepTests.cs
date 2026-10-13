@@ -31,12 +31,12 @@ public class ManagedSitesRecipeStepTests
     {
         var service = new FakeManagedSiteService();
 
-        await RunAsync(service, Step(new { Name = "Alpha", UrlPrefix = "alpha" }));
+        await RunAsync(service, Step(new { Code = "alpha", Name = "Alpha", UrlPrefix = "alpha" }));
 
         var managedSite = Assert.Single(await service.ListAsync());
         Assert.Equal("Alpha", managedSite.Name);
         Assert.Equal("alpha", managedSite.UrlPrefix);
-        Assert.False(string.IsNullOrEmpty(managedSite.Id));
+        Assert.Equal("alpha", managedSite.Code);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class ManagedSitesRecipeStepTests
     {
         var service = new FakeManagedSiteService();
 
-        await RunAsync(service, Step(new { Name = "Alpha", UrlPrefix = "alpha" }));
+        await RunAsync(service, Step(new { Code = "alpha", Name = "Alpha", UrlPrefix = "alpha" }));
 
         Assert.Equal(ManagedSiteStatus.Enabled, (await service.ListAsync())[0].Status);
     }
@@ -54,7 +54,7 @@ public class ManagedSitesRecipeStepTests
     {
         var service = new FakeManagedSiteService();
 
-        await RunAsync(service, Step(new { Name = "Alpha", UrlPrefix = "alpha", Status = "Disabled" }));
+        await RunAsync(service, Step(new { Code = "alpha", Name = "Alpha", UrlPrefix = "alpha", Status = "Disabled" }));
 
         Assert.Equal(ManagedSiteStatus.Disabled, (await service.ListAsync())[0].Status);
     }
@@ -65,16 +65,16 @@ public class ManagedSitesRecipeStepTests
         // A setup recipe is re-run while it is being written, and twice as many Managed Sites as the
         // recipe names would collide on their own addresses.
         var service = new FakeManagedSiteService();
-        var step = Step(new { Name = "Alpha", UrlPrefix = "alpha" });
+        var step = Step(new { Code = "alpha", Name = "Alpha", UrlPrefix = "alpha" });
 
         await RunAsync(service, step);
-        var firstId = (await service.ListAsync())[0].Id;
+        var firstCode = (await service.ListAsync())[0].Code;
 
-        await RunAsync(service, Step(new { Name = "Alpha", UrlPrefix = "alpha-renamed" }));
+        await RunAsync(service, Step(new { Code = "alpha", Name = "Alpha", UrlPrefix = "alpharenamed" }));
 
         var managedSite = Assert.Single(await service.ListAsync());
-        Assert.Equal(firstId, managedSite.Id);
-        Assert.Equal("alpha-renamed", managedSite.UrlPrefix);
+        Assert.Equal(firstCode, managedSite.Code);
+        Assert.Equal("alpharenamed", managedSite.UrlPrefix);
     }
 
     [Fact]
@@ -85,10 +85,27 @@ public class ManagedSitesRecipeStepTests
 
         var context = await RunAsync(
             service,
-            Step(new { UrlPrefix = "nameless" }, new { Name = "Beta", UrlPrefix = "beta" }));
+            Step(
+                new { Code = "nameless", UrlPrefix = "nameless" },
+                new { Code = "beta", Name = "Beta", UrlPrefix = "beta" }));
 
         Assert.Single(context.Errors);
         Assert.Equal("Beta", Assert.Single(await service.ListAsync()).Name);
+    }
+
+    [Fact]
+    public async Task AManagedSiteWithNoCode_IsReportedAndTheRestAreStillDeclared()
+    {
+        // The code is what the recipe's later steps name the Managed Site by, so an entry without one
+        // cannot be referred to and is not worth creating.
+        var service = new FakeManagedSiteService();
+
+        var context = await RunAsync(
+            service,
+            Step(new { Name = "Codeless", UrlPrefix = "codeless" }, new { Code = "beta", Name = "Beta" }));
+
+        Assert.Single(context.Errors);
+        Assert.Equal("beta", Assert.Single(await service.ListAsync()).Code);
     }
 
     [Fact]
@@ -99,7 +116,7 @@ public class ManagedSitesRecipeStepTests
         ManagedSiteEditorsStep.ApplyGrants(settings, Editor("Alpha", "edit"), Sites(), []);
 
         var grant = Assert.Single(settings.Grants);
-        Assert.Equal("alpha-id", grant.ManagedSiteId);
+        Assert.Equal("alphaid", grant.ManagedSiteCode);
         Assert.Equal(["edit"], grant.Scopes);
     }
 
@@ -147,15 +164,15 @@ public class ManagedSitesRecipeStepTests
         ManagedSiteEditorsStep.ApplyGrants(settings, Editor("Beta", "publish"), Sites(), []);
 
         Assert.Equal(2, settings.Grants.Count);
-        Assert.Contains(settings.Grants, grant => grant.ManagedSiteId == "alpha-id");
-        Assert.Contains(settings.Grants, grant => grant.ManagedSiteId == "beta-id");
+        Assert.Contains(settings.Grants, grant => grant.ManagedSiteCode == "alphaid");
+        Assert.Contains(settings.Grants, grant => grant.ManagedSiteCode == "beta-id");
     }
 
     private static async Task<RecipeExecutionContext> RunAsync(FakeManagedSiteService service, JsonObject step)
     {
         var context = new RecipeExecutionContext { Name = "ManagedSites", Step = step };
 
-        await new ManagedSitesStep(service, new SequentialIdGenerator(), new StubStringLocalizer<ManagedSitesStep>())
+        await new ManagedSitesStep(service, new StubStringLocalizer<ManagedSitesStep>())
             .ExecuteAsync(context);
 
         return context;
@@ -176,7 +193,7 @@ public class ManagedSitesRecipeStepTests
         };
 
     private static IReadOnlyList<ManagedSite> Sites()
-        => [ManagedSitesTestData.ManagedSite("alpha-id", name: "Alpha"),
+        => [ManagedSitesTestData.ManagedSite("alphaid", name: "Alpha"),
             ManagedSitesTestData.ManagedSite("beta-id", name: "Beta")];
 
     private sealed class SequentialIdGenerator : IIdGenerator

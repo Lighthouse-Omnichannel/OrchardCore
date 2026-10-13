@@ -24,7 +24,7 @@ public sealed class ManagedSiteClearanceGrant
     /// <summary>
     /// Gets or sets the Managed Site the grant covers.
     /// </summary>
-    public string ManagedSiteId { get; set; }
+    public string ManagedSiteCode { get; set; }
 
     /// <summary>
     /// Gets the action scopes the grant allows.

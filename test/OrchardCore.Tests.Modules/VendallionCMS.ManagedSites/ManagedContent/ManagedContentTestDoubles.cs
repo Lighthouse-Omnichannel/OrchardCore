@@ -52,13 +52,13 @@ public static class ManagedContentTestContent
     /// Creates a content item that stands in for a source item on one Managed Site.
     /// </summary>
     /// <param name="contentItemId">The content item identifier.</param>
-    /// <param name="managedSiteId">The owning Managed Site.</param>
+    /// <param name="managedSiteCode">The owning Managed Site.</param>
     /// <param name="sourceContentItemId">The source content item identifier.</param>
     /// <param name="contentType">The content type, which must match the source.</param>
     /// <returns>The content item.</returns>
     public static ContentItem Override(
         string contentItemId = "override-item",
-        string managedSiteId = "site-a",
+        string managedSiteCode = "sitea",
         string sourceContentItemId = "source-item",
         string contentType = ContentType)
     {
@@ -68,7 +68,7 @@ public static class ManagedContentTestContent
             nameof(ManagedContentOverridePart),
             new ManagedContentOverridePart
             {
-                ManagedSiteId = managedSiteId,
+                ManagedSiteCode = managedSiteCode,
                 SourceContentItemId = sourceContentItemId,
             });
 
@@ -113,16 +113,16 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
     /// <summary>
     /// Registers a published override.
     /// </summary>
-    /// <param name="managedSiteId">The owning Managed Site.</param>
+    /// <param name="managedSiteCode">The owning Managed Site.</param>
     /// <param name="sourceContentItemId">The source content item identifier.</param>
     /// <param name="content">The override content.</param>
     /// <returns>This instance, for chaining.</returns>
     public FakeManagedContentOverrideService WithPublished(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId,
         ContentItem content)
     {
-        _published[Key(managedSiteId, sourceContentItemId)] = content;
+        _published[Key(managedSiteCode, sourceContentItemId)] = content;
 
         return this;
     }
@@ -130,29 +130,29 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
     /// <summary>
     /// Registers unpublished work, which only an authorized preview is shown.
     /// </summary>
-    /// <param name="managedSiteId">The owning Managed Site.</param>
+    /// <param name="managedSiteCode">The owning Managed Site.</param>
     /// <param name="sourceContentItemId">The source content item identifier.</param>
     /// <param name="content">The draft override content.</param>
     /// <returns>This instance, for chaining.</returns>
     public FakeManagedContentOverrideService WithDraft(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId,
         ContentItem content)
     {
-        _drafts[Key(managedSiteId, sourceContentItemId)] = content;
+        _drafts[Key(managedSiteCode, sourceContentItemId)] = content;
 
         return this;
     }
 
     /// <inheritdoc />
     public ValueTask<ContentItem> FindOverrideContentAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId,
         bool includeDrafts = false)
     {
         PublishedLookups++;
 
-        var key = Key(managedSiteId, sourceContentItemId);
+        var key = Key(managedSiteCode, sourceContentItemId);
 
         // The latest version is the draft when one exists and the published version otherwise, which is
         // what the index answers for a Latest row.
@@ -167,12 +167,12 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
     }
 
     /// <inheritdoc />
-    public ValueTask<ManagedContentOverride> GetAsync(string managedSiteId, string sourceContentItemId)
+    public ValueTask<ManagedContentOverride> GetAsync(string managedSiteCode, string sourceContentItemId)
         => ValueTask.FromResult(
-            _published.TryGetValue(Key(managedSiteId, sourceContentItemId), out var content)
+            _published.TryGetValue(Key(managedSiteCode, sourceContentItemId), out var content)
                 ? new ManagedContentOverride
                 {
-                    ManagedSiteId = managedSiteId,
+                    ManagedSiteCode = managedSiteCode,
                     SourceContentItemId = sourceContentItemId,
                     OverrideContentItemId = content.ContentItemId,
                     ContentType = content.ContentType,
@@ -181,15 +181,15 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
                 : null);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ManagedContentOverride>> ListAsync(string managedSiteId)
-        => ValueTask.FromResult<IReadOnlyList<ManagedContentOverride>>([.. _suppressed.Concat(Live(managedSiteId))]);
+    public ValueTask<IReadOnlyList<ManagedContentOverride>> ListAsync(string managedSiteCode)
+        => ValueTask.FromResult<IReadOnlyList<ManagedContentOverride>>([.. _suppressed.Concat(Live(managedSiteCode))]);
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<ManagedContentOverride>> ListSuppressedAsync(string managedSiteId)
+    public ValueTask<IReadOnlyList<ManagedContentOverride>> ListSuppressedAsync(string managedSiteCode)
         => ValueTask.FromResult<IReadOnlyList<ManagedContentOverride>>([.. _suppressed]);
 
     /// <inheritdoc />
-    public ValueTask<ManagedContentOverrideResult> CreateAsync(string managedSiteId, string sourceContentItemId)
+    public ValueTask<ManagedContentOverrideResult> CreateAsync(string managedSiteCode, string sourceContentItemId)
     {
         if (_error != ManagedContentOverrideError.None)
         {
@@ -197,12 +197,12 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
         }
 
         var overrideContentItemId = $"{sourceContentItemId}-override";
-        _published[Key(managedSiteId, sourceContentItemId)] =
+        _published[Key(managedSiteCode, sourceContentItemId)] =
             ManagedContentTestContent.Item(overrideContentItemId);
 
         return ValueTask.FromResult(ManagedContentOverrideResult.Success(new ManagedContentOverride
         {
-            ManagedSiteId = managedSiteId,
+            ManagedSiteCode = managedSiteCode,
             SourceContentItemId = sourceContentItemId,
             OverrideContentItemId = overrideContentItemId,
             ContentType = ManagedContentTestContent.ContentType,
@@ -212,7 +212,7 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
 
     /// <inheritdoc />
     public ValueTask<ManagedContentOverrideResult> SaveAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId,
         string overrideContentItemId,
         bool publish)
@@ -222,12 +222,12 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
             return ValueTask.FromResult(ManagedContentOverrideResult.Failed(_error));
         }
 
-        _published[Key(managedSiteId, sourceContentItemId)] =
+        _published[Key(managedSiteCode, sourceContentItemId)] =
             ManagedContentTestContent.Item(overrideContentItemId);
 
         return ValueTask.FromResult(ManagedContentOverrideResult.Success(new ManagedContentOverride
         {
-            ManagedSiteId = managedSiteId,
+            ManagedSiteCode = managedSiteCode,
             SourceContentItemId = sourceContentItemId,
             OverrideContentItemId = overrideContentItemId,
             ContentType = ManagedContentTestContent.ContentType,
@@ -236,8 +236,8 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
     }
 
     /// <inheritdoc />
-    public ValueTask<bool> DeleteAsync(string managedSiteId, string sourceContentItemId)
-        => ValueTask.FromResult(_published.Remove(Key(managedSiteId, sourceContentItemId)));
+    public ValueTask<bool> DeleteAsync(string managedSiteCode, string sourceContentItemId)
+        => ValueTask.FromResult(_published.Remove(Key(managedSiteCode, sourceContentItemId)));
 
     /// <summary>
     /// Makes the next save fail, so status mapping can be checked for every refusal.
@@ -272,20 +272,20 @@ public sealed class FakeManagedContentOverrideService : IManagedContentOverrideS
         return this;
     }
 
-    private IEnumerable<ManagedContentOverride> Live(string managedSiteId)
+    private IEnumerable<ManagedContentOverride> Live(string managedSiteCode)
         => _published
-            .Where(entry => entry.Key.StartsWith($"{managedSiteId}|", StringComparison.Ordinal))
+            .Where(entry => entry.Key.StartsWith($"{managedSiteCode}|", StringComparison.Ordinal))
             .Select(entry => new ManagedContentOverride
             {
-                ManagedSiteId = managedSiteId,
-                SourceContentItemId = entry.Key[(managedSiteId.Length + 1)..],
+                ManagedSiteCode = managedSiteCode,
+                SourceContentItemId = entry.Key[(managedSiteCode.Length + 1)..],
                 OverrideContentItemId = entry.Value.ContentItemId,
                 ContentType = entry.Value.ContentType,
                 Status = ManagedContentOverrideStatus.Published,
             });
 
-    private static string Key(string managedSiteId, string sourceContentItemId)
-        => $"{managedSiteId}|{sourceContentItemId}";
+    private static string Key(string managedSiteCode, string sourceContentItemId)
+        => $"{managedSiteCode}|{sourceContentItemId}";
 }
 
 /// <summary>

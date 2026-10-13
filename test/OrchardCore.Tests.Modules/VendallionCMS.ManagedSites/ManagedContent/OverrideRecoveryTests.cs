@@ -21,7 +21,7 @@ public class OverrideRecoveryTests
     {
         var suppressed = new ManagedContentOverride
         {
-            ManagedSiteId = "site-a",
+            ManagedSiteCode = "sitea",
             SourceContentItemId = "source-item",
             OverrideContentItemId = "override-item",
             ContentType = ManagedContentTestContent.ContentType,
@@ -52,7 +52,7 @@ public class OverrideRecoveryTests
         // Nothing is rewritten. The same override is evaluated against the restored scope and stops
         // being suppressed on the spot.
         var withdrawn = ManagedContentTestContent.Source("source-item", ManagedContentScope.None());
-        var restored = ManagedContentTestContent.Source("source-item", ManagedContentScope.Selected("site-a"));
+        var restored = ManagedContentTestContent.Source("source-item", ManagedContentScope.Selected("sitea"));
 
         Assert.Equal(
             ManagedContentOverrideSuppressionReason.EditScopeRemoved,
@@ -66,7 +66,7 @@ public class OverrideRecoveryTests
     [Fact]
     public void RepublishingTheSource_MakesTheOverrideEligibleAgain()
     {
-        var published = ManagedContentTestContent.Source("source-item", ManagedContentScope.Selected("site-a"));
+        var published = ManagedContentTestContent.Source("source-item", ManagedContentScope.Selected("sitea"));
 
         Assert.Equal(
             ManagedContentOverrideSuppressionReason.SourceUnpublished,
@@ -80,8 +80,8 @@ public class OverrideRecoveryTests
     [Fact]
     public void ReenablingTheManagedSite_MakesItsOverridesEligibleAgain()
     {
-        var source = ManagedContentTestContent.Source("source-item", ManagedContentScope.Selected("site-a"));
-        var disabled = ManagedSitesTestData.ManagedSite("site-a", ManagedSiteStatus.Disabled);
+        var source = ManagedContentTestContent.Source("source-item", ManagedContentScope.Selected("sitea"));
+        var disabled = ManagedSitesTestData.ManagedSite("sitea", ManagedSiteStatus.Disabled);
 
         Assert.Equal(
             ManagedContentOverrideSuppressionReason.ManagedSiteDisabled,
@@ -112,8 +112,8 @@ public class OverrideRecoveryTests
             new Mock<IManagedSiteService>(MockBehavior.Strict).Object,
             new ManagedContentScopeService());
 
-        return service.Evaluate("site-a", managedSite, publishedSource, sourceExists);
+        return service.Evaluate("sitea", managedSite, publishedSource, sourceExists);
     }
 
-    private static ManagedSite Enabled() => ManagedSitesTestData.ManagedSite("site-a");
+    private static ManagedSite Enabled() => ManagedSitesTestData.ManagedSite("sitea");
 }

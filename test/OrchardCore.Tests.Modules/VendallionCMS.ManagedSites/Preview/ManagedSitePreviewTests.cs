@@ -41,7 +41,7 @@ public class ManagedSitePreviewTests
         var preview = await PreviewService().CreateAsync("costis", "/about", includeDrafts: false);
 
         Assert.Equal("//costis.localhost/about", preview.PreviewUrl);
-        Assert.Equal("costis", preview.ManagedSiteId);
+        Assert.Equal("costis", preview.ManagedSiteCode);
         Assert.Equal(ManagedSitesConstants.Preview.ManagedSiteMode, preview.CompositionMode);
     }
 

@@ -105,16 +105,16 @@ public sealed class ManagedSitesMigrations : DataMigration
             .Column<string>("ContainerContentItemId", column => column.WithLength(26))
             .Column<string>("JsonPath", column => column.Unlimited())
             .Column<string>("ContentType", column => column.WithLength(255))
-            .Column<string>("ManagedSiteId", column => column.WithLength(26))
+            .Column<string>("ManagedSiteCode", column => column.WithLength(ManagedSitesConstants.Code.MaximumLength))
             .Column<bool>("AllManagedSites", column => column.WithDefault(false))
             .Column<bool>("Latest", column => column.WithDefault(false))
             .Column<bool>("Published", column => column.WithDefault(false)));
 
         await SchemaBuilder.AlterIndexTableAsync<ManagedContentEditScopeIndex>(table => table
             .CreateIndex(
-                "IDX_ManagedContentEditScopeIndex_ManagedSiteId",
+                "IDX_ManagedContentEditScopeIndex_ManagedSiteCode",
                 "DocumentId",
-                "ManagedSiteId",
+                "ManagedSiteCode",
                 "AllManagedSites",
                 "Latest",
                 "Published"));
@@ -123,15 +123,15 @@ public sealed class ManagedSitesMigrations : DataMigration
     private async Task AddManagedSiteClearanceIndexAsync()
     {
         await SchemaBuilder.CreateMapIndexTableAsync<ManagedSiteClearanceIndex>(table => table
-            .Column<string>("ManagedSiteId", column => column.WithLength(26))
+            .Column<string>("ManagedSiteCode", column => column.WithLength(ManagedSitesConstants.Code.MaximumLength))
             .Column<string>("UserId", column => column.WithLength(26))
             .Column<string>("NormalizedUserName", column => column.WithLength(255)));
 
         await SchemaBuilder.AlterIndexTableAsync<ManagedSiteClearanceIndex>(table => table
             .CreateIndex(
-                "IDX_ManagedSiteClearanceIndex_ManagedSiteId",
+                "IDX_ManagedSiteClearanceIndex_ManagedSiteCode",
                 "DocumentId",
-                "ManagedSiteId",
+                "ManagedSiteCode",
                 "NormalizedUserName"));
     }
 
@@ -145,7 +145,7 @@ public sealed class ManagedSitesMigrations : DataMigration
 
         await SchemaBuilder.CreateMapIndexTableAsync<ManagedContentOverrideIndex>(table => table
             .Column<string>("OverrideContentItemId", column => column.WithLength(26))
-            .Column<string>("ManagedSiteId", column => column.WithLength(26))
+            .Column<string>("ManagedSiteCode", column => column.WithLength(ManagedSitesConstants.Code.MaximumLength))
             .Column<string>("SourceContentItemId", column => column.WithLength(26))
             .Column<string>("ContentType", column => column.WithLength(255))
             .Column<bool>("Latest", column => column.WithDefault(false))
@@ -155,7 +155,7 @@ public sealed class ManagedSitesMigrations : DataMigration
             .CreateIndex(
                 "IDX_ManagedContentOverrideIndex_Source",
                 "DocumentId",
-                "ManagedSiteId",
+                "ManagedSiteCode",
                 "SourceContentItemId",
                 "Published",
                 "Latest"));

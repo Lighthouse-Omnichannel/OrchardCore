@@ -150,8 +150,8 @@ public class ManagedSiteAddressTests
         await service.SaveAsync(
             ManagedSitesTestData.ManagedSite("b", name: "B", hostname: "contoso.com", urlPrefix: "shop"));
 
-        Assert.Equal("b", (await service.FindByAddressAsync("contoso.com", "/shop")).Id);
-        Assert.Equal("a", (await service.FindByAddressAsync("fabrikam.com", "/shop")).Id);
+        Assert.Equal("b", (await service.FindByAddressAsync("contoso.com", "/shop")).Code);
+        Assert.Equal("a", (await service.FindByAddressAsync("fabrikam.com", "/shop")).Code);
     }
 
     [Fact]
@@ -191,7 +191,7 @@ public class ManagedSiteAddressTests
 
         var match = await service.FindByAddressAsync("contoso.com", "/news");
 
-        Assert.Equal("specific", match.Id);
+        Assert.Equal("specific", match.Code);
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public class ManagedSiteAddressTests
 
         var match = await service.FindByAddressAsync("contoso.com", "/shop/outlet/socks");
 
-        Assert.Equal("deep", match.Id);
+        Assert.Equal("deep", match.Code);
     }
 
     [Fact]
@@ -215,9 +215,9 @@ public class ManagedSiteAddressTests
         await service.SaveAsync(ManagedSitesTestData.ManagedSite("named", name: "Named", hostname: "contoso.com", urlPrefix: "shop"));
 
         // Every one of these is on the named host, so the prefix never comes into it.
-        Assert.Equal("named", (await service.FindByAddressAsync("contoso.com", "/")).Id);
-        Assert.Equal("named", (await service.FindByAddressAsync("contoso.com", "/about")).Id);
-        Assert.Equal("named", (await service.FindByAddressAsync("contoso.com", "/shop/basket")).Id);
+        Assert.Equal("named", (await service.FindByAddressAsync("contoso.com", "/")).Code);
+        Assert.Equal("named", (await service.FindByAddressAsync("contoso.com", "/about")).Code);
+        Assert.Equal("named", (await service.FindByAddressAsync("contoso.com", "/shop/basket")).Code);
         Assert.Null(await service.FindByAddressAsync("fabrikam.com", "/shop"));
     }
 

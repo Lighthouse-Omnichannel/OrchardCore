@@ -28,7 +28,7 @@ public class ManagedSiteContentPermissionTests
     [Fact]
     public async Task Clearance_AuthorizesEditingTheManagedSitesOwnOverride()
     {
-        var context = await AuthorizeAsync(CommonPermissions.EditContent, Override("site-a"), "site-a:view,edit");
+        var context = await AuthorizeAsync(CommonPermissions.EditContent, Override("sitea"), "sitea:view,edit");
 
         Assert.True(context.HasSucceeded);
     }
@@ -36,7 +36,7 @@ public class ManagedSiteContentPermissionTests
     [Fact]
     public async Task Clearance_AuthorizesPublishingWhenItGrantsPublish()
     {
-        var context = await AuthorizeAsync(CommonPermissions.PublishContent, Override("site-a"), "site-a:view,edit,publish");
+        var context = await AuthorizeAsync(CommonPermissions.PublishContent, Override("sitea"), "sitea:view,edit,publish");
 
         Assert.True(context.HasSucceeded);
     }
@@ -45,7 +45,7 @@ public class ManagedSiteContentPermissionTests
     public async Task EditClearanceAlone_DoesNotAuthorizePublishing()
     {
         // The scopes a clearance names are the whole of what it grants; edit does not imply publish.
-        var context = await AuthorizeAsync(CommonPermissions.PublishContent, Override("site-a"), "site-a:view,edit");
+        var context = await AuthorizeAsync(CommonPermissions.PublishContent, Override("sitea"), "sitea:view,edit");
 
         Assert.False(context.HasSucceeded);
     }
@@ -53,7 +53,7 @@ public class ManagedSiteContentPermissionTests
     [Fact]
     public async Task Clearance_DoesNotAuthorizeAnotherManagedSitesOverride()
     {
-        var context = await AuthorizeAsync(CommonPermissions.EditContent, Override("site-b"), "site-a:view,edit,publish");
+        var context = await AuthorizeAsync(CommonPermissions.EditContent, Override("siteb"), "sitea:view,edit,publish");
 
         Assert.False(context.HasSucceeded);
     }
@@ -64,7 +64,7 @@ public class ManagedSiteContentPermissionTests
         // The whole point of the handler: it reaches a Managed Site's own content and nothing else.
         var blueprintItem = ManagedContentTestContent.Source("source-item", ManagedContentScope.All());
 
-        var context = await AuthorizeAsync(CommonPermissions.EditContent, blueprintItem, "site-a:view,edit,publish");
+        var context = await AuthorizeAsync(CommonPermissions.EditContent, blueprintItem, "sitea:view,edit,publish");
 
         Assert.False(context.HasSucceeded);
     }
@@ -75,7 +75,7 @@ public class ManagedSiteContentPermissionTests
         var context = await AuthorizeAsync(
             CommonPermissions.EditContent,
             ManagedContentTestContent.Item("plain-item"),
-            "site-a:view,edit,publish");
+            "sitea:view,edit,publish");
 
         Assert.False(context.HasSucceeded);
     }
@@ -83,7 +83,7 @@ public class ManagedSiteContentPermissionTests
     [Fact]
     public async Task NoClearance_AuthorizesNothing()
     {
-        var context = await AuthorizeAsync(CommonPermissions.EditContent, Override("site-a"));
+        var context = await AuthorizeAsync(CommonPermissions.EditContent, Override("sitea"));
 
         Assert.False(context.HasSucceeded);
     }
@@ -95,8 +95,8 @@ public class ManagedSiteContentPermissionTests
         // own content whatever type that content is, so the type half decides nothing.
         var context = await AuthorizeAsync(
             new Permission("EditContent_Article"),
-            Override("site-a"),
-            "site-a:view,edit");
+            Override("sitea"),
+            "sitea:view,edit");
 
         Assert.True(context.HasSucceeded);
     }
@@ -108,8 +108,8 @@ public class ManagedSiteContentPermissionTests
         // must never turn into authority to define them.
         var context = await AuthorizeAsync(
             Permissions.ManageManagedSites,
-            Override("site-a"),
-            "site-a:view,edit,publish");
+            Override("sitea"),
+            "sitea:view,edit,publish");
 
         Assert.False(context.HasSucceeded);
     }
@@ -123,7 +123,7 @@ public class ManagedSiteContentPermissionTests
         var context = new AuthorizationHandlerContext(
             [requirement],
             ManagedSitesTestData.User(),
-            Override("site-b"));
+            Override("siteb"));
 
         context.Succeed(requirement);
 
@@ -151,12 +151,12 @@ public class ManagedSiteContentPermissionTests
     private static ManagedSiteContentAuthorizationHandler CreateHandler()
     {
         var portal = new ManagedSitePortalTestContext(
-            ManagedSitesTestData.ManagedSite("site-a"),
-            ManagedSitesTestData.ManagedSite("site-b"));
+            ManagedSitesTestData.ManagedSite("sitea"),
+            ManagedSitesTestData.ManagedSite("siteb"));
 
         return new ManagedSiteContentAuthorizationHandler(portal.ClearanceService);
     }
 
-    private static ContentItem Override(string managedSiteId)
-        => ManagedContentTestContent.Override("override-item", managedSiteId);
+    private static ContentItem Override(string managedSiteCode)
+        => ManagedContentTestContent.Override("override-item", managedSiteCode);
 }

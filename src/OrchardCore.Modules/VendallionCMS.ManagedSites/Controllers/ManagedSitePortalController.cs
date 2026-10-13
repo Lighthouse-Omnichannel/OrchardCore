@@ -121,7 +121,7 @@ public sealed class ManagedSitePortalController : Controller
         var pager = new Pager(pagerParameters, _pagerOptions.GetPageSize());
 
         var listing = await _listService.ListAsync(
-            scope.ManagedSite.Id,
+            scope.ManagedSite.Code,
             new ManagedContentListQuery(contentType, status, pager.Page, pager.PageSize));
 
         // Carried onto the page links, so paging past the first page does not quietly drop the filter
@@ -141,8 +141,8 @@ public sealed class ManagedSitePortalController : Controller
         return View(new ManagedSitePortalListViewModel
         {
             ManagedSite = scope.ManagedSite,
-            CanEdit = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Edit),
-            CanPublish = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Publish),
+            CanEdit = await CanAsync(scope.ManagedSite.Code, ManagedSitesConstants.Scopes.Edit),
+            CanPublish = await CanAsync(scope.ManagedSite.Code, ManagedSitesConstants.Scopes.Publish),
             Items = listing.Items,
             TotalCount = listing.TotalCount,
             StartIndex = listing.TotalCount == 0 ? 0 : ((pager.Page - 1) * pager.PageSize) + 1,
@@ -173,26 +173,26 @@ public sealed class ManagedSitePortalController : Controller
         return View(new ManagedSitePortalSelectViewModel
         {
             ManagedSites = session.AuthorizedManagedSites,
-            SelectedManagedSiteId = session.Scope?.ManagedSiteId,
+            SelectedManagedSiteCode = session.Scope?.ManagedSiteCode,
         });
     }
 
     /// <summary>
     /// Takes the Managed Site the editor chose as the one this session works in.
     /// </summary>
-    /// <param name="managedSiteId">The chosen Managed Site.</param>
+    /// <param name="managedSiteCode">The chosen Managed Site.</param>
     /// <returns>The content list, or the chooser again when the choice was refused.</returns>
     [HttpPost]
     [ActionName(nameof(Select))]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SelectPost(string managedSiteId)
+    public async Task<IActionResult> SelectPost(string managedSiteCode)
     {
         if (!await _authorizationService.AuthorizeAsync(User, Permissions.EditManagedSiteContent))
         {
             return Forbid();
         }
 
-        var session = await _sessionService.SelectAsync(User, managedSiteId);
+        var session = await _sessionService.SelectAsync(User, managedSiteCode);
 
         if (session.Status != ManagedSiteSessionStatus.Selected)
         {
@@ -237,7 +237,7 @@ public sealed class ManagedSitePortalController : Controller
         // narrowed between an editor seeing a container and opening it.
         if (container is null
             || !container.TryGet<ManagedContentPart>(out var part)
-            || !_scopeService.CanEdit(part, scope.ManagedSite.Id))
+            || !_scopeService.CanEdit(part, scope.ManagedSite.Code))
         {
             return NotFound();
         }
@@ -253,7 +253,7 @@ public sealed class ManagedSitePortalController : Controller
         var pager = new Pager(pagerParameters, _pagerOptions.GetPageSize());
 
         var listing = await _listService.ListContainedAsync(
-            scope.ManagedSite.Id,
+            scope.ManagedSite.Code,
             sourceContentItemId,
             new ManagedContentListQuery(contentType, status, pager.Page, pager.PageSize));
 
@@ -270,13 +270,13 @@ public sealed class ManagedSitePortalController : Controller
             routeData.Values.TryAdd(nameof(overrideStatus), overrideStatus);
         }
 
-        var containerOverride = await _overrideService.GetAsync(scope.ManagedSite.Id, sourceContentItemId);
+        var containerOverride = await _overrideService.GetAsync(scope.ManagedSite.Code, sourceContentItemId);
 
         return View(new ManagedSitePortalContainedViewModel
         {
             ManagedSite = scope.ManagedSite,
-            CanEdit = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Edit),
-            CanPublish = await CanAsync(scope.ManagedSite.Id, ManagedSitesConstants.Scopes.Publish),
+            CanEdit = await CanAsync(scope.ManagedSite.Code, ManagedSitesConstants.Scopes.Edit),
+            CanPublish = await CanAsync(scope.ManagedSite.Code, ManagedSitesConstants.Scopes.Publish),
             SourceContentItemId = sourceContentItemId,
             ContainerDisplayText = container.DisplayText ?? container.ContentType,
             ContainerIsOverridden = containerOverride is not null,
@@ -311,7 +311,7 @@ public sealed class ManagedSitePortalController : Controller
             return scope.Failure;
         }
 
-        var result = await _overrideService.CreateAsync(scope.ManagedSite.Id, sourceContentItemId);
+        var result = await _overrideService.CreateAsync(scope.ManagedSite.Code, sourceContentItemId);
 
         await ReportAsync(result.Error, S["Your version was created as a draft, starting from the blueprint content."]);
 
@@ -336,11 +336,11 @@ public sealed class ManagedSitePortalController : Controller
     /// <summary>
     /// Answers whether the editor holds a clearance for the active Managed Site.
     /// </summary>
-    /// <param name="managedSiteId">The active Managed Site.</param>
+    /// <param name="managedSiteCode">The active Managed Site.</param>
     /// <param name="scope">What the clearance would allow.</param>
     /// <returns><see langword="true" /> when they hold it.</returns>
-    private ValueTask<bool> CanAsync(string managedSiteId, string scope)
-        => _clearanceService.HasClearanceAsync(User, managedSiteId, scope);
+    private ValueTask<bool> CanAsync(string managedSiteCode, string scope)
+        => _clearanceService.HasClearanceAsync(User, managedSiteCode, scope);
 
     /// <summary>
     /// Works out where an action should hand the editor back to.
@@ -377,7 +377,7 @@ public sealed class ManagedSitePortalController : Controller
         }
 
         var result = await _overrideService.SaveAsync(
-            scope.ManagedSite.Id,
+            scope.ManagedSite.Code,
             sourceContentItemId,
             overrideContentItemId,
             publish: true);
@@ -403,7 +403,7 @@ public sealed class ManagedSitePortalController : Controller
             return scope.Failure;
         }
 
-        if (await _overrideService.DeleteAsync(scope.ManagedSite.Id, sourceContentItemId))
+        if (await _overrideService.DeleteAsync(scope.ManagedSite.Code, sourceContentItemId))
         {
             await _notifier.SuccessAsync(H["Your version was removed. This managed site is served the blueprint content again."]);
         }
@@ -428,7 +428,7 @@ public sealed class ManagedSitePortalController : Controller
             return scope.Failure;
         }
 
-        var suppressed = await _overrideService.ListSuppressedAsync(scope.ManagedSite.Id);
+        var suppressed = await _overrideService.ListSuppressedAsync(scope.ManagedSite.Code);
 
         return View(new ManagedSitePortalSuppressedViewModel
         {
@@ -461,7 +461,7 @@ public sealed class ManagedSitePortalController : Controller
         var preview = path is null
             ? null
             : await _previewService.CreateAsync(
-                scope.ManagedSite.Id,
+                scope.ManagedSite.Code,
                 path,
                 includeDrafts,
                 Request.Host.Port);
@@ -524,15 +524,15 @@ public sealed class ManagedSitePortalController : Controller
             return (null, RedirectToAction(nameof(Select)));
         }
 
-        var managedSiteId = session.Scope.ManagedSiteId;
+        var managedSiteCode = session.Scope.ManagedSiteCode;
 
-        if (!await _clearanceService.HasClearanceAsync(User, managedSiteId, requiredScope))
+        if (!await _clearanceService.HasClearanceAsync(User, managedSiteCode, requiredScope))
         {
             return (null, Forbid());
         }
 
         var managedSite = session.AuthorizedManagedSites
-            .FirstOrDefault(candidate => string.Equals(candidate.Id, managedSiteId, StringComparison.Ordinal));
+            .FirstOrDefault(candidate => string.Equals(candidate.Code, managedSiteCode, StringComparison.Ordinal));
 
         return managedSite is null ? (null, RedirectToAction(nameof(Select))) : (managedSite, null);
     }

@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Localization;
-using OrchardCore.Entities;
 using OrchardCore.Recipes.Models;
 using OrchardCore.Recipes.Services;
 using VendallionCMS.ManagedSites.Models;
@@ -27,7 +26,6 @@ namespace VendallionCMS.ManagedSites.Recipes;
 public sealed class ManagedSitesStep : NamedRecipeStepHandler
 {
     private readonly IManagedSiteService _managedSiteService;
-    private readonly IIdGenerator _idGenerator;
 
     private readonly IStringLocalizer S;
 
@@ -35,16 +33,13 @@ public sealed class ManagedSitesStep : NamedRecipeStepHandler
     /// Initializes a new instance of the <see cref="ManagedSitesStep" /> class.
     /// </summary>
     /// <param name="managedSiteService">The Managed Site service.</param>
-    /// <param name="idGenerator">The identifier generator.</param>
     /// <param name="stringLocalizer">The string localizer.</param>
     public ManagedSitesStep(
         IManagedSiteService managedSiteService,
-        IIdGenerator idGenerator,
         IStringLocalizer<ManagedSitesStep> stringLocalizer)
         : base("ManagedSites")
     {
         _managedSiteService = managedSiteService;
-        _idGenerator = idGenerator;
         S = stringLocalizer;
     }
 
@@ -62,23 +57,26 @@ public sealed class ManagedSitesStep : NamedRecipeStepHandler
 
         foreach (var declared in model.ManagedSites)
         {
-            if (string.IsNullOrWhiteSpace(declared.Name))
+            if (string.IsNullOrWhiteSpace(declared.Code))
             {
-                context.Errors.Add(S["A managed site in this recipe has no name."]);
+                context.Errors.Add(S["A managed site in this recipe has no code."]);
 
                 continue;
             }
 
-            var managedSite = existing.FirstOrDefault(candidate =>
-                string.Equals(candidate.Id, declared.Id, StringComparison.Ordinal)
-                || string.Equals(candidate.Name, declared.Name.Trim(), StringComparison.OrdinalIgnoreCase));
-
-            // A recipe that fixes the identifier can refer to the Managed Site from the scopes it sets
-            // later in the same recipe, which a generated one makes impossible.
-            managedSite ??= new ManagedSite
+            if (string.IsNullOrWhiteSpace(declared.Name))
             {
-                Id = string.IsNullOrWhiteSpace(declared.Id) ? _idGenerator.GenerateUniqueId() : declared.Id.Trim(),
-            };
+                context.Errors.Add(S["The managed site '{0}' has no name.", declared.Code.Trim()]);
+
+                continue;
+            }
+
+            // Matched on the code alone. It is what the recipe's later steps name the Managed Site by,
+            // and what a second run has to find again; a name is a label and can be changed between
+            // runs without meaning a different site.
+            var managedSite = existing.FirstOrDefault(candidate =>
+                string.Equals(candidate.Code, declared.Code.Trim(), StringComparison.Ordinal))
+                ?? new ManagedSite { Code = declared.Code.Trim() };
 
             managedSite.Name = declared.Name;
             managedSite.Hostname = declared.Hostname;
@@ -125,7 +123,7 @@ public sealed class ManagedSiteStepEntry
     /// declares a Managed Site and puts content in its scope has to know what that identifier will be.
     /// Left empty, one is generated.
     /// </remarks>
-    public string Id { get; set; }
+    public string Code { get; set; }
 
     /// <summary>
     /// Gets or sets the name, which is what the recipe matches an existing Managed Site on when no

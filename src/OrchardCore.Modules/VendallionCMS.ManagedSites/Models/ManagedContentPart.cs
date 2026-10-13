@@ -70,30 +70,30 @@ public class ManagedContentPart : ContentPart
             return;
         }
 
-        if (editScope.ManagedSiteIds.Count == 0 || DisplayScope?.Mode == ManagedContentScopeMode.All)
+        if (editScope.ManagedSiteCodes.Count == 0 || DisplayScope?.Mode == ManagedContentScopeMode.All)
         {
             return;
         }
 
-        var managedSiteIds = new List<string>();
+        var managedSiteCodes = new List<string>();
 
         if (DisplayScope?.Mode == ManagedContentScopeMode.Selected)
         {
-            managedSiteIds.AddRange(DisplayScope.ManagedSiteIds);
+            managedSiteCodes.AddRange(DisplayScope.ManagedSiteCodes);
         }
 
-        foreach (var managedSiteId in editScope.ManagedSiteIds)
+        foreach (var managedSiteCode in editScope.ManagedSiteCodes)
         {
-            if (!string.IsNullOrEmpty(managedSiteId) && !managedSiteIds.Contains(managedSiteId, StringComparer.Ordinal))
+            if (!string.IsNullOrEmpty(managedSiteCode) && !managedSiteCodes.Contains(managedSiteCode, StringComparer.Ordinal))
             {
-                managedSiteIds.Add(managedSiteId);
+                managedSiteCodes.Add(managedSiteCode);
             }
         }
 
         DisplayScope = new ManagedContentScope
         {
             Mode = ManagedContentScopeMode.Selected,
-            ManagedSiteIds = managedSiteIds,
+            ManagedSiteCodes = managedSiteCodes,
         };
     }
 }

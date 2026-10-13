@@ -19,13 +19,13 @@ public class DisplayScopePrecedenceTests
     public async Task ExcludedManagedSite_RendersNothingEvenWithAPublishedOverride()
     {
         var source = ManagedContentTestContent.Source(
-            editScope: ManagedContentScope.Selected("site-a"),
+            editScope: ManagedContentScope.Selected("sitea"),
             displayScope: ManagedContentScope.None());
 
         var overrides = new FakeManagedContentOverrideService()
-            .WithPublished("site-a", source.ContentItemId, ManagedContentTestContent.Override());
+            .WithPublished("sitea", source.ContentItemId, ManagedContentTestContent.Override());
 
-        var resolution = await Resolution(overrides).ResolveAsync(source, "site-a");
+        var resolution = await Resolution(overrides).ResolveAsync(source, "sitea");
 
         Assert.False(resolution.ShouldRender);
         Assert.Null(resolution.Content);
@@ -37,12 +37,12 @@ public class DisplayScopePrecedenceTests
         // Display scope decides on its own, so the override store is never consulted for an item the
         // context must not see. Asking would be work that cannot change the answer.
         var source = ManagedContentTestContent.Source(
-            editScope: ManagedContentScope.Selected("site-a"),
+            editScope: ManagedContentScope.Selected("sitea"),
             displayScope: ManagedContentScope.None());
 
         var overrides = new FakeManagedContentOverrideService();
 
-        await Resolution(overrides).ResolveAsync(source, "site-a");
+        await Resolution(overrides).ResolveAsync(source, "sitea");
 
         Assert.Equal(0, overrides.PublishedLookups);
     }
@@ -52,7 +52,7 @@ public class DisplayScopePrecedenceTests
     {
         var source = ManagedContentTestContent.Source(displayInBlueprintContext: false);
 
-        var resolution = await Resolution().ResolveAsync(source, managedSiteId: null);
+        var resolution = await Resolution().ResolveAsync(source, managedSiteCode: null);
 
         Assert.False(resolution.ShouldRender);
     }
@@ -64,7 +64,7 @@ public class DisplayScopePrecedenceTests
             displayScope: ManagedContentScope.None(),
             displayInBlueprintContext: true);
 
-        var resolution = await Resolution().ResolveAsync(source, managedSiteId: null);
+        var resolution = await Resolution().ResolveAsync(source, managedSiteCode: null);
 
         Assert.True(resolution.ShouldRender);
         Assert.Same(source, resolution.Content);
@@ -80,9 +80,9 @@ public class DisplayScopePrecedenceTests
             displayScope: ManagedContentScope.All());
 
         var overrides = new FakeManagedContentOverrideService()
-            .WithPublished("site-a", source.ContentItemId, ManagedContentTestContent.Override());
+            .WithPublished("sitea", source.ContentItemId, ManagedContentTestContent.Override());
 
-        var resolution = await Resolution(overrides).ResolveAsync(source, "site-a");
+        var resolution = await Resolution(overrides).ResolveAsync(source, "sitea");
 
         Assert.True(resolution.ShouldRender);
         Assert.False(resolution.IsOverride);
@@ -93,10 +93,10 @@ public class DisplayScopePrecedenceTests
     public async Task DisplayScopeNamingOtherSites_RendersNothingForThisOne()
     {
         var source = ManagedContentTestContent.Source(
-            editScope: ManagedContentScope.Selected("site-b"),
-            displayScope: ManagedContentScope.Selected("site-b"));
+            editScope: ManagedContentScope.Selected("siteb"),
+            displayScope: ManagedContentScope.Selected("siteb"));
 
-        var resolution = await Resolution().ResolveAsync(source, "site-a");
+        var resolution = await Resolution().ResolveAsync(source, "sitea");
 
         Assert.False(resolution.ShouldRender);
     }

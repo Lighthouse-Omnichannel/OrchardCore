@@ -15,7 +15,7 @@ public class ManagedContentOverridePart : ContentPart
     /// <summary>
     /// Gets or sets the Managed Site that owns this override.
     /// </summary>
-    public string ManagedSiteId { get; set; }
+    public string ManagedSiteCode { get; set; }
 
     /// <summary>
     /// Gets or sets the Managed Content item this override replaces.
@@ -114,7 +114,7 @@ public sealed class ManagedContentOverride
     /// <summary>
     /// Gets or sets the Managed Site that owns the override.
     /// </summary>
-    public string ManagedSiteId { get; set; }
+    public string ManagedSiteCode { get; set; }
 
     /// <summary>
     /// Gets or sets the Managed Content item the override replaces.

@@ -25,7 +25,7 @@ public class ContainerOverrideTests
         var source = Container("source-item", "blueprint-child");
         var overrideContainer = OverrideContainer("managed-child");
 
-        var resolution = await Resolve(source, overrideContainer, "site-a");
+        var resolution = await Resolve(source, overrideContainer, "sitea");
 
         Assert.True(resolution.IsOverride);
         Assert.Equal("managed-child", ChildOf(resolution.Content));
@@ -37,7 +37,7 @@ public class ContainerOverrideTests
         var source = Container("source-item", "blueprint-child");
         var overrideContainer = OverrideContainer("managed-child");
 
-        var resolution = await Resolve(source, overrideContainer, "site-a");
+        var resolution = await Resolve(source, overrideContainer, "sitea");
 
         Assert.NotSame(source, resolution.Content);
         Assert.NotEqual("blueprint-child", ChildOf(resolution.Content));
@@ -48,7 +48,7 @@ public class ContainerOverrideTests
     {
         var source = Container("source-item", "blueprint-child");
 
-        var resolution = await Resolve(source, overrideContainer: null, "site-a");
+        var resolution = await Resolve(source, overrideContainer: null, "sitea");
 
         Assert.False(resolution.IsOverride);
         Assert.Equal("blueprint-child", ChildOf(resolution.Content));
@@ -60,7 +60,7 @@ public class ContainerOverrideTests
         var source = Container("source-item", "blueprint-child", displayScope: ManagedContentScope.None());
         var overrideContainer = OverrideContainer("managed-child");
 
-        var resolution = await Resolve(source, overrideContainer, "site-a");
+        var resolution = await Resolve(source, overrideContainer, "sitea");
 
         Assert.False(resolution.ShouldRender);
         Assert.Null(resolution.Content);
@@ -69,18 +69,18 @@ public class ContainerOverrideTests
     private static async Task<ManagedContentResolution> Resolve(
         ContentItem source,
         ContentItem overrideContainer,
-        string managedSiteId)
+        string managedSiteCode)
     {
         var overrides = new FakeManagedContentOverrideService();
 
         if (overrideContainer is not null)
         {
-            overrides.WithPublished(managedSiteId, source.ContentItemId, overrideContainer);
+            overrides.WithPublished(managedSiteCode, source.ContentItemId, overrideContainer);
         }
 
         var service = new ManagedContentResolutionService(new ManagedContentScopeService(), overrides);
 
-        return await service.ResolveAsync(source, managedSiteId);
+        return await service.ResolveAsync(source, managedSiteCode);
     }
 
     private static ContentItem Container(
@@ -90,7 +90,7 @@ public class ContainerOverrideTests
     {
         var container = ManagedContentTestContent.Source(
             contentItemId,
-            ManagedContentScope.Selected("site-a"),
+            ManagedContentScope.Selected("sitea"),
             displayScope);
 
         container.Content[ChildKey] = childId;

@@ -96,36 +96,36 @@ public interface IManagedContentOverrideService
     /// <summary>
     /// Gets the override a Managed Site holds for one item.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <param name="sourceContentItemId">The source content item identifier.</param>
     /// <returns>The override, or <see langword="null" /> when the Managed Site holds none.</returns>
-    ValueTask<ManagedContentOverride> GetAsync(string managedSiteId, string sourceContentItemId);
+    ValueTask<ManagedContentOverride> GetAsync(string managedSiteCode, string sourceContentItemId);
 
     /// <summary>
     /// Lists every override a Managed Site holds.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <returns>The overrides.</returns>
-    ValueTask<IReadOnlyList<ManagedContentOverride>> ListAsync(string managedSiteId);
+    ValueTask<IReadOnlyList<ManagedContentOverride>> ListAsync(string managedSiteCode);
 
     /// <summary>
     /// Lists the overrides a Managed Site holds that do not render.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <returns>The suppressed overrides, each carrying its reason.</returns>
-    ValueTask<IReadOnlyList<ManagedContentOverride>> ListSuppressedAsync(string managedSiteId);
+    ValueTask<IReadOnlyList<ManagedContentOverride>> ListSuppressedAsync(string managedSiteCode);
 
     /// <summary>
     /// Finds the content that overrides an item for a Managed Site.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <param name="sourceContentItemId">The source content item identifier.</param>
     /// <param name="includeDrafts">
     /// Whether to return work that has not been published, which preview does and rendering never does.
     /// </param>
     /// <returns>The override content, or <see langword="null" /> when there is none.</returns>
     ValueTask<ContentItem> FindOverrideContentAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId,
         bool includeDrafts = false);
 
@@ -137,21 +137,21 @@ public interface IManagedContentOverrideService
     /// than facing an empty form, and it is owned by the Managed Site from the moment it exists, which
     /// is what lets clearance alone authorize editing it.
     /// </remarks>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <param name="sourceContentItemId">The source content item identifier.</param>
     /// <returns>The outcome, carrying the new override when it succeeded.</returns>
-    ValueTask<ManagedContentOverrideResult> CreateAsync(string managedSiteId, string sourceContentItemId);
+    ValueTask<ManagedContentOverrideResult> CreateAsync(string managedSiteCode, string sourceContentItemId);
 
     /// <summary>
     /// Registers a content item as a Managed Site's override of a Managed Content item.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <param name="sourceContentItemId">The source content item identifier.</param>
     /// <param name="overrideContentItemId">The content item holding the override content.</param>
     /// <param name="publish">Whether to publish the override, rather than keep it a draft.</param>
     /// <returns>The outcome.</returns>
     ValueTask<ManagedContentOverrideResult> SaveAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId,
         string overrideContentItemId,
         bool publish);
@@ -159,10 +159,10 @@ public interface IManagedContentOverrideService
     /// <summary>
     /// Removes a Managed Site's override, restoring the original content for that Managed Site.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <param name="sourceContentItemId">The source content item identifier.</param>
     /// <returns><see langword="true" /> when an override was removed; otherwise, <see langword="false" />.</returns>
-    ValueTask<bool> DeleteAsync(string managedSiteId, string sourceContentItemId);
+    ValueTask<bool> DeleteAsync(string managedSiteCode, string sourceContentItemId);
 }
 
 /// <summary>
@@ -221,16 +221,16 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
     }
 
     /// <inheritdoc />
-    public async ValueTask<ManagedContentOverride> GetAsync(string managedSiteId, string sourceContentItemId)
+    public async ValueTask<ManagedContentOverride> GetAsync(string managedSiteCode, string sourceContentItemId)
     {
-        if (string.IsNullOrEmpty(managedSiteId) || string.IsNullOrEmpty(sourceContentItemId))
+        if (string.IsNullOrEmpty(managedSiteCode) || string.IsNullOrEmpty(sourceContentItemId))
         {
             return null;
         }
 
         var rows = await _session
             .QueryIndex<ManagedContentOverrideIndex>(index =>
-                index.ManagedSiteId == managedSiteId && index.SourceContentItemId == sourceContentItemId)
+                index.ManagedSiteCode == managedSiteCode && index.SourceContentItemId == sourceContentItemId)
             .ListAsync();
 
         var candidates = rows.ToArray();
@@ -241,15 +241,15 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<ManagedContentOverride>> ListAsync(string managedSiteId)
+    public async ValueTask<IReadOnlyList<ManagedContentOverride>> ListAsync(string managedSiteCode)
     {
-        if (string.IsNullOrEmpty(managedSiteId))
+        if (string.IsNullOrEmpty(managedSiteCode))
         {
             return [];
         }
 
         var rows = await _session
-            .QueryIndex<ManagedContentOverrideIndex>(index => index.ManagedSiteId == managedSiteId)
+            .QueryIndex<ManagedContentOverrideIndex>(index => index.ManagedSiteCode == managedSiteCode)
             .ListAsync();
 
         var overrides = new List<ManagedContentOverride>();
@@ -263,20 +263,20 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<ManagedContentOverride>> ListSuppressedAsync(string managedSiteId)
+    public async ValueTask<IReadOnlyList<ManagedContentOverride>> ListSuppressedAsync(string managedSiteCode)
     {
-        var overrides = await ListAsync(managedSiteId);
+        var overrides = await ListAsync(managedSiteCode);
 
         return [.. overrides.Where(item => item.Status == ManagedContentOverrideStatus.Suppressed)];
     }
 
     /// <inheritdoc />
     public async ValueTask<ContentItem> FindOverrideContentAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId,
         bool includeDrafts = false)
     {
-        if (string.IsNullOrEmpty(managedSiteId) || string.IsNullOrEmpty(sourceContentItemId))
+        if (string.IsNullOrEmpty(managedSiteCode) || string.IsNullOrEmpty(sourceContentItemId))
         {
             return null;
         }
@@ -290,14 +290,14 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
         return includeDrafts
             ? await _session
                 .Query<ContentItem, ManagedContentOverrideIndex>(index =>
-                    index.ManagedSiteId == managedSiteId
+                    index.ManagedSiteCode == managedSiteCode
                     && index.SourceContentItemId == sourceContentItemId
                     && index.Latest)
                 .OrderBy(index => index.OverrideContentItemId)
                 .FirstOrDefaultAsync()
             : await _session
                 .Query<ContentItem, ManagedContentOverrideIndex>(index =>
-                    index.ManagedSiteId == managedSiteId
+                    index.ManagedSiteCode == managedSiteCode
                     && index.SourceContentItemId == sourceContentItemId
                     && index.Published)
                 .OrderBy(index => index.OverrideContentItemId)
@@ -306,17 +306,17 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
 
     /// <inheritdoc />
     public async ValueTask<ManagedContentOverrideResult> CreateAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId)
     {
-        var validation = await ValidateAsync(managedSiteId, sourceContentItemId);
+        var validation = await ValidateAsync(managedSiteCode, sourceContentItemId);
 
         if (validation.Error != ManagedContentOverrideError.None)
         {
             return ManagedContentOverrideResult.Failed(validation.Error);
         }
 
-        var existing = await GetAsync(managedSiteId, sourceContentItemId);
+        var existing = await GetAsync(managedSiteCode, sourceContentItemId);
 
         if (existing is not null)
         {
@@ -348,7 +348,7 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
         }
 
         var overridePart = overrideContentItem.GetOrCreate<ManagedContentOverridePart>();
-        overridePart.ManagedSiteId = managedSiteId;
+        overridePart.ManagedSiteCode = managedSiteCode;
         overridePart.SourceContentItemId = sourceContentItemId;
         overridePart.SourceContainerContentItemId = validation.Location.Container.ContentItemId;
         overrideContentItem.Apply(nameof(ManagedContentOverridePart), overridePart);
@@ -357,7 +357,7 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
 
         return ManagedContentOverrideResult.Success(new ManagedContentOverride
         {
-            ManagedSiteId = managedSiteId,
+            ManagedSiteCode = managedSiteCode,
             SourceContentItemId = sourceContentItemId,
             OverrideContentItemId = overrideContentItem.ContentItemId,
             ContentType = overrideContentItem.ContentType,
@@ -368,12 +368,12 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
 
     /// <inheritdoc />
     public async ValueTask<ManagedContentOverrideResult> SaveAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId,
         string overrideContentItemId,
         bool publish)
     {
-        var validation = await ValidateAsync(managedSiteId, sourceContentItemId);
+        var validation = await ValidateAsync(managedSiteCode, sourceContentItemId);
 
         if (validation.Error != ManagedContentOverrideError.None)
         {
@@ -397,7 +397,7 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
 
         // Switching which content item overrides an item is a deliberate act with content on both sides,
         // so it is a remove followed by a save rather than a silent swap that orphans the old one.
-        var existing = await GetAsync(managedSiteId, sourceContentItemId);
+        var existing = await GetAsync(managedSiteCode, sourceContentItemId);
 
         if (existing is not null
             && !string.Equals(existing.OverrideContentItemId, overrideContentItemId, StringComparison.Ordinal))
@@ -406,7 +406,7 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
         }
 
         var overridePart = overrideContentItem.GetOrCreate<ManagedContentOverridePart>();
-        overridePart.ManagedSiteId = managedSiteId;
+        overridePart.ManagedSiteCode = managedSiteCode;
         overridePart.SourceContentItemId = sourceContentItemId;
         overridePart.SourceContainerContentItemId = location.Container.ContentItemId;
         overrideContentItem.Apply(nameof(ManagedContentOverridePart), overridePart);
@@ -424,7 +424,7 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
 
         return ManagedContentOverrideResult.Success(new ManagedContentOverride
         {
-            ManagedSiteId = managedSiteId,
+            ManagedSiteCode = managedSiteCode,
             SourceContentItemId = sourceContentItemId,
             OverrideContentItemId = overrideContentItemId,
             ContentType = overrideContentItem.ContentType,
@@ -434,9 +434,9 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
     }
 
     /// <inheritdoc />
-    public async ValueTask<bool> DeleteAsync(string managedSiteId, string sourceContentItemId)
+    public async ValueTask<bool> DeleteAsync(string managedSiteCode, string sourceContentItemId)
     {
-        var existing = await GetAsync(managedSiteId, sourceContentItemId);
+        var existing = await GetAsync(managedSiteCode, sourceContentItemId);
 
         if (existing is null)
         {
@@ -463,10 +463,10 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
     /// Checks everything that must hold before a Managed Site may own an override of an item.
     /// </summary>
     private async ValueTask<(ManagedContentOverrideError Error, ManagedContentLocation Location)> ValidateAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId)
     {
-        var managedSite = await _managedSiteService.GetAsync(managedSiteId);
+        var managedSite = await _managedSiteService.GetAsync(managedSiteCode);
 
         if (managedSite is null || managedSite.Status != ManagedSiteStatus.Enabled)
         {
@@ -487,7 +487,7 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
             return (ManagedContentOverrideError.SourceNotManagedContent, null);
         }
 
-        return _scopeService.CanEdit(managedContentPart, managedSiteId)
+        return _scopeService.CanEdit(managedContentPart, managedSiteCode)
             ? (ManagedContentOverrideError.None, location)
             : (ManagedContentOverrideError.EditScopeExcluded, null);
     }
@@ -539,13 +539,13 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
         overrideContentItem?.TryGet(out overridePart);
 
         var reason = await _suppressionService.EvaluateAsync(
-            row.ManagedSiteId,
+            row.ManagedSiteCode,
             row.SourceContentItemId,
             overridePart?.SourceContainerContentItemId);
 
         return new ManagedContentOverride
         {
-            ManagedSiteId = row.ManagedSiteId,
+            ManagedSiteCode = row.ManagedSiteCode,
             SourceContentItemId = row.SourceContentItemId,
             OverrideContentItemId = row.OverrideContentItemId,
             ContentType = row.ContentType,

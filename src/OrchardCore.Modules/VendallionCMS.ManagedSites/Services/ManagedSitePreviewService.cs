@@ -16,7 +16,7 @@ public sealed class ManagedSitePreview
     /// <summary>
     /// Gets the Managed Site the address resolves to, or <see langword="null" /> when it resolves to none.
     /// </summary>
-    public string ManagedSiteId { get; init; }
+    public string ManagedSiteCode { get; init; }
 
     /// <summary>
     /// Gets how the address composes, either as a Managed Site or as the Site Blueprint.
@@ -32,12 +32,12 @@ public interface IManagedSitePreviewService
     /// <summary>
     /// Builds the preview address for a Managed Site and a path.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site to preview.</param>
+    /// <param name="managedSiteCode">The Managed Site to preview.</param>
     /// <param name="url">The path to preview, relative to the site root.</param>
     /// <param name="includeDrafts">Whether the address should ask to show unpublished work.</param>
     /// <returns>The preview, or <see langword="null" /> when the Managed Site cannot be previewed.</returns>
     ValueTask<ManagedSitePreview> CreateAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string url,
         bool includeDrafts,
         int? port = null);
@@ -70,12 +70,12 @@ public sealed class ManagedSitePreviewService : IManagedSitePreviewService
 
     /// <inheritdoc />
     public async ValueTask<ManagedSitePreview> CreateAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string url,
         bool includeDrafts,
         int? port = null)
     {
-        var managedSite = await _managedSiteService.GetAsync(managedSiteId);
+        var managedSite = await _managedSiteService.GetAsync(managedSiteCode);
 
         if (managedSite is null || managedSite.Status != ManagedSiteStatus.Enabled)
         {
@@ -121,7 +121,7 @@ public sealed class ManagedSitePreviewService : IManagedSitePreviewService
         return new ManagedSitePreview
         {
             PreviewUrl = builder.ToString(),
-            ManagedSiteId = managedSite.Id,
+            ManagedSiteCode = managedSite.Code,
             CompositionMode = ManagedSitesConstants.Preview.ManagedSiteMode,
         };
     }

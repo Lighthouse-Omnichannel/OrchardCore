@@ -48,7 +48,7 @@ public sealed class ManagedContentEditScopeIndex : MapIndex
     /// <summary>
     /// Gets or sets the Managed Site this row covers, empty when the row covers every Managed Site.
     /// </summary>
-    public string ManagedSiteId { get; set; }
+    public string ManagedSiteCode { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether the edit scope covers every Managed Site.
@@ -152,13 +152,13 @@ public sealed class ManagedContentEditScopeIndexProvider : IndexProvider<Content
             return;
         }
 
-        ManagedContentEditScopeIndex Row(string managedSiteId, bool allManagedSites) => new()
+        ManagedContentEditScopeIndex Row(string managedSiteCode, bool allManagedSites) => new()
         {
             ContentItemId = contentItemId,
             ContainerContentItemId = containerContentItemId,
             JsonPath = jsonPath,
             ContentType = contentType,
-            ManagedSiteId = managedSiteId,
+            ManagedSiteCode = managedSiteCode,
             AllManagedSites = allManagedSites,
 
             // Versioning belongs to the stored container: a section has no version of its own.
@@ -173,11 +173,11 @@ public sealed class ManagedContentEditScopeIndexProvider : IndexProvider<Content
             return;
         }
 
-        foreach (var managedSiteId in scope.ManagedSiteIds
-            .Where(managedSiteId => !string.IsNullOrEmpty(managedSiteId))
+        foreach (var managedSiteCode in scope.ManagedSiteCodes
+            .Where(managedSiteCode => !string.IsNullOrEmpty(managedSiteCode))
             .Distinct(StringComparer.Ordinal))
         {
-            results.Add(Row(managedSiteId, allManagedSites: false));
+            results.Add(Row(managedSiteCode, allManagedSites: false));
         }
     }
 }
@@ -200,7 +200,7 @@ public sealed class ManagedContentOverrideIndex : MapIndex
     /// <summary>
     /// Gets or sets the Managed Site that owns the override.
     /// </summary>
-    public string ManagedSiteId { get; set; }
+    public string ManagedSiteCode { get; set; }
 
     /// <summary>
     /// Gets or sets the Managed Content item the override replaces.
@@ -239,7 +239,7 @@ public sealed class ManagedContentOverrideIndexProvider : IndexProvider<ContentI
                 }
 
                 if (!contentItem.TryGet<ManagedContentOverridePart>(out var part)
-                    || string.IsNullOrEmpty(part.ManagedSiteId)
+                    || string.IsNullOrEmpty(part.ManagedSiteCode)
                     || string.IsNullOrEmpty(part.SourceContentItemId))
                 {
                     return null;
@@ -248,7 +248,7 @@ public sealed class ManagedContentOverrideIndexProvider : IndexProvider<ContentI
                 return new ManagedContentOverrideIndex
                 {
                     OverrideContentItemId = contentItem.ContentItemId,
-                    ManagedSiteId = part.ManagedSiteId,
+                    ManagedSiteCode = part.ManagedSiteCode,
                     SourceContentItemId = part.SourceContentItemId,
                     ContentType = contentItem.ContentType,
                     Latest = contentItem.Latest,

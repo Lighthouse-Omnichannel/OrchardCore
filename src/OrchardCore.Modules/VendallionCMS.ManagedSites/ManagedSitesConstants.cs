@@ -11,6 +11,28 @@ public static class ManagedSitesConstants
     }
 
     /// <summary>
+    /// The rule a Managed Site code follows.
+    /// </summary>
+    /// <remarks>
+    /// A code is read by people and written into places that are unforgiving of punctuation: a URL
+    /// path, a recipe, a signed clearance claim whose parts are separated by colons and commas. Letters
+    /// and digits only, beginning with a letter, keeps it safe in all of them and leaves no question of
+    /// how two codes differing only in case relate.
+    /// </remarks>
+    public static class Code
+    {
+        /// <summary>
+        /// The longest a code may be.
+        /// </summary>
+        public const int MaximumLength = 50;
+
+        /// <summary>
+        /// The pattern a code must match: lowercase letters and digits, beginning with a letter.
+        /// </summary>
+        public const string Pattern = "^[a-z][a-z0-9]*$";
+    }
+
+    /// <summary>
     /// Action scopes that Managed Site clearance can grant.
     /// </summary>
     public static class Scopes
@@ -75,7 +97,7 @@ public static class ManagedSitesConstants
         /// another Managed Site's content by sending one. It is named here so that the rule can be
         /// tested against the thing it forbids.
         /// </summary>
-        public const string ManagedSiteId = "X-Managed-Site-Id";
+        public const string ManagedSiteCode = "X-Managed-Site-Id";
     }
 
     /// <summary>
@@ -89,6 +111,8 @@ public static class ManagedSitesConstants
         public const string NoEnabledManagedSite = "managed-sites.no-enabled-managed-site";
         public const string ManagedSiteUnavailable = "managed-sites.managed-site-unavailable";
         public const string SelectionRequired = "managed-sites.selection-required";
+        public const string InvalidCode = "managed-sites.invalid-code";
+        public const string CodeConflict = "managed-sites.code-conflict";
         public const string InvalidName = "managed-sites.invalid-name";
         public const string InvalidUrl = "managed-sites.invalid-url";
         public const string UrlConflict = "managed-sites.url-conflict";

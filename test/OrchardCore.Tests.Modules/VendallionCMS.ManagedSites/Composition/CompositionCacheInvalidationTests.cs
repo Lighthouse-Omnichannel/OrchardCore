@@ -44,12 +44,12 @@ public class CompositionCacheInvalidationTests
 
         await context.PublishAsync(ManagedContentTestContent.Item("page"));
 
-        Assert.Contains(Tag(managedSiteId: null, ManagedSiteCompositionArea.Content), context.Dropped);
+        Assert.Contains(Tag(managedSiteCode: null, ManagedSiteCompositionArea.Content), context.Dropped);
         Assert.Contains(
-            Tag(managedSiteId: null, ManagedSiteCompositionArea.Content),
+            Tag(managedSiteCode: null, ManagedSiteCompositionArea.Content),
             ManagedSiteCompositionCacheService.Tags("costis", ManagedSiteCompositionArea.Content));
         Assert.Contains(
-            Tag(managedSiteId: null, ManagedSiteCompositionArea.Content),
+            Tag(managedSiteCode: null, ManagedSiteCompositionArea.Content),
             ManagedSiteCompositionCacheService.Tags("michael", ManagedSiteCompositionArea.Content));
     }
 
@@ -62,9 +62,9 @@ public class CompositionCacheInvalidationTests
         await context.PublishAsync(ManagedContentTestContent.Source("section", ManagedContentScope.All()));
 
         Assert.Contains(
-            Tag(managedSiteId: null, ManagedSiteCompositionArea.ManagedContentScope),
+            Tag(managedSiteCode: null, ManagedSiteCompositionArea.ManagedContentScope),
             context.Dropped);
-        Assert.Contains(Tag(managedSiteId: null, ManagedSiteCompositionArea.Content), context.Dropped);
+        Assert.Contains(Tag(managedSiteCode: null, ManagedSiteCompositionArea.Content), context.Dropped);
     }
 
     [Fact]
@@ -100,11 +100,11 @@ public class CompositionCacheInvalidationTests
         Assert.Contains(Tag("costis", ManagedSiteCompositionArea.Override), context.Dropped);
     }
 
-    private static string Tag(string managedSiteId, ManagedSiteCompositionArea area)
-        => ManagedSiteCompositionCacheService.Tag(managedSiteId, area);
+    private static string Tag(string managedSiteCode, ManagedSiteCompositionArea area)
+        => ManagedSiteCompositionCacheService.Tag(managedSiteCode, area);
 
-    private static ContentItem Override(string managedSiteId)
-        => ManagedContentTestContent.Override("override-item", managedSiteId);
+    private static ContentItem Override(string managedSiteCode)
+        => ManagedContentTestContent.Override("override-item", managedSiteCode);
 
     private sealed class CacheTestContext
     {

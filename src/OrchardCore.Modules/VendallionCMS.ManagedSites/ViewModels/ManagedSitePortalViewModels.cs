@@ -137,7 +137,7 @@ public sealed class ManagedSitePortalSelectViewModel
     /// <summary>
     /// Gets or sets the Managed Site already chosen, if any.
     /// </summary>
-    public string SelectedManagedSiteId { get; set; }
+    public string SelectedManagedSiteCode { get; set; }
 }
 
 /// <summary>

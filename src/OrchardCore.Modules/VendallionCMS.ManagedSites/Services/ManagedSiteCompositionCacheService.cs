@@ -47,13 +47,13 @@ public sealed class ManagedSiteCompositionCacheService : IManagedSiteComposition
     /// <summary>
     /// Builds the cache tag naming one composition area of one Managed Site.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier, or <see langword="null" /> for every Managed Site.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier, or <see langword="null" /> for every Managed Site.</param>
     /// <param name="affectedArea">The affected composition area.</param>
     /// <returns>The tag.</returns>
-    public static string Tag(string managedSiteId, ManagedSiteCompositionArea affectedArea)
-        => string.IsNullOrEmpty(managedSiteId)
+    public static string Tag(string managedSiteCode, ManagedSiteCompositionArea affectedArea)
+        => string.IsNullOrEmpty(managedSiteCode)
             ? $"{CachePrefix}:{affectedArea}"
-            : $"{CachePrefix}:{affectedArea}:{managedSiteId}";
+            : $"{CachePrefix}:{affectedArea}:{managedSiteCode}";
 
     /// <summary>
     /// Returns the tags composed output should be filed under.
@@ -63,21 +63,21 @@ public sealed class ManagedSiteCompositionCacheService : IManagedSiteComposition
     /// a Managed Site; without the Managed Site tag, publishing on one Managed Site would drop what
     /// every other one had cached.
     /// </remarks>
-    /// <param name="managedSiteId">The Managed Site the output was composed for, or <see langword="null" />.</param>
+    /// <param name="managedSiteCode">The Managed Site the output was composed for, or <see langword="null" />.</param>
     /// <param name="affectedArea">The composition area.</param>
     /// <returns>The tags to file the output under.</returns>
-    public static string[] Tags(string managedSiteId, ManagedSiteCompositionArea affectedArea)
-        => string.IsNullOrEmpty(managedSiteId)
-            ? [Tag(managedSiteId: null, affectedArea)]
-            : [Tag(managedSiteId, affectedArea), Tag(managedSiteId: null, affectedArea)];
+    public static string[] Tags(string managedSiteCode, ManagedSiteCompositionArea affectedArea)
+        => string.IsNullOrEmpty(managedSiteCode)
+            ? [Tag(managedSiteCode: null, affectedArea)]
+            : [Tag(managedSiteCode, affectedArea), Tag(managedSiteCode: null, affectedArea)];
 
     /// <inheritdoc />
-    public async ValueTask InvalidateAsync(string managedSiteId, ManagedSiteCompositionArea affectedArea)
+    public async ValueTask InvalidateAsync(string managedSiteCode, ManagedSiteCompositionArea affectedArea)
     {
         // A change with no Managed Site is Site Blueprint content, which every Managed Site composes
         // from. Dropping the area tag reaches all of them, because every composed response carries it
         // alongside its own.
-        var tag = Tag(managedSiteId, affectedArea);
+        var tag = Tag(managedSiteCode, affectedArea);
 
         await _signal.SignalTokenAsync(tag);
         await _tagCache.RemoveTagAsync(tag);

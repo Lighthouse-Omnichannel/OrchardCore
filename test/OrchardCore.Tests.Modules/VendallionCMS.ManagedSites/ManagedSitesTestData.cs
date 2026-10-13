@@ -18,22 +18,22 @@ public static class ManagedSitesTestData
     /// <summary>
     /// Creates a test Managed Site addressed by host name and URL prefix.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <param name="status">The Managed Site lifecycle status.</param>
     /// <param name="name">The display name, defaulting to the identifier.</param>
     /// <param name="hostname">The host names it answers on, empty for every host.</param>
     /// <param name="urlPrefix">The URL prefix it answers under, empty for the root.</param>
     /// <returns>A test Managed Site.</returns>
     public static ManagedSite ManagedSite(
-        string managedSiteId = "managed-site",
+        string managedSiteCode = "managed-site",
         ManagedSiteStatus status = ManagedSiteStatus.Enabled,
         string name = null,
         string hostname = null,
         string urlPrefix = null)
         => new()
         {
-            Id = managedSiteId,
-            Name = name ?? managedSiteId,
+            Code = managedSiteCode,
+            Name = name ?? managedSiteCode,
             Status = status,
             Hostname = hostname,
             UrlPrefix = urlPrefix,
@@ -42,7 +42,7 @@ public static class ManagedSitesTestData
     /// <summary>
     /// Creates an authenticated principal carrying Managed Site clearance claims.
     /// </summary>
-    /// <param name="managedSiteClaims">Clearance claim values such as <c>site-a:edit,publish</c>.</param>
+    /// <param name="managedSiteClaims">Clearance claim values such as <c>sitea:edit,publish</c>.</param>
     /// <returns>An authenticated principal.</returns>
     public static ClaimsPrincipal User(params string[] managedSiteClaims)
     {

@@ -78,7 +78,7 @@ public class ManagedSitePipelinePositionTests
     {
         var services = new ServiceCollection()
             .AddSingleton<IManagedSiteUrlResolver>(new ManagedSiteUrlResolver(
-                new FakeManagedSiteService(ManagedSitesTestData.ManagedSite("site-a", urlPrefix: "shop"))))
+                new FakeManagedSiteService(ManagedSitesTestData.ManagedSite("sitea", urlPrefix: "shop"))))
             .AddSingleton<IManagedSiteCompositionContextAccessor, ManagedSiteCompositionContextAccessor>()
             .AddSingleton(Options.Create(new AdminOptions()))
             .BuildServiceProvider();

@@ -9,12 +9,34 @@
 
 <zone Name="Title"><h1>@title</h1></zone>
 
-<form asp-action="@formAction" asp-route-id="@Model.Id" method="post">
+<form asp-action="@formAction" asp-route-code="@Model.Code" method="post">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    @* Asked for once. Everything referring to this managed site refers to it by the code, so the
+       editor shows it afterwards but does not offer it. *@
+    <div class="mb-3">
+        <label asp-for="Code" class="form-label">@T["Code"]</label>
+        @if (Model.IsNew)
+        {
+            <input asp-for="Code" class="form-control" autofocus
+                   maxlength="@VendallionCMS.ManagedSites.ManagedSitesConstants.Code.MaximumLength"
+                   aria-describedby="code-hint" />
+            <span asp-validation-for="Code" class="text-danger"></span>
+            <span class="hint" id="code-hint">
+                @T["Lowercase letters and digits, beginning with a letter, up to {0} characters. It cannot be changed later.",
+                    VendallionCMS.ManagedSites.ManagedSitesConstants.Code.MaximumLength]
+            </span>
+        }
+        else
+        {
+            <input class="form-control" value="@Model.Code" readonly aria-describedby="code-hint" />
+            <span class="hint" id="code-hint">@T["Fixed when the managed site was created."]</span>
+        }
+    </div>
 
     <div class="mb-3">
         <label asp-for="Name" class="form-label">@T["Name"]</label>
-        <input asp-for="Name" class="form-control" autofocus />
+        <input asp-for="Name" class="form-control" />
         <span asp-validation-for="Name" class="text-danger"></span>
         <span class="hint">@T["The name must be unique within this site."]</span>
     </div>

@@ -11,25 +11,25 @@ public interface IManagedContentSuppressionService
     /// <summary>
     /// Evaluates an override against the current state of its Managed Site and source item.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site that owns the override.</param>
+    /// <param name="managedSiteCode">The Managed Site that owns the override.</param>
     /// <param name="sourceContentItemId">The Managed Content item the override replaces.</param>
     /// <param name="sourceContainerContentItemId">The stored item the source lives in, when known.</param>
     /// <returns>The suppression reason, or <see cref="ManagedContentOverrideSuppressionReason.None" />.</returns>
     ValueTask<ManagedContentOverrideSuppressionReason> EvaluateAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId,
         string sourceContainerContentItemId = null);
 
     /// <summary>
     /// Evaluates an override from state the caller already holds.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site that owns the override.</param>
+    /// <param name="managedSiteCode">The Managed Site that owns the override.</param>
     /// <param name="managedSite">The owning Managed Site, or <see langword="null" /> when it is gone.</param>
     /// <param name="publishedSource">The published source item, or <see langword="null" /> when it is not published.</param>
     /// <param name="sourceExists">Whether the source content item still exists in any version.</param>
     /// <returns>The suppression reason, or <see cref="ManagedContentOverrideSuppressionReason.None" />.</returns>
     ManagedContentOverrideSuppressionReason Evaluate(
-        string managedSiteId,
+        string managedSiteCode,
         ManagedSite managedSite,
         ContentItem publishedSource,
         bool sourceExists);
@@ -71,11 +71,11 @@ public sealed class ManagedContentSuppressionService : IManagedContentSuppressio
 
     /// <inheritdoc />
     public async ValueTask<ManagedContentOverrideSuppressionReason> EvaluateAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string sourceContentItemId,
         string sourceContainerContentItemId = null)
     {
-        var managedSite = await _managedSiteService.GetAsync(managedSiteId);
+        var managedSite = await _managedSiteService.GetAsync(managedSiteCode);
 
         var published = await _locator.FindAsync(
             sourceContentItemId,
@@ -89,12 +89,12 @@ public sealed class ManagedContentSuppressionService : IManagedContentSuppressio
             || await _locator.FindAsync(sourceContentItemId, sourceContainerContentItemId, VersionOptions.Latest)
                 is not null;
 
-        return Evaluate(managedSiteId, managedSite, published?.ContentItem, sourceExists);
+        return Evaluate(managedSiteCode, managedSite, published?.ContentItem, sourceExists);
     }
 
     /// <inheritdoc />
     public ManagedContentOverrideSuppressionReason Evaluate(
-        string managedSiteId,
+        string managedSiteCode,
         ManagedSite managedSite,
         ContentItem publishedSource,
         bool sourceExists)
@@ -114,7 +114,7 @@ public sealed class ManagedContentSuppressionService : IManagedContentSuppressio
             return ManagedContentOverrideSuppressionReason.CapabilityDetached;
         }
 
-        if (!_scopeService.CanEdit(part, managedSiteId))
+        if (!_scopeService.CanEdit(part, managedSiteCode))
         {
             return ManagedContentOverrideSuppressionReason.EditScopeRemoved;
         }

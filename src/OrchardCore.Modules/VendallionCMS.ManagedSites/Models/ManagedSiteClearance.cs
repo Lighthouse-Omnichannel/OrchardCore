@@ -13,7 +13,7 @@ public sealed class ManagedSiteClearance
     /// <summary>
     /// Gets or sets the Managed Site identifier.
     /// </summary>
-    public string ManagedSiteId { get; set; }
+    public string ManagedSiteCode { get; set; }
 
     /// <summary>
     /// Gets the permitted action scopes.

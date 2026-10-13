@@ -10,9 +10,9 @@ public interface IManagedSiteService
     /// <summary>
     /// Gets a Managed Site by identifier.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <returns>The Managed Site, or <see langword="null" /> when no match exists.</returns>
-    ValueTask<ManagedSite> GetAsync(string managedSiteId);
+    ValueTask<ManagedSite> GetAsync(string managedSiteCode);
 
     /// <summary>
     /// Lists the Managed Sites defined in the tenant.
@@ -43,7 +43,7 @@ public interface IManagedSiteService
     /// <summary>
     /// Deletes a Managed Site.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <returns><see langword="true" /> when a Managed Site was removed; otherwise, <see langword="false" />.</returns>
-    ValueTask<bool> DeleteAsync(string managedSiteId);
+    ValueTask<bool> DeleteAsync(string managedSiteCode);
 }

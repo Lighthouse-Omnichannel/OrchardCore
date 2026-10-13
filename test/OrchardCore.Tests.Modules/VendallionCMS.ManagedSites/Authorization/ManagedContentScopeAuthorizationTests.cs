@@ -37,7 +37,7 @@ public class ManagedContentScopeAuthorizationTests
         // boundary that granted it.
         var handler = CreateHandler(isAuthorized: false);
 
-        Assert.False(await handler.CanConfigureScopesAsync(ManagedSitesTestData.User("site-a:edit,publish")));
+        Assert.False(await handler.CanConfigureScopesAsync(ManagedSitesTestData.User("sitea:edit,publish")));
     }
 
     [Fact]

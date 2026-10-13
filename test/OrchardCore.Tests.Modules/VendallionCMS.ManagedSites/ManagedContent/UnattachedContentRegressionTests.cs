@@ -83,7 +83,7 @@ public class UnattachedContentRegressionTests
         var plain = ManagedContentTestContent.Item("widget");
 
         Assert.True(service.CanDisplay(plain, "costis"));
-        Assert.True(service.CanDisplay(plain, managedSiteId: null));
+        Assert.True(service.CanDisplay(plain, managedSiteCode: null));
     }
 
     [Fact]

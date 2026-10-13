@@ -22,7 +22,7 @@ public class ManagedSiteSecurityTests
         // than a grant of everything.
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", null);
+        ManagedSiteSecurityService.ApplyGrant(settings, "sitea", null);
 
         Assert.Empty(Assert.Single(settings.Grants).Scopes);
     }
@@ -32,9 +32,9 @@ public class ManagedSiteSecurityTests
     {
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [ManagedSitesConstants.Scopes.Edit]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "sitea", [ManagedSitesConstants.Scopes.Edit]);
 
-        Assert.Equal("site-a", Assert.Single(settings.Grants).ManagedSiteId);
+        Assert.Equal("sitea", Assert.Single(settings.Grants).ManagedSiteCode);
     }
 
     [Fact]
@@ -43,8 +43,8 @@ public class ManagedSiteSecurityTests
         // Two grants for one Managed Site would be two answers to one question.
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [ManagedSitesConstants.Scopes.Edit]);
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [ManagedSitesConstants.Scopes.Publish]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "sitea", [ManagedSitesConstants.Scopes.Edit]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "sitea", [ManagedSitesConstants.Scopes.Publish]);
 
         Assert.Equal([ManagedSitesConstants.Scopes.Publish], Assert.Single(settings.Grants).Scopes);
     }
@@ -54,10 +54,10 @@ public class ManagedSiteSecurityTests
     {
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [ManagedSitesConstants.Scopes.Edit]);
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-b", [ManagedSitesConstants.Scopes.Publish]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "sitea", [ManagedSitesConstants.Scopes.Edit]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "siteb", [ManagedSitesConstants.Scopes.Publish]);
 
-        Assert.Equal(["site-a", "site-b"], settings.Grants.Select(grant => grant.ManagedSiteId));
+        Assert.Equal(["sitea", "siteb"], settings.Grants.Select(grant => grant.ManagedSiteCode));
     }
 
     [Theory]
@@ -67,7 +67,7 @@ public class ManagedSiteSecurityTests
     {
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", [given]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "sitea", [given]);
 
         Assert.Equal([expected], Assert.Single(settings.Grants).Scopes);
     }
@@ -79,7 +79,7 @@ public class ManagedSiteSecurityTests
         // as a grant that allows something.
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", ["edit", "wander-in-freely"]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "sitea", ["edit", "wander-in-freely"]);
 
         Assert.Equal([ManagedSitesConstants.Scopes.Edit], Assert.Single(settings.Grants).Scopes);
     }
@@ -89,7 +89,7 @@ public class ManagedSiteSecurityTests
     {
         var settings = new ManagedSiteClearanceSettings();
 
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", ["preview", "edit", "publish", "edit"]);
+        ManagedSiteSecurityService.ApplyGrant(settings, "sitea", ["preview", "edit", "publish", "edit"]);
 
         Assert.Equal(
             [ManagedSitesConstants.Scopes.Edit, ManagedSitesConstants.Scopes.Publish, ManagedSitesConstants.Scopes.Preview],
@@ -117,20 +117,20 @@ public class ManagedSiteSecurityTests
     public void Withdrawing_TakesOnlyTheManagedSiteNamed()
     {
         var settings = new ManagedSiteClearanceSettings();
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", null);
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-b", null);
+        ManagedSiteSecurityService.ApplyGrant(settings, "sitea", null);
+        ManagedSiteSecurityService.ApplyGrant(settings, "siteb", null);
 
-        Assert.True(ManagedSiteSecurityService.RemoveGrant(settings, "site-a"));
-        Assert.Equal(["site-b"], settings.Grants.Select(grant => grant.ManagedSiteId));
+        Assert.True(ManagedSiteSecurityService.RemoveGrant(settings, "sitea"));
+        Assert.Equal(["siteb"], settings.Grants.Select(grant => grant.ManagedSiteCode));
     }
 
     [Fact]
     public void Withdrawing_WhatWasNeverGranted_ChangesNothing()
     {
         var settings = new ManagedSiteClearanceSettings();
-        ManagedSiteSecurityService.ApplyGrant(settings, "site-a", null);
+        ManagedSiteSecurityService.ApplyGrant(settings, "sitea", null);
 
-        Assert.False(ManagedSiteSecurityService.RemoveGrant(settings, "site-b"));
+        Assert.False(ManagedSiteSecurityService.RemoveGrant(settings, "siteb"));
         Assert.Single(settings.Grants);
     }
 }

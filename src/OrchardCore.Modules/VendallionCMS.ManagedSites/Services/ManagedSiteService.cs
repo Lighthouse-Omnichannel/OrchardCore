@@ -7,7 +7,7 @@ namespace VendallionCMS.ManagedSites.Services;
 /// <summary>
 /// Manages Managed Site definitions stored in site settings.
 /// </summary>
-public sealed class ManagedSiteService : IManagedSiteService
+public sealed partial class ManagedSiteService : IManagedSiteService
 {
     private readonly ISiteService _siteService;
     private readonly IShellUrlSynchronizationService _shellUrlSynchronizationService;
@@ -41,19 +41,19 @@ public sealed class ManagedSiteService : IManagedSiteService
     private ValueTask InvalidateAddressesAsync()
         => _compositionCacheService is null
             ? ValueTask.CompletedTask
-            : _compositionCacheService.InvalidateAsync(managedSiteId: null, ManagedSiteCompositionArea.Address);
+            : _compositionCacheService.InvalidateAsync(managedSiteCode: null, ManagedSiteCompositionArea.Address);
 
     /// <inheritdoc />
-    public async ValueTask<ManagedSite> GetAsync(string managedSiteId)
+    public async ValueTask<ManagedSite> GetAsync(string managedSiteCode)
     {
-        if (string.IsNullOrEmpty(managedSiteId))
+        if (string.IsNullOrEmpty(managedSiteCode))
         {
             return null;
         }
 
         var document = await GetDocumentAsync();
 
-        return document.ManagedSites.FirstOrDefault(managedSite => managedSite.Id == managedSiteId);
+        return document.ManagedSites.FirstOrDefault(managedSite => managedSite.Code == managedSiteCode);
     }
 
     /// <inheritdoc />
@@ -77,11 +77,27 @@ public sealed class ManagedSiteService : IManagedSiteService
     {
         ArgumentNullException.ThrowIfNull(managedSite);
 
-        if (string.IsNullOrWhiteSpace(managedSite.Id))
+        managedSite.Code = managedSite.Code?.Trim();
+
+        if (string.IsNullOrEmpty(managedSite.Code))
         {
             throw new ManagedSiteValidationException(
-                ManagedSitesConstants.ErrorCodes.ManagedSiteNotFound,
-                "A Managed Site must have an identifier.");
+                ManagedSitesConstants.ErrorCodes.InvalidCode,
+                "A Managed Site must have a code.");
+        }
+
+        if (managedSite.Code.Length > ManagedSitesConstants.Code.MaximumLength)
+        {
+            throw new ManagedSiteValidationException(
+                ManagedSitesConstants.ErrorCodes.InvalidCode,
+                $"A Managed Site code is at most {ManagedSitesConstants.Code.MaximumLength} characters.");
+        }
+
+        if (!ManagedSiteCodeRegex().IsMatch(managedSite.Code))
+        {
+            throw new ManagedSiteValidationException(
+                ManagedSitesConstants.ErrorCodes.InvalidCode,
+                "A Managed Site code is lowercase letters and digits, beginning with a letter.");
         }
 
         if (string.IsNullOrWhiteSpace(managedSite.Name))
@@ -99,12 +115,12 @@ public sealed class ManagedSiteService : IManagedSiteService
         ValidateNameIsUnique(managedSite, document);
 
         var others = document.ManagedSites
-            .Where(existing => existing.Id != managedSite.Id)
+            .Where(existing => existing.Code != managedSite.Code)
             .ToArray();
 
         ManagedSiteAddressValidator.ValidateNoConflict(managedSite, others);
 
-        var replaced = document.ManagedSites.FirstOrDefault(item => item.Id == managedSite.Id);
+        var replaced = document.ManagedSites.FirstOrDefault(item => item.Code == managedSite.Code);
         if (replaced != null)
         {
             document.ManagedSites.Remove(replaced);
@@ -122,9 +138,9 @@ public sealed class ManagedSiteService : IManagedSiteService
     }
 
     /// <inheritdoc />
-    public async ValueTask<bool> DeleteAsync(string managedSiteId)
+    public async ValueTask<bool> DeleteAsync(string managedSiteCode)
     {
-        if (string.IsNullOrEmpty(managedSiteId))
+        if (string.IsNullOrEmpty(managedSiteCode))
         {
             return false;
         }
@@ -132,7 +148,7 @@ public sealed class ManagedSiteService : IManagedSiteService
         var site = await _siteService.LoadSiteSettingsAsync();
         var document = site.GetOrCreate<ManagedSitesDocument>();
 
-        var existing = document.ManagedSites.FirstOrDefault(item => item.Id == managedSiteId);
+        var existing = document.ManagedSites.FirstOrDefault(item => item.Code == managedSiteCode);
         if (existing == null)
         {
             return false;
@@ -154,7 +170,7 @@ public sealed class ManagedSiteService : IManagedSiteService
     private static void ValidateNameIsUnique(ManagedSite managedSite, ManagedSitesDocument document)
     {
         var hasConflict = document.ManagedSites.Any(existing =>
-            existing.Id != managedSite.Id &&
+            existing.Code != managedSite.Code &&
             string.Equals(existing.Name, managedSite.Name, StringComparison.OrdinalIgnoreCase));
 
         if (hasConflict)
@@ -171,4 +187,8 @@ public sealed class ManagedSiteService : IManagedSiteService
 
         return site.GetOrCreate<ManagedSitesDocument>();
     }
+
+
+    [System.Text.RegularExpressions.GeneratedRegex(ManagedSitesConstants.Code.Pattern)]
+    private static partial System.Text.RegularExpressions.Regex ManagedSiteCodeRegex();
 }

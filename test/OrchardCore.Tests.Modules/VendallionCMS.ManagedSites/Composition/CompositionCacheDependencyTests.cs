@@ -62,7 +62,7 @@ public class CompositionCacheDependencyTests
     {
         var context = new DependencyContext();
 
-        await context.Cache.InvalidateAsync(managedSiteId: null, ManagedSiteCompositionArea.Address);
+        await context.Cache.InvalidateAsync(managedSiteCode: null, ManagedSiteCompositionArea.Address);
 
         Assert.Contains(
             ManagedSiteCompositionCacheService.Tag(null, ManagedSiteCompositionArea.Address),
@@ -92,7 +92,7 @@ public class CompositionCacheDependencyTests
         // of the store that tells it when addresses change.
         var context = new DependencyContext();
 
-        await context.Cache.InvalidateAsync(managedSiteId: null, ManagedSiteCompositionArea.Content);
+        await context.Cache.InvalidateAsync(managedSiteCode: null, ManagedSiteCompositionArea.Content);
 
         var areaTag = ManagedSiteCompositionCacheService.Tag(null, ManagedSiteCompositionArea.Content);
 

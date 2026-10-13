@@ -8,7 +8,7 @@ public class ManagedContentOverrideLinkViewModel
     /// <summary>
     /// Gets or sets the Managed Site that owns the override.
     /// </summary>
-    public string ManagedSiteId { get; set; }
+    public string ManagedSiteCode { get; set; }
 
     /// <summary>
     /// Gets or sets the display name of the owning Managed Site, or <see langword="null" /> when it is gone.

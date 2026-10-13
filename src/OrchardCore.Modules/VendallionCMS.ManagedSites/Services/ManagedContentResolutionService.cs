@@ -34,7 +34,7 @@ public sealed class ManagedContentResolutionService : IManagedContentResolutionS
     }
 
     /// <inheritdoc />
-    public async ValueTask<ManagedContentResolution> ResolveAsync(ContentItem contentItem, string managedSiteId)
+    public async ValueTask<ManagedContentResolution> ResolveAsync(ContentItem contentItem, string managedSiteCode)
     {
         if (contentItem is null)
         {
@@ -47,20 +47,20 @@ public sealed class ManagedContentResolutionService : IManagedContentResolutionS
             return ManagedContentResolution.Original(contentItem);
         }
 
-        if (!_scopeService.CanDisplay(part, managedSiteId))
+        if (!_scopeService.CanDisplay(part, managedSiteCode))
         {
             return ManagedContentResolution.Hidden();
         }
 
         // The Site Blueprint context is the original content by definition; only a Managed Site holds
         // an override.
-        if (string.IsNullOrEmpty(managedSiteId) || !_scopeService.CanEdit(part, managedSiteId))
+        if (string.IsNullOrEmpty(managedSiteCode) || !_scopeService.CanEdit(part, managedSiteCode))
         {
             return ManagedContentResolution.Original(contentItem);
         }
 
         var overrideContent = await _overrideService.FindOverrideContentAsync(
-            managedSiteId,
+            managedSiteCode,
             contentItem.ContentItemId);
 
         return overrideContent is null

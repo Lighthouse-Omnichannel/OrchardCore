@@ -27,20 +27,20 @@ public interface IManagedContentListService
     /// put a page and each of its sections side by side as though they were peers, which is not how
     /// either is reached or what overriding one does to the other.
     /// </remarks>
-    /// <param name="managedSiteId">The Managed Site.</param>
+    /// <param name="managedSiteCode">The Managed Site.</param>
     /// <param name="query">What to list, and which page of it.</param>
     /// <returns>The page, and how many items it was drawn from.</returns>
-    ValueTask<ManagedContentListing> ListAsync(string managedSiteId, ManagedContentListQuery query);
+    ValueTask<ManagedContentListing> ListAsync(string managedSiteCode, ManagedContentListQuery query);
 
     /// <summary>
     /// Lists what a Managed Site may customize inside one container.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site.</param>
+    /// <param name="managedSiteCode">The Managed Site.</param>
     /// <param name="containerContentItemId">The item the listed items are stored inside.</param>
     /// <param name="query">What to list, and which page of it.</param>
     /// <returns>The page, and how many items it was drawn from.</returns>
     ValueTask<ManagedContentListing> ListContainedAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string containerContentItemId,
         ManagedContentListQuery query);
 }
@@ -120,16 +120,16 @@ public sealed class ManagedContentListService : IManagedContentListService
     }
 
     /// <inheritdoc />
-    public async ValueTask<ManagedContentListing> ListAsync(string managedSiteId, ManagedContentListQuery query)
-        => ApplyQuery(InTheirOwnRight(await ListEditableAsync(managedSiteId)), query);
+    public async ValueTask<ManagedContentListing> ListAsync(string managedSiteCode, ManagedContentListQuery query)
+        => ApplyQuery(InTheirOwnRight(await ListEditableAsync(managedSiteCode)), query);
 
     /// <inheritdoc />
     public async ValueTask<ManagedContentListing> ListContainedAsync(
-        string managedSiteId,
+        string managedSiteCode,
         string containerContentItemId,
         ManagedContentListQuery query)
     {
-        var items = await ListEditableAsync(managedSiteId);
+        var items = await ListEditableAsync(managedSiteCode);
 
         return ApplyQuery(
             [.. items.Where(item => IsStoredInside(item, containerContentItemId))],
@@ -235,11 +235,11 @@ public sealed class ManagedContentListService : IManagedContentListService
             ? ManagedContentOverrideStatus.None
             : Enum.Parse<ManagedContentOverrideStatus>(item.Override.Status);
 
-    private async Task<List<ManagedContentListItem>> ListEditableAsync(string managedSiteId)
+    private async Task<List<ManagedContentListItem>> ListEditableAsync(string managedSiteCode)
     {
         var rows = await _session
             .QueryIndex<ManagedContentEditScopeIndex>(index =>
-                (index.ManagedSiteId == managedSiteId || index.AllManagedSites) && index.Published)
+                (index.ManagedSiteCode == managedSiteCode || index.AllManagedSites) && index.Published)
             .ListAsync();
 
         var candidates = rows.ToArray();
@@ -274,7 +274,7 @@ public sealed class ManagedContentListService : IManagedContentListService
             .Select(group => group.First())
             .ToArray();
 
-        var overrides = (await _overrideService.ListAsync(managedSiteId))
+        var overrides = (await _overrideService.ListAsync(managedSiteCode))
             .ToDictionary(item => item.SourceContentItemId, StringComparer.Ordinal);
 
         var items = new List<ManagedContentListItem>();
@@ -292,7 +292,7 @@ public sealed class ManagedContentListService : IManagedContentListService
             // row, because a blueprint administrator can narrow it at any moment.
             if (source is null
                 || !source.TryGet<ManagedContentPart>(out var part)
-                || !_scopeService.CanEdit(part, managedSiteId))
+                || !_scopeService.CanEdit(part, managedSiteCode))
             {
                 continue;
             }
@@ -306,7 +306,7 @@ public sealed class ManagedContentListService : IManagedContentListService
                 ContentType = source.ContentType,
                 DisplayText = Describe(source, container),
                 IsContainer = await IsContainerAsync(source.ContentType),
-                DisplayScopeIncludesManagedSite = _scopeService.CanDisplay(part, managedSiteId),
+                DisplayScopeIncludesManagedSite = _scopeService.CanDisplay(part, managedSiteCode),
                 Override = ManagedContentOverrideSummary.Of(managedContentOverride),
             });
         }

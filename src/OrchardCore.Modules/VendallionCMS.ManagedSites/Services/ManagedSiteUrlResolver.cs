@@ -36,7 +36,7 @@ public sealed class ManagedSiteUrlResolver : IManagedSiteUrlResolver
         {
             // Null when nothing answers, which every consumer reads as the Site Blueprint context. A
             // request that matches no Managed Site is not an error; it is the tenant's own content.
-            ManagedSiteId = managedSite?.Id,
+            ManagedSiteCode = managedSite?.Code,
 
             // Empty for a Managed Site that matched on its host name, whose prefix decides nothing and
             // so must not be stripped from the path either.

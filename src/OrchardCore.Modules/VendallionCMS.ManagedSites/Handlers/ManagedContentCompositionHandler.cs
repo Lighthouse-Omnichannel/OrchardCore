@@ -58,9 +58,9 @@ public sealed class ManagedContentCompositionHandler : ContentHandlerBase
     public override async Task LoadedAsync(LoadContentContext context)
     {
         var requestContext = _contextAccessor.Current;
-        var managedSiteId = requestContext?.ManagedSiteId;
+        var managedSiteCode = requestContext?.ManagedSiteCode;
 
-        if (string.IsNullOrEmpty(managedSiteId))
+        if (string.IsNullOrEmpty(managedSiteCode))
         {
             return;
         }
@@ -78,17 +78,17 @@ public sealed class ManagedContentCompositionHandler : ContentHandlerBase
         // that called it is built and cached, so asking for it now is a lookup rather than a cycle.
         _overrideService ??= _serviceProvider.GetRequiredService<IManagedContentOverrideService>();
 
-        var includeDrafts = await IncludeDraftsAsync(requestContext, managedSiteId);
+        var includeDrafts = await IncludeDraftsAsync(requestContext, managedSiteCode);
 
         // The item itself first. If it is replaced, nothing inside it is visited: what it now holds is
         // the Managed Site's own content, not a set of further items for that same Managed Site to
         // override, and asking would be the same loop an override of an override is.
-        if (await TrySubstituteSelfAsync(contentItem, managedSiteId, includeDrafts))
+        if (await TrySubstituteSelfAsync(contentItem, managedSiteCode, includeDrafts))
         {
             return;
         }
 
-        await SubstituteAsync(contentItem, managedSiteId, includeDrafts);
+        await SubstituteAsync(contentItem, managedSiteCode, includeDrafts);
     }
 
     /// <summary>
@@ -99,7 +99,7 @@ public sealed class ManagedContentCompositionHandler : ContentHandlerBase
     /// caller's preview clearance for the Managed Site the URL resolved to. Authentication has run by
     /// the time content loads, which it had not when the request was resolved.
     /// </remarks>
-    private async Task<bool> IncludeDraftsAsync(ManagedSiteRequestContext requestContext, string managedSiteId)
+    private async Task<bool> IncludeDraftsAsync(ManagedSiteRequestContext requestContext, string managedSiteCode)
     {
         if (!requestContext.PreviewRequested)
         {
@@ -112,7 +112,7 @@ public sealed class ManagedContentCompositionHandler : ContentHandlerBase
         var user = _httpContextAccessor.HttpContext?.User;
 
         return user is not null
-            && await _clearanceService.HasClearanceAsync(user, managedSiteId, ManagedSitesConstants.Scopes.Preview);
+            && await _clearanceService.HasClearanceAsync(user, managedSiteCode, ManagedSitesConstants.Scopes.Preview);
     }
 
     /// <summary>
@@ -131,21 +131,21 @@ public sealed class ManagedContentCompositionHandler : ContentHandlerBase
     /// afterwards is the substituted content.
     /// </remarks>
     /// <param name="contentItem">The loaded content item.</param>
-    /// <param name="managedSiteId">The Managed Site the request resolved to.</param>
+    /// <param name="managedSiteCode">The Managed Site the request resolved to.</param>
     /// <param name="includeDrafts">Whether unpublished work may be shown.</param>
     /// <returns><see langword="true" /> when the item was replaced.</returns>
     private async Task<bool> TrySubstituteSelfAsync(
         ContentItem contentItem,
-        string managedSiteId,
+        string managedSiteCode,
         bool includeDrafts)
     {
-        if (!contentItem.TryGet<ManagedContentPart>(out var part) || !_scopeService.CanEdit(part, managedSiteId))
+        if (!contentItem.TryGet<ManagedContentPart>(out var part) || !_scopeService.CanEdit(part, managedSiteCode))
         {
             return false;
         }
 
         var overrideContent = await _overrideService.FindOverrideContentAsync(
-            managedSiteId,
+            managedSiteCode,
             contentItem.ContentItemId,
             includeDrafts);
 
@@ -199,7 +199,7 @@ public sealed class ManagedContentCompositionHandler : ContentHandlerBase
         return true;
     }
 
-    private async Task SubstituteAsync(ContentItem owner, string managedSiteId, bool includeDrafts)
+    private async Task SubstituteAsync(ContentItem owner, string managedSiteCode, bool includeDrafts)
     {
         // Substituting an item replaces everything inside it, so the list is taken once and a replaced
         // item's former children are simply never visited.
@@ -215,7 +215,7 @@ public sealed class ManagedContentCompositionHandler : ContentHandlerBase
                 continue;
             }
 
-            if (await TrySubstituteAsync(contained.Content, contained.ContentItem, managedSiteId, includeDrafts))
+            if (await TrySubstituteAsync(contained.Content, contained.ContentItem, managedSiteCode, includeDrafts))
             {
                 substituted.Add(contained.JsonPath);
 
@@ -298,16 +298,16 @@ public sealed class ManagedContentCompositionHandler : ContentHandlerBase
     private async Task<bool> TrySubstituteAsync(
         JsonObject jItem,
         ContentItem contained,
-        string managedSiteId,
+        string managedSiteCode,
         bool includeDrafts)
     {
-        if (!contained.TryGet<ManagedContentPart>(out var part) || !_scopeService.CanEdit(part, managedSiteId))
+        if (!contained.TryGet<ManagedContentPart>(out var part) || !_scopeService.CanEdit(part, managedSiteCode))
         {
             return false;
         }
 
         var overrideContent = await _overrideService.FindOverrideContentAsync(
-            managedSiteId,
+            managedSiteCode,
             contained.ContentItemId,
             includeDrafts);
 

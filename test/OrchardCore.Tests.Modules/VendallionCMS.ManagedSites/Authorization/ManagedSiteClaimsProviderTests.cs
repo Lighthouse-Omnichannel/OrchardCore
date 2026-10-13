@@ -18,27 +18,27 @@ public class ManagedSiteClaimsProviderTests
     [Fact]
     public async Task GenerateAsync_GrantWithScopes_EmitsScopedClaim()
     {
-        var identity = await GenerateAsync(Grant("site-a", "edit", "publish"));
+        var identity = await GenerateAsync(Grant("sitea", "edit", "publish"));
 
         var claim = Assert.Single(ClearanceClaims(identity));
-        Assert.Equal("site-a:edit,publish", claim);
+        Assert.Equal("sitea:edit,publish", claim);
     }
 
     [Fact]
     public async Task GenerateAsync_GrantWithoutScopes_EmitsWildcardClaim()
     {
-        var identity = await GenerateAsync(Grant("site-a"));
+        var identity = await GenerateAsync(Grant("sitea"));
 
         var claim = Assert.Single(ClearanceClaims(identity));
-        Assert.Equal("site-a", claim);
+        Assert.Equal("sitea", claim);
     }
 
     [Fact]
     public async Task GenerateAsync_SeveralGrants_EmitsOneClaimEach()
     {
-        var identity = await GenerateAsync(Grant("site-a", "edit"), Grant("site-b", "preview"));
+        var identity = await GenerateAsync(Grant("sitea", "edit"), Grant("siteb", "preview"));
 
-        Assert.Equal(["site-a:edit", "site-b:preview"], ClearanceClaims(identity));
+        Assert.Equal(["sitea:edit", "siteb:preview"], ClearanceClaims(identity));
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class ManagedSiteClaimsProviderTests
     [Fact]
     public async Task GenerateAsync_DuplicateGrants_EmitsClaimOnce()
     {
-        var identity = await GenerateAsync(Grant("site-a", "edit"), Grant("site-a", "edit"));
+        var identity = await GenerateAsync(Grant("sitea", "edit"), Grant("sitea", "edit"));
 
         Assert.Single(ClearanceClaims(identity));
     }
@@ -60,10 +60,10 @@ public class ManagedSiteClaimsProviderTests
     [Theory]
     [InlineData("site:a")]
     [InlineData("site,a")]
-    public async Task GenerateAsync_IdentifierContainsSeparator_SkipsGrant(string managedSiteId)
+    public async Task GenerateAsync_IdentifierContainsSeparator_SkipsGrant(string managedSiteCode)
     {
         // A separator inside the identifier would reparse as a different site, silently misdirecting access.
-        var identity = await GenerateAsync(Grant(managedSiteId, "edit"));
+        var identity = await GenerateAsync(Grant(managedSiteCode, "edit"));
 
         Assert.Empty(ClearanceClaims(identity));
     }
@@ -79,47 +79,47 @@ public class ManagedSiteClaimsProviderTests
     [Fact]
     public async Task GenerateAsync_ScopeContainsSeparator_DropsThatScopeOnly()
     {
-        var identity = await GenerateAsync(Grant("site-a", "edit", "pub,lish"));
+        var identity = await GenerateAsync(Grant("sitea", "edit", "pub,lish"));
 
         var claim = Assert.Single(ClearanceClaims(identity));
-        Assert.Equal("site-a:edit", claim);
+        Assert.Equal("sitea:edit", claim);
     }
 
     [Fact]
     public async Task GenerateAsync_EmittedClaims_AreAcceptedByTheClearanceParser()
     {
         // The provider and the parser must agree on the claim format, or a granted user is still denied.
-        var identity = await GenerateAsync(Grant("site-a", "edit"), Grant("site-b"));
+        var identity = await GenerateAsync(Grant("sitea", "edit"), Grant("siteb"));
         var principal = new ClaimsPrincipal(identity);
         var authorizationService = new ManagedSiteAuthorizationService();
 
-        Assert.True(await authorizationService.AuthorizeAsync(principal, "site-a", "edit"));
-        Assert.False(await authorizationService.AuthorizeAsync(principal, "site-a", "publish"));
+        Assert.True(await authorizationService.AuthorizeAsync(principal, "sitea", "edit"));
+        Assert.False(await authorizationService.AuthorizeAsync(principal, "sitea", "publish"));
 
-        // site-b was granted without naming a scope, which allows reading it and nothing else.
-        Assert.True(await authorizationService.AuthorizeAsync(principal, "site-b", null));
-        Assert.False(await authorizationService.AuthorizeAsync(principal, "site-b", "publish"));
+        // siteb was granted without naming a scope, which allows reading it and nothing else.
+        Assert.True(await authorizationService.AuthorizeAsync(principal, "siteb", null));
+        Assert.False(await authorizationService.AuthorizeAsync(principal, "siteb", "publish"));
 
-        Assert.False(await authorizationService.AuthorizeAsync(principal, "site-c", "edit"));
+        Assert.False(await authorizationService.AuthorizeAsync(principal, "sitec", "edit"));
     }
 
     [Fact]
     public async Task GenerateAsync_EmittedClaims_ResolveThroughTheSessionService()
     {
-        var identity = await GenerateAsync(Grant("site-a", "edit"));
+        var identity = await GenerateAsync(Grant("sitea", "edit"));
         identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, ManagedSitesTestData.UserId));
 
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var result = await context.SessionService.ResolveAsync(new ClaimsPrincipal(identity));
 
         Assert.Equal(ManagedSiteSessionStatus.Selected, result.Status);
-        Assert.Equal("site-a", result.Scope.ManagedSiteId);
+        Assert.Equal("sitea", result.Scope.ManagedSiteCode);
     }
 
-    private static ManagedSiteClearanceGrant Grant(string managedSiteId, params string[] scopes)
+    private static ManagedSiteClearanceGrant Grant(string managedSiteCode, params string[] scopes)
     {
-        var grant = new ManagedSiteClearanceGrant { ManagedSiteId = managedSiteId };
+        var grant = new ManagedSiteClearanceGrant { ManagedSiteCode = managedSiteCode };
 
         foreach (var scope in scopes)
         {

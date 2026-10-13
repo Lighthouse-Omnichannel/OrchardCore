@@ -30,10 +30,10 @@ public interface IManagedSiteClearanceService
     /// Determines whether the user holds effective clearance for a Managed Site and scope.
     /// </summary>
     /// <param name="user">The user principal to evaluate.</param>
-    /// <param name="managedSiteId">The Managed Site identifier.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier.</param>
     /// <param name="scope">The requested action scope, or <see langword="null" /> for any scope.</param>
     /// <returns><see langword="true" /> when the user holds effective clearance; otherwise, <see langword="false" />.</returns>
-    ValueTask<bool> HasClearanceAsync(ClaimsPrincipal user, string managedSiteId, string scope);
+    ValueTask<bool> HasClearanceAsync(ClaimsPrincipal user, string managedSiteCode, string scope);
 }
 
 /// <summary>
@@ -74,9 +74,9 @@ public sealed class ManagedSiteClearanceService : IManagedSiteClearanceService
 
         return clearances
             .Where(clearance => IsEffective(clearance, now))
-            .GroupBy(clearance => clearance.ManagedSiteId, StringComparer.Ordinal)
+            .GroupBy(clearance => clearance.ManagedSiteCode, StringComparer.Ordinal)
             .Select(group => group.First())
-            .OrderBy(clearance => clearance.ManagedSiteId, StringComparer.Ordinal)
+            .OrderBy(clearance => clearance.ManagedSiteCode, StringComparer.Ordinal)
             .ToArray();
     }
 
@@ -90,22 +90,22 @@ public sealed class ManagedSiteClearanceService : IManagedSiteClearanceService
         }
 
         var clearedIds = clearances
-            .Select(clearance => clearance.ManagedSiteId)
+            .Select(clearance => clearance.ManagedSiteCode)
             .ToHashSet(StringComparer.Ordinal);
 
         var managedSites = await _managedSiteService.ListAsync();
 
         return managedSites
-            .Where(managedSite => clearedIds.Contains(managedSite.Id))
+            .Where(managedSite => clearedIds.Contains(managedSite.Code))
             .Where(managedSite => managedSite.Status == ManagedSiteStatus.Enabled)
             .OrderBy(managedSite => managedSite.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
 
     /// <inheritdoc />
-    public async ValueTask<bool> HasClearanceAsync(ClaimsPrincipal user, string managedSiteId, string scope)
+    public async ValueTask<bool> HasClearanceAsync(ClaimsPrincipal user, string managedSiteCode, string scope)
     {
-        if (string.IsNullOrWhiteSpace(managedSiteId))
+        if (string.IsNullOrWhiteSpace(managedSiteCode))
         {
             return false;
         }
@@ -113,13 +113,13 @@ public sealed class ManagedSiteClearanceService : IManagedSiteClearanceService
         var clearances = await GetEffectiveClearancesAsync(user);
 
         return clearances.Any(clearance =>
-            string.Equals(clearance.ManagedSiteId, managedSiteId, StringComparison.Ordinal)
+            string.Equals(clearance.ManagedSiteCode, managedSiteCode, StringComparison.Ordinal)
             && HasScope(clearance, scope));
     }
 
     private static bool IsEffective(ManagedSiteClearance clearance, DateTimeOffset now)
     {
-        if (string.IsNullOrEmpty(clearance.ManagedSiteId))
+        if (string.IsNullOrEmpty(clearance.ManagedSiteCode))
         {
             return false;
         }

@@ -11,9 +11,9 @@ public class ManagedSiteContentAuthorizationTests
     public async Task AuthorizeAsync_MatchingClaimAndScope_ReturnsTrue()
     {
         var service = new ManagedSiteAuthorizationService();
-        var user = CreateUser("site-a:edit,publish");
+        var user = CreateUser("sitea:edit,publish");
 
-        var result = await service.AuthorizeAsync(user, "site-a", "edit");
+        var result = await service.AuthorizeAsync(user, "sitea", "edit");
 
         Assert.True(result);
     }
@@ -22,9 +22,9 @@ public class ManagedSiteContentAuthorizationTests
     public async Task AuthorizeAsync_MissingManagedSite_ReturnsFalse()
     {
         var service = new ManagedSiteAuthorizationService();
-        var user = CreateUser("site-a:edit");
+        var user = CreateUser("sitea:edit");
 
-        var result = await service.AuthorizeAsync(user, "site-b", "edit");
+        var result = await service.AuthorizeAsync(user, "siteb", "edit");
 
         Assert.False(result);
     }

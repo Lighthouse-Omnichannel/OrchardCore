@@ -27,8 +27,8 @@ public sealed class FakeManagedSiteService : IManagedSiteService
         _managedSites = [.. managedSites];
     }
 
-    public ValueTask<ManagedSite> GetAsync(string managedSiteId)
-        => ValueTask.FromResult(_managedSites.FirstOrDefault(managedSite => managedSite.Id == managedSiteId));
+    public ValueTask<ManagedSite> GetAsync(string managedSiteCode)
+        => ValueTask.FromResult(_managedSites.FirstOrDefault(managedSite => managedSite.Code == managedSiteCode));
 
     public ValueTask<IReadOnlyList<ManagedSite>> ListAsync()
         => ValueTask.FromResult<IReadOnlyList<ManagedSite>>(_managedSites.ToArray());
@@ -40,14 +40,14 @@ public sealed class FakeManagedSiteService : IManagedSiteService
 
     public ValueTask SaveAsync(ManagedSite managedSite)
     {
-        _managedSites.RemoveAll(item => item.Id == managedSite.Id);
+        _managedSites.RemoveAll(item => item.Code == managedSite.Code);
         _managedSites.Add(managedSite);
 
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask<bool> DeleteAsync(string managedSiteId)
-        => ValueTask.FromResult(_managedSites.RemoveAll(item => item.Id == managedSiteId) > 0);
+    public ValueTask<bool> DeleteAsync(string managedSiteCode)
+        => ValueTask.FromResult(_managedSites.RemoveAll(item => item.Code == managedSiteCode) > 0);
 }
 
 /// <summary>
@@ -87,11 +87,11 @@ public sealed class InMemoryManagedSiteSessionStore : IManagedSiteSessionStore
         return ValueTask.CompletedTask;
     }
 
-    public void Seed(string userId, string managedSiteId)
+    public void Seed(string userId, string managedSiteCode)
         => _scopes[userId] = new ActiveManagedSiteSessionScope
         {
             UserId = userId,
-            ManagedSiteId = managedSiteId,
+            ManagedSiteCode = managedSiteCode,
             SelectedAt = DateTimeOffset.UnixEpoch,
         };
 }

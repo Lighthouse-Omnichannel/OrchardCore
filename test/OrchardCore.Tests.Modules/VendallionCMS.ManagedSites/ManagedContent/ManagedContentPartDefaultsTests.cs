@@ -45,9 +45,9 @@ public class ManagedContentPartDefaultsTests
         var service = new ManagedContentScopeService();
         var part = new ManagedContentPart();
 
-        Assert.True(service.CanDisplay(part, "site-a"));
-        Assert.True(service.CanDisplay(part, managedSiteId: null));
-        Assert.False(service.CanEdit(part, "site-a"));
+        Assert.True(service.CanDisplay(part, "sitea"));
+        Assert.True(service.CanDisplay(part, managedSiteCode: null));
+        Assert.False(service.CanEdit(part, "sitea"));
     }
 
     [Fact]
@@ -67,8 +67,8 @@ public class ManagedContentPartDefaultsTests
     {
         var part = new ManagedContentPart
         {
-            EditScope = ManagedContentScope.Selected("site-a", "site-b"),
-            DisplayScope = ManagedContentScope.Selected("site-a"),
+            EditScope = ManagedContentScope.Selected("sitea", "siteb"),
+            DisplayScope = ManagedContentScope.Selected("sitea"),
             DisplayInBlueprintContext = false,
         };
 
@@ -76,8 +76,8 @@ public class ManagedContentPartDefaultsTests
             JsonSerializer.Serialize(part, JOptions.Default),
             JOptions.Default);
 
-        Assert.Equal(["site-a", "site-b"], roundTripped.EditScope.ManagedSiteIds);
-        Assert.Equal(["site-a"], roundTripped.DisplayScope.ManagedSiteIds);
+        Assert.Equal(["sitea", "siteb"], roundTripped.EditScope.ManagedSiteCodes);
+        Assert.Equal(["sitea"], roundTripped.DisplayScope.ManagedSiteCodes);
         Assert.False(roundTripped.DisplayInBlueprintContext);
     }
 
@@ -87,7 +87,7 @@ public class ManagedContentPartDefaultsTests
         var service = new ManagedContentScopeService();
         var contentItem = new ContentItem { ContentType = "Page" };
 
-        Assert.True(service.CanDisplay(contentItem, "site-a"));
-        Assert.True(service.CanDisplay(contentItem, managedSiteId: null));
+        Assert.True(service.CanDisplay(contentItem, "sitea"));
+        Assert.True(service.CanDisplay(contentItem, managedSiteCode: null));
     }
 }

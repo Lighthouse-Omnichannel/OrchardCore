@@ -55,7 +55,7 @@ public class OverrideEditorTests
         await driver.UpdateAsync(part, PartUpdateContext());
 
         Assert.Equal(ManagedContentScopeMode.Selected, part.EditScope.Mode);
-        Assert.Equal(["costis"], part.EditScope.ManagedSiteIds);
+        Assert.Equal(["costis"], part.EditScope.ManagedSiteCodes);
     }
 
     [Fact]

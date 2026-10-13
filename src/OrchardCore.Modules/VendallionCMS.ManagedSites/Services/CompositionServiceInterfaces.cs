@@ -42,9 +42,9 @@ public interface IManagedContentResolutionService
     /// Resolves the content to render for a content item.
     /// </summary>
     /// <param name="contentItem">The source content item.</param>
-    /// <param name="managedSiteId">The resolved Managed Site, or <see langword="null" /> for the Site Blueprint context.</param>
+    /// <param name="managedSiteCode">The resolved Managed Site, or <see langword="null" /> for the Site Blueprint context.</param>
     /// <returns>The resolution outcome.</returns>
-    ValueTask<ManagedContentResolution> ResolveAsync(ContentItem contentItem, string managedSiteId);
+    ValueTask<ManagedContentResolution> ResolveAsync(ContentItem contentItem, string managedSiteCode);
 }
 
 /// <summary>
@@ -99,10 +99,10 @@ public interface IManagedSiteCompositionCacheService
     /// <summary>
     /// Invalidates cached composition state for a Managed Site.
     /// </summary>
-    /// <param name="managedSiteId">The Managed Site identifier, or <see langword="null" /> for every Managed Site.</param>
+    /// <param name="managedSiteCode">The Managed Site identifier, or <see langword="null" /> for every Managed Site.</param>
     /// <param name="affectedArea">The affected composition area.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    ValueTask InvalidateAsync(string managedSiteId, ManagedSiteCompositionArea affectedArea);
+    ValueTask InvalidateAsync(string managedSiteCode, ManagedSiteCompositionArea affectedArea);
 }
 
 /// <summary>
@@ -114,7 +114,7 @@ public sealed class ManagedSiteRequestContext
     /// Gets or sets the resolved Managed Site identifier, or <see langword="null" /> when the request
     /// matched no Managed Site and is served by the Site Blueprint context.
     /// </summary>
-    public string ManagedSiteId { get; set; }
+    public string ManagedSiteCode { get; set; }
 
     /// <summary>
     /// Gets or sets the URL prefix the resolved Managed Site answers under, empty when it answers at

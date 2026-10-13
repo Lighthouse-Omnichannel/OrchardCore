@@ -17,11 +17,11 @@ public class ManagedSiteClearanceScopeTests
     [Fact]
     public async Task AClearanceNamingNoScope_StillAllowsReading()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         Assert.True(await context.ClearanceService.HasClearanceAsync(
-            ManagedSitesTestData.User("site-a"),
-            "site-a",
+            ManagedSitesTestData.User("sitea"),
+            "sitea",
             null));
     }
 
@@ -31,11 +31,11 @@ public class ManagedSiteClearanceScopeTests
     [InlineData("preview")]
     public async Task AClearanceNamingNoScope_AllowsNothingFurther(string scope)
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         Assert.False(await context.ClearanceService.HasClearanceAsync(
-            ManagedSitesTestData.User("site-a"),
-            "site-a",
+            ManagedSitesTestData.User("sitea"),
+            "sitea",
             scope));
     }
 
@@ -45,21 +45,21 @@ public class ManagedSiteClearanceScopeTests
     [InlineData("preview")]
     public async Task AScope_AllowsItselfAndReading(string scope)
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
-        var user = ManagedSitesTestData.User($"site-a:{scope}");
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
+        var user = ManagedSitesTestData.User($"sitea:{scope}");
 
-        Assert.True(await context.ClearanceService.HasClearanceAsync(user, "site-a", scope));
-        Assert.True(await context.ClearanceService.HasClearanceAsync(user, "site-a", null));
+        Assert.True(await context.ClearanceService.HasClearanceAsync(user, "sitea", scope));
+        Assert.True(await context.ClearanceService.HasClearanceAsync(user, "sitea", null));
     }
 
     [Fact]
     public async Task OneScope_DoesNotCarryAnother()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         Assert.False(await context.ClearanceService.HasClearanceAsync(
-            ManagedSitesTestData.User("site-a:edit"),
-            "site-a",
+            ManagedSitesTestData.User("sitea:edit"),
+            "sitea",
             "publish"));
     }
 
@@ -67,23 +67,23 @@ public class ManagedSiteClearanceScopeTests
     public async Task AClearance_DoesNotReachAnotherManagedSite()
     {
         var context = new ManagedSitePortalTestContext(
-            ManagedSitesTestData.ManagedSite("site-a"),
-            ManagedSitesTestData.ManagedSite("site-b"));
+            ManagedSitesTestData.ManagedSite("sitea"),
+            ManagedSitesTestData.ManagedSite("siteb"));
 
-        var user = ManagedSitesTestData.User("site-a:edit");
+        var user = ManagedSitesTestData.User("sitea:edit");
 
-        Assert.False(await context.ClearanceService.HasClearanceAsync(user, "site-b", "edit"));
-        Assert.False(await context.ClearanceService.HasClearanceAsync(user, "site-b", null));
+        Assert.False(await context.ClearanceService.HasClearanceAsync(user, "siteb", "edit"));
+        Assert.False(await context.ClearanceService.HasClearanceAsync(user, "siteb", null));
     }
 
     [Fact]
     public async Task TheWildcard_FromAnIssuerThatMeansEveryScope_IsHonoured()
     {
         // Nothing here writes one, but a signed claim from elsewhere may say it.
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("site-a"));
-        var user = ManagedSitesTestData.User("site-a:*");
+        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
+        var user = ManagedSitesTestData.User("sitea:*");
 
-        Assert.True(await context.ClearanceService.HasClearanceAsync(user, "site-a", "edit"));
-        Assert.True(await context.ClearanceService.HasClearanceAsync(user, "site-a", "publish"));
+        Assert.True(await context.ClearanceService.HasClearanceAsync(user, "sitea", "edit"));
+        Assert.True(await context.ClearanceService.HasClearanceAsync(user, "sitea", "publish"));
     }
 }

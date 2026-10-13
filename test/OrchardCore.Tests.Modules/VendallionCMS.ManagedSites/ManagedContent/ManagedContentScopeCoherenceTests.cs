@@ -27,55 +27,55 @@ public class ManagedContentScopeCoherenceTests
     [Fact]
     public void OverrideByEverySite_ReplacesANarrowerSelection()
     {
-        var part = Part(ManagedContentScope.All(), ManagedContentScope.Selected("site-a"));
+        var part = Part(ManagedContentScope.All(), ManagedContentScope.Selected("sitea"));
 
         part.EnsureDisplayCoversEdit();
 
         Assert.Equal(ManagedContentScopeMode.All, part.DisplayScope.Mode);
-        Assert.True(new ManagedContentScopeService().CanDisplay(part, "site-b"));
+        Assert.True(new ManagedContentScopeService().CanDisplay(part, "siteb"));
     }
 
     [Fact]
     public void OverrideByNamedSites_AddsThemToAnEmptyDisplayScope()
     {
-        var part = Part(ManagedContentScope.Selected("site-a", "site-b"), ManagedContentScope.None());
+        var part = Part(ManagedContentScope.Selected("sitea", "siteb"), ManagedContentScope.None());
 
         part.EnsureDisplayCoversEdit();
 
         Assert.Equal(ManagedContentScopeMode.Selected, part.DisplayScope.Mode);
-        Assert.Equal(["site-a", "site-b"], part.DisplayScope.ManagedSiteIds);
+        Assert.Equal(["sitea", "siteb"], part.DisplayScope.ManagedSiteCodes);
     }
 
     [Fact]
     public void OverrideByNamedSites_KeepsTheSitesDisplayAlreadyNamed()
     {
         // Visibility granted on its own is a separate decision, so widening must never take it away.
-        var part = Part(ManagedContentScope.Selected("site-a"), ManagedContentScope.Selected("site-b"));
+        var part = Part(ManagedContentScope.Selected("sitea"), ManagedContentScope.Selected("siteb"));
 
         part.EnsureDisplayCoversEdit();
 
-        Assert.Equal(["site-b", "site-a"], part.DisplayScope.ManagedSiteIds);
+        Assert.Equal(["siteb", "sitea"], part.DisplayScope.ManagedSiteCodes);
     }
 
     [Fact]
     public void OverrideByNamedSites_DoesNotRepeatASiteDisplayAlreadyNames()
     {
-        var part = Part(ManagedContentScope.Selected("site-a"), ManagedContentScope.Selected("site-a"));
+        var part = Part(ManagedContentScope.Selected("sitea"), ManagedContentScope.Selected("sitea"));
 
         part.EnsureDisplayCoversEdit();
 
-        Assert.Equal(["site-a"], part.DisplayScope.ManagedSiteIds);
+        Assert.Equal(["sitea"], part.DisplayScope.ManagedSiteCodes);
     }
 
     [Fact]
     public void OverrideByNamedSites_LeavesAWiderDisplayScopeAlone()
     {
-        var part = Part(ManagedContentScope.Selected("site-a"), ManagedContentScope.All());
+        var part = Part(ManagedContentScope.Selected("sitea"), ManagedContentScope.All());
 
         part.EnsureDisplayCoversEdit();
 
         Assert.Equal(ManagedContentScopeMode.All, part.DisplayScope.Mode);
-        Assert.Empty(part.DisplayScope.ManagedSiteIds);
+        Assert.Empty(part.DisplayScope.ManagedSiteCodes);
     }
 
     [Fact]
@@ -83,13 +83,13 @@ public class ManagedContentScopeCoherenceTests
     {
         // Nothing is being granted, so an item nobody sees stays an item nobody sees.
         var hidden = Part(ManagedContentScope.None(), ManagedContentScope.None());
-        var narrow = Part(ManagedContentScope.None(), ManagedContentScope.Selected("site-a"));
+        var narrow = Part(ManagedContentScope.None(), ManagedContentScope.Selected("sitea"));
 
         hidden.EnsureDisplayCoversEdit();
         narrow.EnsureDisplayCoversEdit();
 
         Assert.Equal(ManagedContentScopeMode.None, hidden.DisplayScope.Mode);
-        Assert.Equal(["site-a"], narrow.DisplayScope.ManagedSiteIds);
+        Assert.Equal(["sitea"], narrow.DisplayScope.ManagedSiteCodes);
     }
 
     [Fact]
@@ -107,12 +107,12 @@ public class ManagedContentScopeCoherenceTests
     public void Widening_NeverTouchesTheEditScope()
     {
         // The edit scope is the authority being granted; only visibility follows it.
-        var part = Part(ManagedContentScope.Selected("site-a"), ManagedContentScope.All());
+        var part = Part(ManagedContentScope.Selected("sitea"), ManagedContentScope.All());
 
         part.EnsureDisplayCoversEdit();
 
         Assert.Equal(ManagedContentScopeMode.Selected, part.EditScope.Mode);
-        Assert.Equal(["site-a"], part.EditScope.ManagedSiteIds);
+        Assert.Equal(["sitea"], part.EditScope.ManagedSiteCodes);
     }
 
     [Fact]
@@ -130,12 +130,12 @@ public class ManagedContentScopeCoherenceTests
     [Fact]
     public void Widening_IsIdempotent()
     {
-        var part = Part(ManagedContentScope.Selected("site-a"), ManagedContentScope.Selected("site-b"));
+        var part = Part(ManagedContentScope.Selected("sitea"), ManagedContentScope.Selected("siteb"));
 
         part.EnsureDisplayCoversEdit();
         part.EnsureDisplayCoversEdit();
 
-        Assert.Equal(["site-b", "site-a"], part.DisplayScope.ManagedSiteIds);
+        Assert.Equal(["siteb", "sitea"], part.DisplayScope.ManagedSiteCodes);
     }
 
     [Fact]
@@ -143,26 +143,26 @@ public class ManagedContentScopeCoherenceTests
     {
         // A part deserialized from partial data can carry a null scope, and the rule runs on every save.
         var noEditScope = Part(editScope: null, ManagedContentScope.None());
-        var noDisplayScope = Part(ManagedContentScope.Selected("site-a"), displayScope: null);
+        var noDisplayScope = Part(ManagedContentScope.Selected("sitea"), displayScope: null);
 
         noEditScope.EnsureDisplayCoversEdit();
         noDisplayScope.EnsureDisplayCoversEdit();
 
         Assert.Equal(ManagedContentScopeMode.None, noEditScope.DisplayScope.Mode);
-        Assert.Equal(["site-a"], noDisplayScope.DisplayScope.ManagedSiteIds);
+        Assert.Equal(["sitea"], noDisplayScope.DisplayScope.ManagedSiteCodes);
     }
 
     [Fact]
     public void WidenedPart_LetsEveryOverridingSiteSeeTheItem()
     {
         var service = new ManagedContentScopeService();
-        var part = Part(ManagedContentScope.Selected("site-a"), ManagedContentScope.None());
+        var part = Part(ManagedContentScope.Selected("sitea"), ManagedContentScope.None());
 
         part.EnsureDisplayCoversEdit();
 
-        Assert.True(service.CanEdit(part, "site-a"));
-        Assert.True(service.CanDisplay(part, "site-a"));
-        Assert.False(service.CanDisplay(part, "site-b"));
+        Assert.True(service.CanEdit(part, "sitea"));
+        Assert.True(service.CanDisplay(part, "sitea"));
+        Assert.False(service.CanDisplay(part, "siteb"));
     }
 
     private static ManagedContentPart Part(ManagedContentScope editScope, ManagedContentScope displayScope)

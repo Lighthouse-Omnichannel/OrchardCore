@@ -63,19 +63,19 @@ public class ManagedSitePortalAccessTests
     [Fact]
     public async Task ClearedForOneManagedSite_TheEditorIsWorkingInItOnArrival()
     {
-        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        var context = new PortalContext(clearance: ["sitea:view,edit"]);
 
         var result = Assert.IsType<ViewResult>(await context.Controller.Index(null, null, new PagerParameters()));
 
-        Assert.Equal("site-a", Assert.IsType<ManagedSitePortalListViewModel>(result.Model).ManagedSite.Id);
+        Assert.Equal("sitea", Assert.IsType<ManagedSitePortalListViewModel>(result.Model).ManagedSite.Code);
     }
 
     [Fact]
     public async Task ClearedForSeveralAndHavingChosenNone_NothingScopedIsShown()
     {
         var context = new PortalContext(
-            clearance: ["site-a:view,edit", "site-b:view,edit"],
-            managedSites: [Site("site-a"), Site("site-b")]);
+            clearance: ["sitea:view,edit", "siteb:view,edit"],
+            managedSites: [Site("sitea"), Site("siteb")]);
 
         var result = Assert.IsType<RedirectToActionResult>(await context.Controller.Index(null, null, new PagerParameters()));
 
@@ -86,10 +86,10 @@ public class ManagedSitePortalAccessTests
     public async Task ChoosingAManagedSiteOutsideTheirClearance_IsRefusedAndChangesNothing()
     {
         var context = new PortalContext(
-            clearance: ["site-a:view,edit"],
-            managedSites: [Site("site-a"), Site("site-b")]);
+            clearance: ["sitea:view,edit"],
+            managedSites: [Site("sitea"), Site("siteb")]);
 
-        var result = Assert.IsType<RedirectToActionResult>(await context.Controller.SelectPost("site-b"));
+        var result = Assert.IsType<RedirectToActionResult>(await context.Controller.SelectPost("siteb"));
 
         Assert.Equal(nameof(ManagedSitePortalController.Select), result.ActionName);
         Assert.Equal(0, context.Portal.SessionStore.SetCount);
@@ -99,10 +99,10 @@ public class ManagedSitePortalAccessTests
     public async Task ChoosingAManagedSiteTheyAreClearedFor_IsTakenAndOpensTheList()
     {
         var context = new PortalContext(
-            clearance: ["site-a:view,edit", "site-b:view,edit"],
-            managedSites: [Site("site-a"), Site("site-b")]);
+            clearance: ["sitea:view,edit", "siteb:view,edit"],
+            managedSites: [Site("sitea"), Site("siteb")]);
 
-        var result = Assert.IsType<RedirectToActionResult>(await context.Controller.SelectPost("site-b"));
+        var result = Assert.IsType<RedirectToActionResult>(await context.Controller.SelectPost("siteb"));
 
         Assert.Equal(nameof(ManagedSitePortalController.Index), result.ActionName);
     }
@@ -112,7 +112,7 @@ public class ManagedSitePortalAccessTests
     {
         // Seeing a Managed Site's content and changing it are separate grants, and the action that
         // changes it says so rather than trusting the one that listed it.
-        var context = new PortalContext(clearance: ["site-a:view"]);
+        var context = new PortalContext(clearance: ["sitea:view"]);
 
         Assert.IsType<ForbidResult>(await context.Controller.Create("source-item"));
     }
@@ -120,7 +120,7 @@ public class ManagedSitePortalAccessTests
     [Fact]
     public async Task PublishingWithEditClearanceAlone_IsRefused()
     {
-        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        var context = new PortalContext(clearance: ["sitea:view,edit"]);
 
         Assert.IsType<ForbidResult>(await context.Controller.Publish("source-item", "override-item"));
     }
@@ -128,7 +128,7 @@ public class ManagedSitePortalAccessTests
     [Fact]
     public async Task PublishingWithPublishClearance_IsAllowedThrough()
     {
-        var context = new PortalContext(clearance: ["site-a:view,edit,publish"]);
+        var context = new PortalContext(clearance: ["sitea:view,edit,publish"]);
 
         // Published, then handed back to where it was asked from rather than to a screen of its own.
         Assert.IsType<RedirectResult>(await context.Controller.Publish("source-item", "override-item"));
@@ -139,8 +139,8 @@ public class ManagedSitePortalAccessTests
     {
         // Checked against the item as it stands rather than trusted from the listing, because a
         // blueprint administrator can narrow the scope between an editor seeing an item and opening it.
-        var context = new PortalContext(clearance: ["site-a:view,edit"]);
-        context.WithSource(ManagedContentScope.Selected("site-b"));
+        var context = new PortalContext(clearance: ["sitea:view,edit"]);
+        context.WithSource(ManagedContentScope.Selected("siteb"));
 
         Assert.IsType<NotFoundResult>(await context.Controller.Contained("source-item", null, null, new PagerParameters()));
     }
@@ -150,7 +150,7 @@ public class ManagedSitePortalAccessTests
     {
         // The same answer as an item that is not theirs, so that guessing identifiers tells an editor
         // nothing about what the Site Blueprint holds.
-        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        var context = new PortalContext(clearance: ["sitea:view,edit"]);
 
         Assert.IsType<NotFoundResult>(await context.Controller.Contained("nothing-here", null, null, new PagerParameters()));
     }
@@ -159,7 +159,7 @@ public class ManagedSitePortalAccessTests
     public async Task AnItemTheManagedSiteMayCustomize_IsShown()
     {
         // Guards the two above: they would pass just as well if nothing were ever shown.
-        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        var context = new PortalContext(clearance: ["sitea:view,edit"]);
         context.WithSource(ManagedContentScope.All());
 
         var result = Assert.IsType<ViewResult>(
@@ -172,17 +172,17 @@ public class ManagedSitePortalAccessTests
     public async Task ClearanceWithdrawnAfterChoosing_StopsTheSessionRatherThanHonouringTheChoice()
     {
         var context = new PortalContext(
-            clearance: ["site-a:view,edit", "site-b:view,edit"],
-            managedSites: [Site("site-a"), Site("site-b")]);
+            clearance: ["sitea:view,edit", "siteb:view,edit"],
+            managedSites: [Site("sitea"), Site("siteb")]);
 
-        await context.Controller.SelectPost("site-b");
+        await context.Controller.SelectPost("siteb");
 
         // The same editor returns, now cleared for one of them only.
-        context.WithClearance("site-a:view,edit");
+        context.WithClearance("sitea:view,edit");
 
         var result = Assert.IsType<ViewResult>(await context.Controller.Index(null, null, new PagerParameters()));
 
-        Assert.Equal("site-a", Assert.IsType<ManagedSitePortalListViewModel>(result.Model).ManagedSite.Id);
+        Assert.Equal("sitea", Assert.IsType<ManagedSitePortalListViewModel>(result.Model).ManagedSite.Code);
     }
 
     [Fact]
@@ -190,7 +190,7 @@ public class ManagedSitePortalAccessTests
     {
         // One place decides which Managed Site an action acts on, so a screen cannot be reached for a
         // different one by arriving at it directly.
-        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        var context = new PortalContext(clearance: ["sitea:view,edit"]);
 
         foreach (var result in new[]
         {
@@ -221,7 +221,7 @@ public class ManagedSitePortalAccessTests
     {
         // Creating a version is the beginning of changing it, and the copy handed over is the blueprint
         // content until the editor does, so there is nothing to read on a screen in between.
-        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        var context = new PortalContext(clearance: ["sitea:view,edit"]);
         context.WithSource(ManagedContentScope.All());
 
         var result = Assert.IsType<RedirectToActionResult>(await context.Controller.Create("source-item"));
@@ -234,7 +234,7 @@ public class ManagedSitePortalAccessTests
     [Fact]
     public async Task CreatingAVersion_ReturnsToWhereItWasAskedFor()
     {
-        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        var context = new PortalContext(clearance: ["sitea:view,edit"]);
         context.WithSource(ManagedContentScope.All());
 
         var result = Assert.IsType<RedirectToActionResult>(
@@ -247,7 +247,7 @@ public class ManagedSitePortalAccessTests
     public async Task CreatingAVersion_WillNotBounceTheEditorOffTheSite()
     {
         // The value arrives in the query string, where anyone can put anything.
-        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        var context = new PortalContext(clearance: ["sitea:view,edit"]);
         context.WithSource(ManagedContentScope.All());
 
         var result = Assert.IsType<RedirectToActionResult>(
@@ -259,7 +259,7 @@ public class ManagedSitePortalAccessTests
     [Fact]
     public async Task TheList_OffersNoWayToChangeAnythingWithoutEditClearance()
     {
-        var context = new PortalContext(clearance: ["site-a:view"]);
+        var context = new PortalContext(clearance: ["sitea:view"]);
 
         var result = Assert.IsType<ViewResult>(await context.Controller.Index(null, null, new PagerParameters()));
 
@@ -269,7 +269,7 @@ public class ManagedSitePortalAccessTests
     [Fact]
     public async Task TheList_OffersTheWayToChangeThingsWithEditClearance()
     {
-        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        var context = new PortalContext(clearance: ["sitea:view,edit"]);
 
         var result = Assert.IsType<ViewResult>(await context.Controller.Index(null, null, new PagerParameters()));
 
@@ -279,7 +279,7 @@ public class ManagedSitePortalAccessTests
     [Fact]
     public async Task AnItem_OffersPublishingOnlyToSomebodyWhoMayPublish()
     {
-        var context = new PortalContext(clearance: ["site-a:view,edit"]);
+        var context = new PortalContext(clearance: ["sitea:view,edit"]);
         context.WithSource(ManagedContentScope.All());
 
         var result = Assert.IsType<ViewResult>(await context.Controller.Index(null, null, new PagerParameters()));
@@ -350,9 +350,9 @@ public class ManagedSitePortalAccessTests
             bool authorized = true,
             ManagedSite[] managedSites = null)
         {
-            Portal = new ManagedSitePortalTestContext(managedSites ?? [Site("site-a")]);
+            Portal = new ManagedSitePortalTestContext(managedSites ?? [Site("sitea")]);
             _authorization = new StubAuthorizationService(authorized);
-            _user = ManagedSitesTestData.User(clearance ?? ["site-a:view,edit,publish"]);
+            _user = ManagedSitesTestData.User(clearance ?? ["sitea:view,edit,publish"]);
 
             Controller = new ManagedSitePortalController(
                 _authorization,
@@ -393,11 +393,11 @@ public class ManagedSitePortalAccessTests
 
     private sealed class StubListService : IManagedContentListService
     {
-        public ValueTask<ManagedContentListing> ListAsync(string managedSiteId, ManagedContentListQuery query)
+        public ValueTask<ManagedContentListing> ListAsync(string managedSiteCode, ManagedContentListQuery query)
             => ValueTask.FromResult(new ManagedContentListing([], 0));
 
         public ValueTask<ManagedContentListing> ListContainedAsync(
-            string managedSiteId,
+            string managedSiteCode,
             string containerContentItemId,
             ManagedContentListQuery query)
             => ValueTask.FromResult(new ManagedContentListing([], 0));

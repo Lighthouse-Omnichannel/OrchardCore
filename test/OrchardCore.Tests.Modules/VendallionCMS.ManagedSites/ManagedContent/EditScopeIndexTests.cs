@@ -48,7 +48,7 @@ public class EditScopeIndexTests
         var overrideItem = ManagedContentTestContent.Item("override-item");
         overrideItem.Weld(new ManagedContentOverridePart
         {
-            ManagedSiteId = "costis",
+            ManagedSiteCode = "costis",
             SourceContentItemId = "section",
         });
         overrideItem.Alter<ManagedContentPart>(part => part.EditScope = ManagedContentScope.All());
@@ -86,7 +86,7 @@ public class EditScopeIndexTests
         {
             container.Weld(new ManagedContentOverridePart
             {
-                ManagedSiteId = "costis",
+                ManagedSiteCode = "costis",
                 SourceContentItemId = "blueprint-page",
             });
         }

@@ -18,7 +18,7 @@
                 <div class="list-group">
                     @foreach (var managedSite in Model.ManagedSites)
                     {
-                        <button type="submit" name="managedSiteId" value="@managedSite.Id"
+                        <button type="submit" name="managedSiteCode" value="@managedSite.Code"
                                 class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                             <span>
                                 <strong>@managedSite.Name</strong>
@@ -30,7 +30,7 @@
                                     }
                                 </span>
                             </span>
-                            @if (managedSite.Id == Model.SelectedManagedSiteId)
+                            @if (managedSite.Code == Model.SelectedManagedSiteCode)
                             {
                                 <span class="badge bg-primary">@T["Current"]</span>
                             }

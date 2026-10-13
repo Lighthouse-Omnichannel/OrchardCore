@@ -126,11 +126,11 @@ public sealed class ManagedSiteEditorsStep : NamedRecipeStepHandler
             }
 
             settings.Grants.RemoveAll(existing =>
-                string.Equals(existing.ManagedSiteId, managedSite.Id, StringComparison.Ordinal));
+                string.Equals(existing.ManagedSiteCode, managedSite.Code, StringComparison.Ordinal));
 
             settings.Grants.Add(new ManagedSiteClearanceGrant
             {
-                ManagedSiteId = managedSite.Id,
+                ManagedSiteCode = managedSite.Code,
 
                 // A grant naming no action is view only, which is what the clearance editor records for
                 // a Managed Site selected with nothing ticked.

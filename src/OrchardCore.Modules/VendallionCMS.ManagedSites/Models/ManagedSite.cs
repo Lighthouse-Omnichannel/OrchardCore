@@ -11,9 +11,18 @@ namespace VendallionCMS.ManagedSites.Models;
 public sealed class ManagedSite
 {
     /// <summary>
-    /// Gets or sets the stable managed-site identifier.
+    /// Gets or sets the code naming this Managed Site, chosen when it is created and fixed thereafter.
     /// </summary>
-    public string Id { get; set; }
+    /// <remarks>
+    /// Everything that refers to a Managed Site refers to it by this: the clearance a user holds, the
+    /// rows recording which items a site may override and what it has overridden, the session an editor
+    /// works in, and the addresses it answers on. Letting it change would detach all of that at once,
+    /// so it is asked for at creation and never offered again.
+    ///
+    /// Chosen rather than generated, because it is read by people: it names the site in a URL, in a
+    /// recipe, and in a signed clearance claim.
+    /// </remarks>
+    public string Code { get; set; }
 
     /// <summary>
     /// Gets or sets the display name.

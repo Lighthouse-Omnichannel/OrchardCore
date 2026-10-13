@@ -24,9 +24,13 @@ public class ManagedSiteIndexViewModel
 public class ManagedSiteEditViewModel
 {
     /// <summary>
-    /// Gets or sets the Managed Site identifier, empty when creating.
+    /// Gets or sets the code naming the Managed Site, asked for once and fixed thereafter.
     /// </summary>
-    public string Id { get; set; }
+    /// <remarks>
+    /// Empty when creating, which is the only time it can be set. The editor shows it afterwards but
+    /// does not offer it: everything referring to a Managed Site refers to it by this.
+    /// </remarks>
+    public string Code { get; set; }
 
     /// <summary>
     /// Gets or sets the Managed Site name.
@@ -50,9 +54,14 @@ public class ManagedSiteEditViewModel
     public string UrlPrefix { get; set; }
 
     /// <summary>
-    /// Gets a value indicating whether the form creates a new Managed Site.
+    /// Gets or sets a value indicating whether the form creates a new Managed Site.
     /// </summary>
-    public bool IsNew => string.IsNullOrEmpty(Id);
+    /// <remarks>
+    /// Set by whichever action rendered the form rather than worked out from the code. A create that
+    /// was refused comes back with the code the editor typed, so reading it from there turned the form
+    /// into an edit and took away the field the error was about.
+    /// </remarks>
+    public bool IsNew { get; set; }
 
     /// <summary>
     /// Builds an edit model from a stored Managed Site.
@@ -61,7 +70,8 @@ public class ManagedSiteEditViewModel
     /// <returns>The edit model.</returns>
     public static ManagedSiteEditViewModel From(ManagedSite managedSite) => new()
     {
-        Id = managedSite.Id,
+        IsNew = false,
+        Code = managedSite.Code,
         Name = managedSite.Name,
         Status = managedSite.Status,
         Hostname = managedSite.Hostname,
