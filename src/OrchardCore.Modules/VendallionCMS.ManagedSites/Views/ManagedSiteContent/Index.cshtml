@@ -28,7 +28,10 @@
                     </select>
                 </div>
                 <div class="col-auto">
-                    <button type="submit" class="btn btn-secondary">@T["Apply"]</button>
+                    @* Applying the filter is what this bar is for, so it leads. Switching managed site
+                       sits beside it because it is the other thing that changes what the list shows. *@
+                    <button type="submit" class="btn btn-primary">@T["Apply"]</button>
+                    <a class="btn btn-secondary" role="button" asp-action="Sites">@T["Switch Site"]</a>
                 </div>
             </div>
         </div>
@@ -178,9 +181,3 @@
 </ul>
 
 @await DisplayAsync(Model.Pager)
-
-<div class="ocat-wrapper mt-3">
-    <div class="ocat-end-offset">
-        <a class="btn btn-secondary" role="button" asp-action="Sites">@T["Switch Site"]</a>
-    </div>
-</div>
