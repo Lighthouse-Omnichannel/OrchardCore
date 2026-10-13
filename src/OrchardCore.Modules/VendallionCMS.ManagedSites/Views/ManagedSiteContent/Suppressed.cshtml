@@ -4,16 +4,9 @@
     <h1>@T["Not rendering"] <small class="text-muted">@Model.ManagedSite.Name</small></h1>
 </zone>
 
-<div class="card text-bg-theme mb-3 position-sticky action-bar">
-    <div class="card-body">
-        <div class="row gx-3">
-            <div class="col d-flex align-items-center">
-                <span class="hint mb-0">@T["Versions of your own that exist but are not being served. Each is kept, and starts being served again if the reason is undone."]</span>
-            </div>
-            <div class="col-auto">
-                <a asp-action="Index" asp-route-managedSiteCode="@Model.ManagedSite.Code" class="btn btn-secondary">@T["Back to the list"]</a>
-            </div>
-        </div>
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <p class="hint">@T["Versions of your own that exist but are not being served. Each is kept, and starts being served again if the reason is undone."]</p>
     </div>
 </div>
 
@@ -53,3 +46,10 @@ else
         </table>
     </div>
 }
+
+@* Under what it acts on, where the admin puts the way out of a screen. *@
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <a asp-action="Index" asp-route-managedSiteCode="@Model.ManagedSite.Code" class="btn btn-secondary" role="button">@T["Back to the list"]</a>
+    </div>
+</div>

@@ -57,9 +57,6 @@
                     @T.Plural(Model.Items.Count, "{0} item", "{0} items")<span class="text-muted" title="@T["Items {0} to {1}", Model.StartIndex, Model.EndIndex]">@T.Plural(Model.TotalCount, " / {0} item in total", " / {0} items in total")</span>
                 </span>
             </div>
-            <div class="col col-md-auto text-end">
-                <a asp-action="Index" asp-route-managedSiteCode="@Model.ManagedSite.Code" class="btn btn-sm btn-light">@T["Back to everything"]</a>
-            </div>
         </div>
     </li>
 
@@ -151,3 +148,9 @@
 </ul>
 
 @await DisplayAsync(Model.Pager)
+
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <a asp-action="Index" asp-route-managedSiteCode="@Model.ManagedSite.Code" class="btn btn-secondary" role="button">@T["Back to everything"]</a>
+    </div>
+</div>

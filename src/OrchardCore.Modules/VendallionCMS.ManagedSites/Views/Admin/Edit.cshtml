@@ -74,10 +74,10 @@
 
     @* Where the admin puts an editor's way out of a form: the actions offset under the fields, and
        Cancel beside them, so leaving without saving does not mean finding the way back. *@
-    <div class="ocat-wrapper edit-item-secondary group">
-        <div class="ocat-end-offset edit-item-actions">
-            <button type="submit" class="btn btn-primary save mb-1">@T["Save"]</button>
-            <a asp-action="Index" class="btn btn-secondary cancel mb-1" role="button">@T["Cancel"]</a>
+    <div class="ocat-wrapper">
+        <div class="ocat-end-offset">
+            <button type="submit" class="btn btn-primary save">@T["Save"]</button>
+            <a asp-action="Index" class="btn btn-secondary cancel" role="button">@T["Cancel"]</a>
         </div>
     </div>
 </form>

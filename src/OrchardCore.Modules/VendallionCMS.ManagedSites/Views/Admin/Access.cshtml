@@ -5,16 +5,9 @@
     <h1>@RenderTitleSegments(T["Who can work on {0}", Model.ManagedSite.Name])</h1>
 </zone>
 
-<div class="card text-bg-theme mb-3 position-sticky action-bar">
-    <div class="card-body">
-        <div class="row gx-3">
-            <div class="col d-flex align-items-center">
-                <span class="hint mb-0">@T["Clearance is granted here, on the managed site it covers. A user granted one can open this site's content and read it, and no other site's unless they are granted that too. What they may do beyond reading is ticked on their row."]</span>
-            </div>
-            <div class="col-auto">
-                <a asp-action="Index" class="btn btn-secondary">@T["Back to managed sites"]</a>
-            </div>
-        </div>
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <p class="hint">@T["Clearance is granted here, on the managed site it covers. A user granted one can open this site's content and read it, and no other site's unless they are granted that too. What they may do beyond reading is ticked on their row."]</p>
     </div>
 </div>
 
@@ -165,5 +158,11 @@
                 }
             </div>
         </div>
+    </div>
+</div>
+
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <a asp-action="Index" class="btn btn-secondary" role="button">@T["Back to managed sites"]</a>
     </div>
 </div>

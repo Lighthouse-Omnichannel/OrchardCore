@@ -48,7 +48,6 @@
                     <i class="fa-solid fa-sitemap text-secondary" aria-hidden="true"></i>
                     @T["Editing {0}", Model.ManagedSite.Name]
                 </span>
-                <a asp-action="Sites" class="btn btn-sm btn-light ms-2">@T["Change"]</a>
             </div>
         </div>
     </li>
@@ -179,3 +178,9 @@
 </ul>
 
 @await DisplayAsync(Model.Pager)
+
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <a asp-action="Sites" class="btn btn-secondary" role="button">@T["Work on a different managed site"]</a>
+    </div>
+</div>
