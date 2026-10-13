@@ -30,7 +30,7 @@ public class ManagedSitePermissionModelTests
     [Fact]
     public void GoverningManagedSites_AlsoGrantsEditingTheirContent()
     {
-        // Whoever grants clearance can grant it to themselves, so withholding the portal from them
+        // Whoever grants clearance can grant it to themselves, so withholding the screens from them
         // would be a formality rather than a restriction.
         Assert.Contains(
             Permissions.EditManagedSiteContent.ImpliedBy ?? [],

@@ -82,7 +82,7 @@ public class ManagedSiteEditViewModel
 /// <summary>
 /// Who may work on one Managed Site, and who could be given leave to.
 /// </summary>
-public sealed class ManagedSiteSecurityViewModel
+public sealed class ManagedSiteAccessViewModel
 {
     /// <summary>
     /// Gets or sets the Managed Site whose security is being administered.

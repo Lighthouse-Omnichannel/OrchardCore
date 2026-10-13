@@ -1,0 +1,37 @@
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSiteContentSitesViewModel
+
+<zone Name="Title"><h1>@RenderTitleSegments(T["Choose a managed site"])</h1></zone>
+
+<p class="text-muted">
+    @T["Everything you edit and preview applies to the managed site you open, and to that one only."]
+</p>
+
+@* Links rather than a form: opening a managed site is going somewhere, and the address says which one,
+   so it can be bookmarked, shared and opened twice over. *@
+<ul class="list-group">
+    @foreach (var managedSite in Model.ManagedSites)
+    {
+        <li class="list-group-item list-group-item-action">
+            <div class="row gx-3 align-items-center">
+                <div class="col">
+                    <a asp-action="Index" asp-route-managedSiteCode="@managedSite.Code"
+                       class="link-body-emphasis text-decoration-underline">
+                        <strong>@managedSite.Name</strong>
+                    </a>
+                    <span class="hint d-block">
+                        @(string.IsNullOrEmpty(managedSite.Hostname)
+                            ? string.IsNullOrEmpty(managedSite.UrlPrefix)
+                                ? T["Answers on this site's own address"]
+                                : T["Answers under /{0}", managedSite.UrlPrefix]
+                            : T["Answers on {0}", managedSite.Hostname])
+                    </span>
+                </div>
+                <div class="col-auto">
+                    <a class="btn btn-primary btn-sm"
+                       asp-action="Index" asp-route-managedSiteCode="@managedSite.Code"
+                       aria-label="@T["Work on {0}", managedSite.Name]">@T["Open"]</a>
+                </div>
+            </div>
+        </li>
+    }
+</ul>

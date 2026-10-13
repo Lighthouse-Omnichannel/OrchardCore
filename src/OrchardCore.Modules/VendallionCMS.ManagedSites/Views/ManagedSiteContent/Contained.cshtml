@@ -1,10 +1,10 @@
-@model VendallionCMS.ManagedSites.ViewModels.ManagedSitePortalContainedViewModel
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSiteContentContainedViewModel
 
 <zone Name="Title"><h1>@RenderTitleSegments(T["Inside {0}", Model.ContainerDisplayText])</h1></zone>
 
-@* The same list the portal draws everywhere else, narrowed to one container. An editor who has used
+@* The same list drawn everywhere else, narrowed to one container. An editor who has used
    the main list already knows how to read this one. *@
-<form asp-action="Contained" asp-route-sourceContentItemId="@Model.SourceContentItemId" method="get">
+<form asp-action="Contained" asp-route-managedSiteCode="@Model.ManagedSite.Code" asp-route-sourceContentItemId="@Model.SourceContentItemId" method="get">
     <div class="card text-bg-theme mb-3 position-sticky action-bar">
         <div class="card-body">
             <div class="row gx-3">
@@ -44,7 +44,7 @@
             </p>
             <p class="mb-0">
                 @T["Nothing listed here is being served to this managed site while that version exists, whatever its own version says. Edit the contents of your version instead, or remove it to go back to the blueprint content."]
-                <a asp-action="Index" class="alert-link text-decoration-underline">@T["Back to everything"]</a>
+                <a asp-action="Index" asp-route-managedSiteCode="@Model.ManagedSite.Code" class="alert-link text-decoration-underline">@T["Back to everything"]</a>
             </p>
         </div>
     }
@@ -58,7 +58,7 @@
                 </span>
             </div>
             <div class="col col-md-auto text-end">
-                <a asp-action="Index" class="link-body-emphasis text-decoration-underline">@T["Back to everything"]</a>
+                <a asp-action="Index" asp-route-managedSiteCode="@Model.ManagedSite.Code" class="link-body-emphasis text-decoration-underline">@T["Back to everything"]</a>
             </div>
         </div>
     </li>
@@ -129,6 +129,7 @@
                     <div class="col-lg-auto col-12 d-flex justify-content-end">
                         @await Html.PartialAsync("_RowActions", new VendallionCMS.ManagedSites.ViewModels.ManagedContentRowActionsViewModel
                         {
+                            ManagedSiteCode = Model.ManagedSite.Code,
                             Item = item,
                             CanEdit = Model.CanEdit,
                             CanPublish = Model.CanPublish,

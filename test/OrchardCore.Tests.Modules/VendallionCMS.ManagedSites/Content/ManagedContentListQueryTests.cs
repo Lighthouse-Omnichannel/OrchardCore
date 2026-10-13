@@ -4,7 +4,7 @@ using VendallionCMS.ManagedSites.Services;
 using VendallionCMS.ManagedSites.ViewModels;
 using Xunit;
 
-namespace VendallionCMS.ManagedSites.Tests.Portal;
+namespace VendallionCMS.ManagedSites.Tests.Content;
 
 /// <summary>
 /// Covers narrowing and paging what a Managed Site may customize.

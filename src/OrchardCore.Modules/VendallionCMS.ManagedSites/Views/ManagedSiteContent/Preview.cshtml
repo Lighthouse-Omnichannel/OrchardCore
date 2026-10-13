@@ -1,4 +1,4 @@
-@model VendallionCMS.ManagedSites.ViewModels.ManagedSitePortalPreviewViewModel
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSiteContentPreviewViewModel
 
 <zone Name="Title">
     <h1>@T["Preview"] <small class="text-muted">@Model.ManagedSite.Name</small></h1>
@@ -19,7 +19,7 @@
     </div>
 </div>
 
-<form asp-action="Preview" method="get">
+<form asp-action="Preview" asp-route-managedSiteCode="@Model.ManagedSite.Code" method="get">
     <div class="ocat-wrapper">
         <label for="path" class="ocat-label">@T["Path"]</label>
         <div class="ocat-end">

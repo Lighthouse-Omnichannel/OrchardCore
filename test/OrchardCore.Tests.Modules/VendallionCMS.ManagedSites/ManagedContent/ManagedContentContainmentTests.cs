@@ -13,7 +13,7 @@ namespace VendallionCMS.ManagedSites.Tests.ManagedContent;
 /// <remarks>
 /// Containment is found structurally rather than by asking each part what it holds. The platform's
 /// containment aspect is published by bag and taxonomy parts only, so a widget in a flow part, which is
-/// how most pages are built, was invisible to everything that relied on it: never listed in the portal,
+/// how most pages are built, was invisible to everything that relied on it: never listed for an editor,
 /// and never substituted when a Managed Site had overridden it.
 ///
 /// The shapes here are the ones OrchardCore actually stores, taken from a real page rather than

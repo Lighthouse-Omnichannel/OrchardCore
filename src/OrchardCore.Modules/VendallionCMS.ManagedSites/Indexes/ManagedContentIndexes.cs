@@ -9,7 +9,7 @@ namespace VendallionCMS.ManagedSites.Indexes;
 /// Indexes one row per Managed Site that may override a content item.
 /// </summary>
 /// <remarks>
-/// The portal lists everything the active Managed Site may customize, which is a query by Managed Site
+/// A Managed Site's content list shows everything it may customize, which is a query by Managed Site
 /// rather than by content item. One row per pairing keeps that a single indexed lookup instead of a
 /// scan over every item carrying the part.
 ///

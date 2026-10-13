@@ -14,12 +14,12 @@ cheap: adding a managed site costs an address and a row, not a site.
 ## Enabling the feature
 
 One feature, `Vendallion Managed Sites`, in `Content Management`. Enabling it brings the whole module:
-the Managed Content part and the scopes, URL resolution, the permissions and clearance, the admin portal,
+the Managed Content part and the scopes, URL resolution, the permissions and clearance, the content screens,
 and the composition that serves a managed site its own content.
 
 There is deliberately no way to enable part of it. Resolving a URL to a managed site decides nothing
 without the content rules that say what it may override, those rules authorize nothing without clearance,
-and clearance is granted from the portal — so every subset short of the whole is a configuration in which
+and clearance is granted from the managed site — so every subset short of the whole is a configuration in which
 the module cannot do its job.
 
 ## Permissions
@@ -30,19 +30,19 @@ There are two, and the line between them is the point.
 override, and granting people clearance to them. It is security critical, because clearance decides who
 may change a managed site's content.
 
-**Edit Managed Site content** opens the portal. Which managed sites it opens onto, and what may be done
+**Edit Managed Site content** opens the content screens. Which managed sites they open onto, and what may be done
 in each, comes from the holder's clearance rather than from the permission.
 
 All three ways of widening your own reach — defining a new managed site, putting more content in scope,
 granting clearance — sit on the governing side. An editor holding only the second permission cannot
 reach any of them. The second is implied by the first, because whoever grants clearance can grant it to
-themselves and withholding the portal from them would be a formality.
+themselves and withholding the content screens from them would be a formality.
 
-The portal is hosted in the admin, so an editor also needs `AccessAdminPanel`.
+The screens are in the admin, so an editor also needs `AccessAdminPanel`.
 
 ## Clearance
 
-Clearance is granted per user, per managed site, from **Security** on the managed site's row in the
+Clearance is granted per user, per managed site, from **Access** on the managed site's row in the
 managed sites list. The screen has two lists — the users who can work on the site and the users who
 cannot — and either can be searched, so a tenant with more users than fit on a screen is worked through
 by narrowing rather than by scrolling. Granting it needs **Manage Managed Sites**, the same permission
@@ -54,13 +54,13 @@ built — but it is administered from the site, because the question an administ
 may work on this site, and answering that one user at a time meant opening every user to find out.
 
 **Holding clearance is permission to read.** There is no scope for reading: a user given access to a
-managed site can see its content in the portal, and a scope says what they may do beyond that.
+managed site can see its content, and a scope says what they may do beyond that.
 
 | Scope | Allows, on top of reading |
 | --- | --- |
 | `edit` | Changing the managed site's content |
 | `publish` | Publishing it |
-| `preview` | Seeing unpublished work, in the portal and through a preview link |
+| `preview` | Seeing unpublished work, in the admin and through a preview link |
 
 A user given access starts with none of them, which is read-only, and the row is where each is ticked.
 Clearing them all is a real answer rather than a refusal — the holder reads the site and changes
@@ -69,9 +69,9 @@ nothing — and taking the access away is how to say they should not see it at a
 Clearance arriving as a signed claim from an external issuer follows the same rule: `site-a` grants
 reading, `site-a:edit,publish` grants those two as well, and `site-a:*` grants every scope.
 
-A user cleared for exactly one managed site is scoped to it automatically. A user cleared for several
-must choose one before any scoped action, and everything they then do applies to that managed site only.
-Managed sites they hold no clearance for are neither listed nor reachable.
+A user cleared for exactly one managed site goes straight to it. A user cleared for several is offered
+the choice, and opening one takes them to its own address. Managed sites they hold no clearance for are
+not listed, and naming one is refused.
 
 ## The code
 
@@ -79,12 +79,12 @@ Every managed site has a **code**, chosen when it is created and fixed from then
 letters and digits, beginning with a letter, up to 50 characters: `alpha`, `contoso`, `shop2`.
 
 Everything that refers to a managed site refers to it by the code — the clearance a user holds, the rows
-recording which items the site may override and what it has overridden, the session an editor works in,
-and the address of its own admin screens. That is why it cannot be changed: changing it would detach all
+recording which items the site may override and what it has overridden, and the address of its own
+admin screens. That is why it cannot be changed: changing it would detach all
 of that at once. The editor shows it after creation but does not offer it.
 
 It is chosen rather than generated because people read it. It names the site in a URL
-(`/Admin/ManagedSites/Security/alpha`), in a recipe, and in a signed clearance claim — and a claim packs
+(`/Admin/ManagedSites/Content/alpha`), in a recipe, and in a signed clearance claim — and a claim packs
 the code and its scopes into one value separated by colons and commas, which is why punctuation is
 refused rather than escaped.
 
@@ -145,13 +145,19 @@ letting the two drift apart. Display can be wider than edit; it is never narrowe
 Anything. The three cases worth knowing apart are how the content is stored, not what it is:
 
 - **An item stored inside another**, such as a section in a page or an entry in a menu. The most common
-  case, and the one the portal names by its container: `Services (Home page)`.
+  case, and the one the content list names by its container: `Services (Home page)`.
 - **An item stored in its own right**, such as a menu, a layer widget or a page.
 - **A container**, overridden whole. See below.
 
 ## Overriding
 
-An editor opens the portal, picks a managed site, and sees the items whose edit scope includes it.
+An editor opens **Managed Sites → Content**, which goes straight to their managed site when they hold
+one and offers the choice when they hold several, and sees the items whose edit scope includes it.
+
+Which managed site is being worked on is in the address — `/Admin/ManagedSites/Content/alpha` — rather
+than remembered. An editor can see which site they are on, link to it, bookmark it, and keep two open at
+once. Naming one decides nothing: the code is checked against their clearance on every request, so a
+bookmark kept after the clearance was withdrawn is refused rather than honoured.
 Creating an override copies the blueprint's content, so they change what differs rather than retyping
 the item. Creating and publishing it needs managed-site clearance alone — no permission over the
 tenant's content.
@@ -183,8 +189,8 @@ Identity is left alone. The database key, the content item identifier and the co
 Blueprint's, because routing, caching and invalidation all key on them; what changes is the content.
 
 Admin requests resolve no managed site, so they always see Site Blueprint content. That is what stops an
-editor saving a managed site's content over the blueprint's: the portal shows a managed site's version
-because it asks for it, not because the request it arrived on was composed.
+editor saving a managed site's content over the blueprint's: the content screens show a managed site's
+version because they ask for it, not because the request they arrived on was composed.
 
 The admin answers at the tenant's own address and nowhere else. A managed site's URL prefix addresses the
 content that site serves, not the screens the tenant is administered from, so a request that reaches for
@@ -193,12 +199,13 @@ query and the method with it. Links are built from the request's path base, and 
 managed site has that site's prefix on it, so every admin link such a page draws points under the prefix;
 the redirect is what keeps the user menu and the dashboard working from a managed site's pages.
 
-Editors therefore reach the portal at the tenant's admin whichever managed site they work on, and which
-one that is comes from the portal, not from the URL.
+Editors therefore work at the tenant's admin whichever managed site they work on, and which one that is
+comes from the path under it — `/Admin/ManagedSites/Content/alpha` — not from the address the content
+itself is served at.
 
 ## Preview
 
-The portal builds a preview link from the managed site's own address, so the preview is composed by the
+A preview link is built from the managed site's own address, so the preview is composed by the
 pipeline that serves the site rather than by a separate renderer and cannot drift from what visitors
 receive. Asking for unpublished work adds a query value; asking is not being granted, and the request is
 honoured only for a caller holding `preview` clearance for the managed site the address resolves to. The
@@ -215,7 +222,7 @@ Previewing a disabled managed site is refused rather than showing Site Blueprint
 ## When an override stops rendering
 
 An override can stop rendering without anybody deleting it. It stays visible to authorized
-administrators in the portal, which reports why, and starts rendering again if the condition is
+administrators, on a screen that reports why, and starts rendering again if the condition is
 restored — no re-authoring.
 
 | Reason | What happened |
@@ -244,25 +251,25 @@ What it provisions:
 - A `Managed Site Content Editor` role holding `EditManagedSiteContent` and `AccessAdminPanel` — what an
   editor needs, and deliberately not the permission to govern managed sites.
 - Three editors in that role, `alphaUser`, `betaUser` and `gammaUser`, all with the password
-  `Password1!`. Each is cleared for the managed site they are named for; `betaUser` is also cleared to
-  view Gamma, so the portal's selection screen is reachable without editing a user first.
+  `Password1!`. Each is cleared for the managed site they are named for; `betaUser` is also cleared for
+  Gamma, so the screen that offers the choice is reachable without granting clearance first.
 - A home page with three sections, a main menu with two entries, and a footer widget on a layer — one of
   each way content composes.
 
-The scopes are set so the portal has something to say in each direction:
+The scopes are set so the content list has something to say in each direction:
 
 | Item | Who may override it |
 | --- | --- |
 | `Home` page | Every managed site — overriding it replaces the page, its sections included |
 | `What we do` section | Every managed site |
 | `Where we are` section | Alpha only, so Beta and Gamma do not see it listed |
-| `Not for anybody` section | Nobody, so the portal lists content it will not offer |
+| `Not for anybody` section | Nobody, so the list has content it will not offer |
 | `Home` menu entry | Every managed site |
 | `About` menu entry | Nobody |
 | `Footer note` widget | Every managed site |
 
-Signing in as `alphaUser` goes straight to Alpha, because a user cleared for one managed site is scoped
-to it automatically. Signing in as `betaUser` asks which managed site to work on.
+**Managed Sites → Content** goes straight to Alpha for `alphaUser`, because a user cleared for one
+managed site is not being offered a choice. For `betaUser` it asks which managed site to work on.
 
 !!! warning "For development only"
     The recipe creates accounts with a password written in it. Do not run it anywhere that matters.

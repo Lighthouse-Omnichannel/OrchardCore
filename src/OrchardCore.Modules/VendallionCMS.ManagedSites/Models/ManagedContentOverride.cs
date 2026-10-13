@@ -101,7 +101,7 @@ public enum ManagedContentOverrideSuppressionReason
 }
 
 /// <summary>
-/// One Managed Site's override of one Managed Content item, as administrators and the portal see it.
+/// One Managed Site's override of one Managed Content item, as administrators and editors see it.
 /// </summary>
 /// <remarks>
 /// A read model rather than a stored record. <see cref="Status" /> and <see cref="SuppressionReason" />

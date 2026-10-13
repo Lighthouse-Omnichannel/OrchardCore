@@ -6,19 +6,18 @@ using Xunit;
 namespace OrchardCore.Tests.Functional.Tests.ManagedSites;
 
 /// <summary>
-/// Covers the Managed Site Admin Portal: which managed site an editor ends up working in, and what they
-/// are shown when the answer is none or not yet decided.
+/// Covers reaching a managed site's content: which one an editor ends up working on, and what they are
+/// shown when they hold none.
 ///
-/// The portal is rendered by the server, so these assertions are about the screens an editor actually
-/// gets. Which managed site a request acts on is never taken from the URL; it comes from the portal
-/// session, and these tests pin that by arriving at the same address with different clearance and
-/// expecting different screens.
+/// The screens are rendered by the server, so these assertions are about what an editor actually gets.
+/// Which managed site a request acts on is in the address, and naming one decides nothing: these tests
+/// pin that by arriving at the same address with different clearance and expecting different answers.
 /// </summary>
-public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<CmsSetupFixture>
+public sealed class ManagedSiteContentTests : CmsTestBase, IClassFixture<CmsSetupFixture>
 {
     private const string ManagedSitesFeatureId = "VendallionCMS.ManagedSites";
 
-    public ManagedSiteAdminPortalTests(CmsSetupFixture fixture) : base(fixture) { }
+    public ManagedSiteContentTests(CmsSetupFixture fixture) : base(fixture) { }
 
     protected override string RecipeName => "Blog";
 
@@ -27,7 +26,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     /// managed site must be told so, rather than shown an empty list they would read as "nothing to do".
     /// </summary>
     [Fact]
-    public async Task Portal_AdministratorHoldingNoClearance_IsToldSoRatherThanShownAnEmptyList()
+    public async Task Content_AdministratorHoldingNoClearance_IsToldSoRatherThanShownAnEmptyList()
     {
         var page = await CreateAuthenticatedPageAsync();
 
@@ -35,7 +34,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
         {
             await CreateManagedSiteAsync(page, "Contoso", "contoso");
 
-            await GotoPortalAsync(page);
+            await GotoContentAsync(page);
 
             await Assertions.Expect(page.GetByText("You hold no clearance for any managed site."))
                 .ToBeVisibleAsync();
@@ -49,7 +48,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     }
 
     [Fact]
-    public async Task Portal_AnonymousVisitor_IsNotServedTheList()
+    public async Task Content_AnonymousVisitor_IsNotServedTheList()
     {
         var page = await CreateAuthenticatedPageAsync();
         await page.CloseAsync();
@@ -59,7 +58,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
         try
         {
             var response = await anonymousPage.APIRequest.GetAsync(
-                $"{Fixture.BaseUrl}/{Tenant.Prefix}/Admin/ManagedSites/Portal/Index",
+                $"{Fixture.BaseUrl}/{Tenant.Prefix}/Admin/ManagedSites/Content",
                 new APIRequestContextOptions { MaxRedirects = 0 });
 
             Assert.NotEqual(200, response.Status);
@@ -74,7 +73,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     /// Cleared for exactly one, there is nothing to choose, so the editor is working in it on arrival.
     /// </summary>
     [Fact]
-    public async Task Portal_ClearedForOneManagedSite_OpensInThatManagedSite()
+    public async Task Content_ClearedForOneManagedSite_OpensInThatManagedSite()
     {
         var page = await CreateAuthenticatedPageAsync();
 
@@ -83,8 +82,10 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
             await CreateManagedSiteAsync(page, "Contoso", "contoso");
             await GrantClearanceAsync(page, "Contoso");
 
-            await GotoPortalAsync(page);
+            await GotoContentAsync(page);
 
+            // A list of one is not a choice, so the root opens it.
+            Assert.EndsWith("/Admin/ManagedSites/Content/contoso", page.Url, StringComparison.OrdinalIgnoreCase);
             await Assertions.Expect(page.GetByText("Editing Contoso")).ToBeVisibleAsync();
 
             // The Blog recipe's content carries no Managed Content, so there is nothing in scope yet.
@@ -101,7 +102,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     /// Cleared for several, nothing scoped is shown until the editor says which one they mean.
     /// </summary>
     [Fact]
-    public async Task Portal_ClearedForSeveralManagedSites_AsksWhichBeforeShowingAnything()
+    public async Task Content_ClearedForSeveralManagedSites_AsksWhichBeforeShowingAnything()
     {
         var page = await CreateAuthenticatedPageAsync();
 
@@ -111,22 +112,20 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
             await CreateManagedSiteAsync(page, "Fabrikam", "fabrikam");
             await GrantClearanceAsync(page, "Contoso", "Fabrikam");
 
-            await GotoPortalAsync(page);
+            await GotoContentAsync(page);
 
-            // Asking for the list lands on the chooser instead.
-            Assert.Contains("ManagedSites/Portal/Select", page.Url, StringComparison.OrdinalIgnoreCase);
-            await Assertions.Expect(page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Contoso" }))
-                .ToBeVisibleAsync();
-            await Assertions.Expect(page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Fabrikam" }))
+            // Cleared for two, so the root of the area offers both rather than picking one.
+            await Assertions.Expect(page.GetByRole(AriaRole.Link, new PageGetByRoleOptions { Name = "Work on Contoso" }))
                 .ToBeVisibleAsync();
 
-            await page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Fabrikam" }).ClickAsync();
+            await page.GetByRole(AriaRole.Link, new PageGetByRoleOptions { Name = "Work on Fabrikam" }).ClickAsync();
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
+            // The managed site is in the address, so it can be returned to directly.
+            Assert.EndsWith("/Admin/ManagedSites/Content/fabrikam", page.Url, StringComparison.OrdinalIgnoreCase);
             await Assertions.Expect(page.GetByText("Editing Fabrikam")).ToBeVisibleAsync();
 
-            // And the choice is the session's, so it survives leaving the portal and coming back.
-            await GotoPortalAsync(page);
+            await GotoContentAsync(page, "Fabrikam");
             await Assertions.Expect(page.GetByText("Editing Fabrikam")).ToBeVisibleAsync();
         }
         finally
@@ -136,11 +135,10 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     }
 
     /// <summary>
-    /// The chooser only offers managed sites the editor is cleared for, so asking for another one means
-    /// asking directly. Clearance is checked when the choice is made, not only when it is offered.
+    /// The address names the managed site, and anyone can type one, so naming it decides nothing.
     /// </summary>
     [Fact]
-    public async Task Select_AManagedSiteTheEditorHoldsNoClearanceFor_IsRefused()
+    public async Task Content_AManagedSiteTheEditorHoldsNoClearanceFor_IsRefused()
     {
         var page = await CreateAuthenticatedPageAsync();
 
@@ -150,43 +148,11 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
             await CreateManagedSiteAsync(page, "Fabrikam", "fabrikam");
             await GrantClearanceAsync(page, "Contoso");
 
-            var unclearedId = await ReadManagedSiteCodeAsync(page, "Fabrikam");
+            var response = await page.APIRequest.GetAsync(
+                $"{Fixture.BaseUrl}/{Tenant.Prefix}/Admin/ManagedSites/Content/fabrikam",
+                new APIRequestContextOptions { MaxRedirects = 0 });
 
-            await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Portal/Select");
-
-            var response = await PostSelectAsync(page, unclearedId, await ReadAntiforgeryTokenAsync(page));
-
-            // Refused back to the chooser rather than acted on, and the session is left where it was.
-            Assert.Contains("ManagedSites/Portal/Select", response.Url, StringComparison.OrdinalIgnoreCase);
-
-            await GotoPortalAsync(page);
-            await Assertions.Expect(page.GetByText("Editing Fabrikam")).ToHaveCountAsync(0);
-        }
-        finally
-        {
-            await page.CloseAsync();
-        }
-    }
-
-    /// <summary>
-    /// Choosing a managed site changes what every later request in the session acts on, so it is a state
-    /// change and must carry the token, whatever the admin cookie says.
-    /// </summary>
-    [Fact]
-    public async Task Select_WithoutAnAntiforgeryToken_IsRejected()
-    {
-        var page = await CreateAuthenticatedPageAsync();
-
-        try
-        {
-            await CreateManagedSiteAsync(page, "Contoso", "contoso");
-            await GrantClearanceAsync(page, "Contoso");
-
-            var contosoId = await ReadManagedSiteCodeAsync(page, "Contoso");
-
-            var response = await PostSelectAsync(page, contosoId, antiforgeryToken: null);
-
-            Assert.Equal(400, response.Status);
+            Assert.NotEqual(200, response.Status);
         }
         finally
         {
@@ -199,7 +165,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     /// the site and who cannot, and move a user between the two.
     /// </summary>
     [Fact]
-    public async Task Security_AuthorizedAdministrator_MovesAUserBetweenTheTwoLists()
+    public async Task Access_AuthorizedAdministrator_MovesAUserBetweenTheTwoLists()
     {
         var page = await CreateAuthenticatedPageAsync();
         var administrator = TestUtils.DefaultConfig.Username;
@@ -207,7 +173,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
         try
         {
             await CreateManagedSiteAsync(page, "Contoso", "contoso");
-            await GotoSecurityAsync(page, "Contoso");
+            await GotoAccessAsync(page, "Contoso");
 
             await Assertions.Expect(page.GetByText("Nobody can work on this managed site yet."))
                 .ToBeVisibleAsync();
@@ -222,8 +188,8 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
             await Assertions.Expect(page.GetByRole(AriaRole.Checkbox,
                 new PageGetByRoleOptions { Name = "publish" }).First).ToBeVisibleAsync();
 
-            // And the clearance is real: the portal opens in the site it was granted for.
-            await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Portal/Index");
+            // And the clearance is real: the content opens in the site it was granted for.
+            await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Content");
             await Assertions.Expect(page.GetByText("Editing Contoso")).ToBeVisibleAsync();
         }
         finally
@@ -238,7 +204,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     /// content.
     /// </summary>
     [Fact]
-    public async Task Security_AnonymousVisitor_IsNotServedTheScreen()
+    public async Task Access_AnonymousVisitor_IsNotServedTheScreen()
     {
         var page = await CreateAuthenticatedPageAsync();
         await CreateManagedSiteAsync(page, "Contoso", "contoso");
@@ -250,7 +216,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
         try
         {
             var response = await anonymousPage.APIRequest.GetAsync(
-                $"{Fixture.BaseUrl}/{Tenant.Prefix}/Admin/ManagedSites/Security/{id}",
+                $"{Fixture.BaseUrl}/{Tenant.Prefix}/Admin/ManagedSites/Access/{id}",
                 new APIRequestContextOptions { MaxRedirects = 0 });
 
             Assert.NotEqual(200, response.Status);
@@ -261,8 +227,11 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
         }
     }
 
-    private Task GotoPortalAsync(IPage page)
-        => page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Portal/Index");
+    private Task GotoContentAsync(IPage page)
+        => page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Content");
+
+    private Task GotoContentAsync(IPage page, string managedSiteName)
+        => page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Content/{managedSiteName.ToLowerInvariant()}");
 
     /// <summary>
     /// Grants the signed-in administrator view and edit clearance for each named managed site, through
@@ -276,7 +245,7 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
     {
         foreach (var name in managedSiteNames)
         {
-            await GotoSecurityAsync(page, name);
+            await GotoAccessAsync(page, name);
 
             await page.GetByRole(AriaRole.Button,
                 new PageGetByRoleOptions { Name = $"Give {TestUtils.DefaultConfig.Username} access" }).ClickAsync();
@@ -285,9 +254,9 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
         }
     }
 
-    private async Task GotoSecurityAsync(IPage page, string managedSiteName)
+    private async Task GotoAccessAsync(IPage page, string managedSiteName)
         => await page.GotoAndAssertOkAsync(
-            $"/{Tenant.Prefix}/Admin/ManagedSites/Security/{await ReadManagedSiteCodeAsync(page, managedSiteName)}");
+            $"/{Tenant.Prefix}/Admin/ManagedSites/Access/{await ReadManagedSiteCodeAsync(page, managedSiteName)}");
 
     private async Task CreateManagedSiteAsync(IPage page, string name, string urlPrefix)
     {
@@ -320,30 +289,6 @@ public sealed class ManagedSiteAdminPortalTests : CmsTestBase, IClassFixture<Cms
             .GetAttributeAsync("href");
 
         return href[(href.LastIndexOf('/') + 1)..];
-    }
-
-    private static async Task<string> ReadAntiforgeryTokenAsync(IPage page)
-        => await page.Locator("input[name='__RequestVerificationToken']").First.GetAttributeAsync("value");
-
-    private Task<IAPIResponse> PostSelectAsync(IPage page, string managedSiteCode, string antiforgeryToken)
-    {
-        var form = $"managedSiteCode={Uri.EscapeDataString(managedSiteCode)}";
-
-        if (!string.IsNullOrEmpty(antiforgeryToken))
-        {
-            form += $"&__RequestVerificationToken={Uri.EscapeDataString(antiforgeryToken)}";
-        }
-
-        return page.APIRequest.PostAsync(
-            $"{Fixture.BaseUrl}/{Tenant.Prefix}/Admin/ManagedSites/Portal/Select",
-            new APIRequestContextOptions
-            {
-                Headers = new Dictionary<string, string>
-                {
-                    ["Content-Type"] = "application/x-www-form-urlencoded",
-                },
-                Data = form,
-            });
     }
 
     private async Task<IPage> CreateAuthenticatedPageAsync()

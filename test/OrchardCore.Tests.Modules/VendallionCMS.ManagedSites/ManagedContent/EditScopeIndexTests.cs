@@ -9,7 +9,7 @@ using Xunit;
 namespace VendallionCMS.ManagedSites.Tests.ManagedContent;
 
 /// <summary>
-/// Covers what reaches the edit scope index, which is what the portal offers a Managed Site.
+/// Covers what reaches the edit scope index, which is what a Managed Site is offered.
 /// </summary>
 /// <remarks>
 /// An override must contribute nothing, and neither must anything stored inside it. An override of a

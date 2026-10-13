@@ -150,11 +150,11 @@ public class ManagedSiteContentPermissionTests
 
     private static ManagedSiteContentAuthorizationHandler CreateHandler()
     {
-        var portal = new ManagedSitePortalTestContext(
+        var scaffold = new ManagedSiteContentTestContext(
             ManagedSitesTestData.ManagedSite("sitea"),
             ManagedSitesTestData.ManagedSite("siteb"));
 
-        return new ManagedSiteContentAuthorizationHandler(portal.ClearanceService);
+        return new ManagedSiteContentAuthorizationHandler(scaffold.ClearanceService);
     }
 
     private static ContentItem Override(string managedSiteCode)

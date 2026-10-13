@@ -10,12 +10,12 @@ using Xunit;
 
 namespace VendallionCMS.ManagedSites.Tests.Authorization;
 
-public class ManagedSitePortalAuthorizationTests
+public class ManagedSiteClearanceAuthorizationTests
 {
     [Fact]
     public async Task Authorized_UserClearedForOneSite_ReturnsOnlyThatSite()
     {
-        var context = new ManagedSitePortalTestContext(
+        var context = new ManagedSiteContentTestContext(
             ManagedSitesTestData.ManagedSite("sitea", name: "Site A", hostname: "contoso.com", urlPrefix: "shop"),
             ManagedSitesTestData.ManagedSite("siteb", name: "Site B"));
 
@@ -33,7 +33,7 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task Authorized_UserClearedForSeveralSites_ReturnsAllOrderedByName()
     {
-        var context = new ManagedSitePortalTestContext(
+        var context = new ManagedSiteContentTestContext(
             ManagedSitesTestData.ManagedSite("siteb", name: "Zulu"),
             ManagedSitesTestData.ManagedSite("sitea", name: "Alpha"));
 
@@ -46,7 +46,7 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task Authorized_UserWithoutClearance_ReturnsEmptyList()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
+        var context = new ManagedSiteContentTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(ManagedSitesTestData.User());
 
@@ -56,7 +56,7 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task Authorized_AnonymousUser_ReturnsEmptyList()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
+        var context = new ManagedSiteContentTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(ManagedSitesTestData.AnonymousUser());
 
@@ -66,7 +66,7 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task Authorized_ClearanceForDisabledSite_ExcludesSite()
     {
-        var context = new ManagedSitePortalTestContext(
+        var context = new ManagedSiteContentTestContext(
             ManagedSitesTestData.ManagedSite("sitea", ManagedSiteStatus.Disabled));
 
         var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(ManagedSitesTestData.User("sitea:edit"));
@@ -77,7 +77,7 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task Authorized_ClearanceForUnknownSite_ExcludesSite()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
+        var context = new ManagedSiteContentTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(ManagedSitesTestData.User("site-removed:edit"));
 
@@ -87,7 +87,7 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task GetAuthorizedManagedSites_ClearanceExpired_ExcludesSite()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
+        var context = new ManagedSiteContentTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         // The claim format carries no validity window, so an expired clearance is modelled directly.
         var clearances = await context.ClearanceService.GetEffectiveClearancesAsync(
@@ -100,7 +100,7 @@ public class ManagedSitePortalAuthorizationTests
     [Fact]
     public async Task HasClearance_ScopeNotGranted_ReturnsFalse()
     {
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
+        var context = new ManagedSiteContentTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var result = await context.ClearanceService.HasClearanceAsync(
             ManagedSitesTestData.User("sitea:view"),
@@ -115,7 +115,7 @@ public class ManagedSitePortalAuthorizationTests
     {
         // The wildcard is what an issuer says when it means every scope. A claim naming no scope is
         // not that: it allows reading the Managed Site and nothing else.
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
+        var context = new ManagedSiteContentTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var result = await context.ClearanceService.HasClearanceAsync(
             ManagedSitesTestData.User("sitea:*"),

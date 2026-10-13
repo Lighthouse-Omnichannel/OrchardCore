@@ -171,7 +171,7 @@
           ]
         },
         {
-          // Cleared for two, so the portal's selection screen is reachable without editing a user
+          // Cleared for two, so the screen that offers the choice is reachable without editing a user
           // first. A user cleared for one managed site is scoped to it automatically.
           "UserName": "betaUser",
           "Password": "Password1!",
@@ -236,7 +236,7 @@
                 "Latest": true,
                 "Published": true,
                 "TitlePart": { "Title": "Where we are" },
-                "HtmlBodyPart": { "Html": "<p>Only Alpha may replace this one, so Beta and Gamma will not see it in their portal.</p>" },
+                "HtmlBodyPart": { "Html": "<p>Only Alpha may replace this one, so Beta and Gamma will not see it in their content list.</p>" },
                 "ManagedContentPart": {
                   "EditScope": { "Mode": "Selected", "ManagedSiteCodes": [ "alpha" ] },
                   "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },
@@ -251,7 +251,7 @@
                 "Latest": true,
                 "Published": true,
                 "TitlePart": { "Title": "Not for anybody" },
-                "HtmlBodyPart": { "Html": "<p>Nobody may replace this one. It is here so the portal has something it does not list, which is the first question the portal raises.</p>" },
+                "HtmlBodyPart": { "Html": "<p>Nobody may replace this one. It is here so the content list has something it does not offer, which is the first question it raises.</p>" },
                 "ManagedContentPart": {
                   "EditScope": { "Mode": "None", "ManagedSiteCodes": [] },
                   "DisplayScope": { "Mode": "All", "ManagedSiteCodes": [] },

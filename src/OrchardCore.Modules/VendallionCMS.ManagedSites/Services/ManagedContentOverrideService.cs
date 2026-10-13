@@ -333,7 +333,7 @@ public sealed class ManagedContentOverrideService : IManagedContentOverrideServi
 
         // The copy must not inherit the source's Managed Content. An override is somebody's answer to a
         // scoped item, never a scoped item in its own right, and leaving the part on would list every
-        // override back in the portal as something else to override.
+        // override back in the content list as something else to override.
         overrideContentItem.Remove(nameof(ManagedContentPart));
 
         // Nor the parts that would give the copy a place of its own. An override is only ever reached

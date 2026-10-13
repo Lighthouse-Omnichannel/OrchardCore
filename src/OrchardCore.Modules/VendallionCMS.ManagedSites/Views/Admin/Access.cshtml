@@ -1,12 +1,12 @@
 @using VendallionCMS.ManagedSites
-@model VendallionCMS.ManagedSites.ViewModels.ManagedSiteSecurityViewModel
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSiteAccessViewModel
 
 <zone Name="Title">
     <h1>@RenderTitleSegments(T["Who can work on {0}", Model.ManagedSite.Name])</h1>
 </zone>
 
 <p class="text-muted">
-    @T["Clearance is granted here, on the managed site it covers. A user granted one can open the admin portal and read this site's content, and no other site's unless they are granted that too. What they may do beyond reading is ticked on their row."]
+    @T["Clearance is granted here, on the managed site it covers. A user granted one can open this site's content and read it, and no other site's unless they are granted that too. What they may do beyond reading is ticked on their row."]
     <a asp-action="Index" class="text-decoration-underline">@T["Back to managed sites"]</a>
 </p>
 
@@ -19,7 +19,7 @@
                 <strong>@T["Users without access"]</strong>
             </div>
             <div class="card-body">
-                <form asp-action="Security" asp-route-code="@Model.ManagedSite.Code" method="get" class="mb-3">
+                <form asp-action="Access" asp-route-code="@Model.ManagedSite.Code" method="get" class="mb-3">
                     <input type="hidden" name="cleared" value="@Model.ClearedSearch" />
                     <div class="input-group">
                         <label for="available" class="visually-hidden">@T["Search users without access"]</label>
@@ -78,7 +78,7 @@
                 <strong>@T["Users with access"]</strong>
             </div>
             <div class="card-body">
-                <form asp-action="Security" asp-route-code="@Model.ManagedSite.Code" method="get" class="mb-3">
+                <form asp-action="Access" asp-route-code="@Model.ManagedSite.Code" method="get" class="mb-3">
                     <input type="hidden" name="available" value="@Model.AvailableSearch" />
                     <div class="input-group">
                         <label for="cleared" class="visually-hidden">@T["Search users with access"]</label>

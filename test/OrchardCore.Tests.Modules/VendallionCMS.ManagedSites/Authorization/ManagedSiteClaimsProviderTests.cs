@@ -104,17 +104,17 @@ public class ManagedSiteClaimsProviderTests
     }
 
     [Fact]
-    public async Task GenerateAsync_EmittedClaims_ResolveThroughTheSessionService()
+    public async Task GenerateAsync_EmittedClaims_ResolveThroughTheClearanceService()
     {
+        // The provider writes the claims and the clearance service reads them, so what one emits has to
+        // be what the other recognises.
+        var context = new ManagedSiteContentTestContext(ManagedSitesTestData.ManagedSite("sitea"));
         var identity = await GenerateAsync(Grant("sitea", "edit"));
-        identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, ManagedSitesTestData.UserId));
 
-        var context = new ManagedSitePortalTestContext(ManagedSitesTestData.ManagedSite("sitea"));
+        var managedSites = await context.ClearanceService.GetAuthorizedManagedSitesAsync(
+            new ClaimsPrincipal(identity));
 
-        var result = await context.SessionService.ResolveAsync(new ClaimsPrincipal(identity));
-
-        Assert.Equal(ManagedSiteSessionStatus.Selected, result.Status);
-        Assert.Equal("sitea", result.Scope.ManagedSiteCode);
+        Assert.Equal("sitea", Assert.Single(managedSites).Code);
     }
 
     private static ManagedSiteClearanceGrant Grant(string managedSiteCode, params string[] scopes)

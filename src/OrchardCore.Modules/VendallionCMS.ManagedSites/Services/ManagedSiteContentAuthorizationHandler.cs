@@ -13,7 +13,7 @@ namespace VendallionCMS.ManagedSites.Services;
 /// Without this, authoring an override would require tenant-wide content permissions for its content
 /// type, and anyone holding those could equally change Site Blueprint content and every other Managed
 /// Site's overrides. FR-011 forbids exactly that, so clearance has to be a content authorization
-/// decision rather than something only the portal endpoints consult.
+/// decision rather than something only the content endpoints consult.
 ///
 /// The handler only ever grants. It succeeds for content a Managed Site owns and stays silent for
 /// everything else, so it can widen what a cleared editor may do and can never narrow what anyone else

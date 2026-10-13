@@ -6,7 +6,7 @@ namespace VendallionCMS.ManagedSites.ViewModels;
 /// <summary>
 /// What the active Managed Site may customize.
 /// </summary>
-public class ManagedSitePortalListViewModel
+public class ManagedSiteContentListViewModel
 {
     /// <summary>
     /// Gets or sets the Managed Site this session is working in.
@@ -71,7 +71,7 @@ public class ManagedSitePortalListViewModel
 /// <summary>
 /// What the active Managed Site may customize inside one item.
 /// </summary>
-public sealed class ManagedSitePortalContainedViewModel : ManagedSitePortalListViewModel
+public sealed class ManagedSiteContentContainedViewModel : ManagedSiteContentListViewModel
 {
     /// <summary>
     /// Gets or sets the identifier of the item these are stored inside.
@@ -104,6 +104,11 @@ public sealed class ManagedSitePortalContainedViewModel : ManagedSitePortalListV
 public sealed class ManagedContentRowActionsViewModel
 {
     /// <summary>
+    /// Gets or sets the Managed Site the actions act on.
+    /// </summary>
+    public string ManagedSiteCode { get; set; }
+
+    /// <summary>
     /// Gets or sets the item the actions act on.
     /// </summary>
     public ManagedContentListItem Item { get; set; }
@@ -125,25 +130,20 @@ public sealed class ManagedContentRowActionsViewModel
 }
 
 /// <summary>
-/// The Managed Sites an editor may work in.
+/// The Managed Sites an editor may work on.
 /// </summary>
-public sealed class ManagedSitePortalSelectViewModel
+public sealed class ManagedSiteContentSitesViewModel
 {
     /// <summary>
     /// Gets or sets the Managed Sites the editor holds clearance for.
     /// </summary>
     public IReadOnlyList<ManagedSite> ManagedSites { get; set; } = [];
-
-    /// <summary>
-    /// Gets or sets the Managed Site already chosen, if any.
-    /// </summary>
-    public string SelectedManagedSiteCode { get; set; }
 }
 
 /// <summary>
 /// The Managed Site's versions that exist but are not being served.
 /// </summary>
-public sealed class ManagedSitePortalSuppressedViewModel
+public sealed class ManagedSiteContentSuppressedViewModel
 {
     /// <summary>
     /// Gets or sets the Managed Site this session is working in.
@@ -159,7 +159,7 @@ public sealed class ManagedSitePortalSuppressedViewModel
 /// <summary>
 /// A link that opens a path at the Managed Site's own address.
 /// </summary>
-public sealed class ManagedSitePortalPreviewViewModel
+public sealed class ManagedSiteContentPreviewViewModel
 {
     /// <summary>
     /// Gets or sets the Managed Site this session is working in.

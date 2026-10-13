@@ -20,7 +20,7 @@ public interface IManagedSiteClearanceService
     /// </summary>
     /// <remarks>
     /// Only Managed Sites that exist under the active Site Blueprint and are enabled are returned,
-    /// so clearance for a removed or disabled Managed Site never reaches the portal.
+    /// so clearance for a removed or disabled Managed Site never reaches the content screens.
     /// </remarks>
     /// <param name="user">The user principal to evaluate.</param>
     /// <returns>The authorized Managed Sites, ordered by name.</returns>

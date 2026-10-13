@@ -16,22 +16,21 @@ using VendallionCMS.ManagedSites.ViewModels;
 namespace VendallionCMS.ManagedSites.Controllers;
 
 /// <summary>
-/// The Managed Site Admin Portal: what a Managed Site may customize, and what it has done with it.
+/// One Managed Site's content: what it may customize, and what it has done with it.
 /// </summary>
 /// <remarks>
-/// Every action answers for one Managed Site, and which one is never taken from the request. It comes
-/// from the session the editor selected, checked against their clearance on each action rather than
-/// trusted from the one that listed the items, because a blueprint administrator can narrow an item's
-/// scope between an editor opening it and saving it.
+/// Every action answers for one Managed Site, and the Managed Site is in the address. An editor can see
+/// which site they are working on, link to it, bookmark it, and keep two open at once, none of which is
+/// possible when the answer is remembered somewhere instead.
 ///
-/// An editor cleared for exactly one Managed Site is working in it as soon as they arrive. One cleared
-/// for several chooses, and until they do, nothing scoped is shown.
+/// Naming it in the address decides nothing: the code is checked against the editor's clearance on every
+/// action, and on the action itself rather than once at the start, because a blueprint administrator can
+/// narrow an item's scope between an editor opening it and saving it.
 /// </remarks>
-[Admin("ManagedSites/Portal/{action}/{sourceContentItemId?}", "ManagedSitesPortal{action}")]
-public sealed class ManagedSitePortalController : Controller
+[Admin("ManagedSites/Content/{managedSiteCode}/{action}/{sourceContentItemId?}", "ManagedSiteContent{action}")]
+public sealed class ManagedSiteContentController : Controller
 {
     private readonly IAuthorizationService _authorizationService;
-    private readonly IManagedSiteSessionService _sessionService;
     private readonly IManagedSiteClearanceService _clearanceService;
     private readonly IManagedContentListService _listService;
     private readonly IManagedContentOverrideService _overrideService;
@@ -46,10 +45,9 @@ public sealed class ManagedSitePortalController : Controller
     private readonly IHtmlLocalizer H;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ManagedSitePortalController" /> class.
+    /// Initializes a new instance of the <see cref="ManagedSiteContentController" /> class.
     /// </summary>
     /// <param name="authorizationService">The authorization service.</param>
-    /// <param name="sessionService">The Managed Site session service.</param>
     /// <param name="clearanceService">The Managed Site clearance service.</param>
     /// <param name="listService">The Managed Content listing service.</param>
     /// <param name="overrideService">The Managed Content override service.</param>
@@ -61,9 +59,8 @@ public sealed class ManagedSitePortalController : Controller
     /// <param name="pagerOptions">The site's pager options.</param>
     /// <param name="stringLocalizer">The string localizer.</param>
     /// <param name="htmlLocalizer">The HTML localizer.</param>
-    public ManagedSitePortalController(
+    public ManagedSiteContentController(
         IAuthorizationService authorizationService,
-        IManagedSiteSessionService sessionService,
         IManagedSiteClearanceService clearanceService,
         IManagedContentListService listService,
         IManagedContentOverrideService overrideService,
@@ -73,11 +70,10 @@ public sealed class ManagedSitePortalController : Controller
         INotifier notifier,
         IShapeFactory shapeFactory,
         IOptions<PagerOptions> pagerOptions,
-        IStringLocalizer<ManagedSitePortalController> stringLocalizer,
-        IHtmlLocalizer<ManagedSitePortalController> htmlLocalizer)
+        IStringLocalizer<ManagedSiteContentController> stringLocalizer,
+        IHtmlLocalizer<ManagedSiteContentController> htmlLocalizer)
     {
         _authorizationService = authorizationService;
-        _sessionService = sessionService;
         _clearanceService = clearanceService;
         _listService = listService;
         _overrideService = overrideService;
@@ -98,12 +94,14 @@ public sealed class ManagedSitePortalController : Controller
     /// <param name="overrideStatus">One override status, or nothing for all of them.</param>
     /// <param name="pagerParameters">Which page to show, and how large.</param>
     /// <returns>The list, the Managed Site chooser, or a refusal.</returns>
+    [Admin("ManagedSites/Content/{managedSiteCode}", "ManagedSiteContentIndex")]
     public async Task<IActionResult> Index(
+        string managedSiteCode,
         string contentType,
         string overrideStatus,
         PagerParameters pagerParameters)
     {
-        var scope = await ResolveScopeAsync();
+        var scope = await ResolveScopeAsync(managedSiteCode);
 
         if (scope.Failure is not null)
         {
@@ -138,7 +136,7 @@ public sealed class ManagedSitePortalController : Controller
             routeData.Values.TryAdd(nameof(overrideStatus), overrideStatus);
         }
 
-        return View(new ManagedSitePortalListViewModel
+        return View(new ManagedSiteContentListViewModel
         {
             ManagedSite = scope.ManagedSite,
             CanEdit = await CanAsync(scope.ManagedSite.Code, ManagedSitesConstants.Scopes.Edit),
@@ -155,53 +153,33 @@ public sealed class ManagedSitePortalController : Controller
     /// <summary>
     /// Offers the Managed Sites the editor may work in.
     /// </summary>
-    /// <returns>The chooser, or a refusal when they are cleared for none.</returns>
-    public async Task<IActionResult> Select()
+    /// <remarks>
+    /// Reached at the root of this area, where no Managed Site is named. An editor cleared for exactly
+    /// one is sent straight to it: asking somebody to choose from a list of one is asking them to
+    /// confirm something they did not decide.
+    /// </remarks>
+    /// <returns>The chooser, the one site they hold, or a refusal.</returns>
+    [Admin("ManagedSites/Content", "ManagedSiteContentSites")]
+    public async Task<IActionResult> Sites()
     {
         if (!await _authorizationService.AuthorizeAsync(User, Permissions.EditManagedSiteContent))
         {
             return Forbid();
         }
 
-        var session = await _sessionService.ResolveAsync(User);
+        var managedSites = await _clearanceService.GetAuthorizedManagedSitesAsync(User);
 
-        if (session.Status == ManagedSiteSessionStatus.NoClearance)
+        if (managedSites.Count == 0)
         {
             return View("NoClearance");
         }
 
-        return View(new ManagedSitePortalSelectViewModel
+        if (managedSites.Count == 1)
         {
-            ManagedSites = session.AuthorizedManagedSites,
-            SelectedManagedSiteCode = session.Scope?.ManagedSiteCode,
-        });
-    }
-
-    /// <summary>
-    /// Takes the Managed Site the editor chose as the one this session works in.
-    /// </summary>
-    /// <param name="managedSiteCode">The chosen Managed Site.</param>
-    /// <returns>The content list, or the chooser again when the choice was refused.</returns>
-    [HttpPost]
-    [ActionName(nameof(Select))]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SelectPost(string managedSiteCode)
-    {
-        if (!await _authorizationService.AuthorizeAsync(User, Permissions.EditManagedSiteContent))
-        {
-            return Forbid();
+            return RedirectToAction(nameof(Index), new { managedSiteCode = managedSites[0].Code });
         }
 
-        var session = await _sessionService.SelectAsync(User, managedSiteCode);
-
-        if (session.Status != ManagedSiteSessionStatus.Selected)
-        {
-            await _notifier.ErrorAsync(H["You do not hold clearance for that managed site."]);
-
-            return RedirectToAction(nameof(Select));
-        }
-
-        return RedirectToAction(nameof(Index));
+        return View(new ManagedSiteContentSitesViewModel { ManagedSites = managedSites });
     }
 
     /// <summary>
@@ -218,12 +196,13 @@ public sealed class ManagedSitePortalController : Controller
     /// <param name="pagerParameters">Which page to show, and how large.</param>
     /// <returns>The list, or a refusal.</returns>
     public async Task<IActionResult> Contained(
+        string managedSiteCode,
         string sourceContentItemId,
         string contentType,
         string overrideStatus,
         PagerParameters pagerParameters)
     {
-        var scope = await ResolveScopeAsync();
+        var scope = await ResolveScopeAsync(managedSiteCode);
 
         if (scope.Failure is not null)
         {
@@ -272,7 +251,7 @@ public sealed class ManagedSitePortalController : Controller
 
         var containerOverride = await _overrideService.GetAsync(scope.ManagedSite.Code, sourceContentItemId);
 
-        return View(new ManagedSitePortalContainedViewModel
+        return View(new ManagedSiteContentContainedViewModel
         {
             ManagedSite = scope.ManagedSite,
             CanEdit = await CanAsync(scope.ManagedSite.Code, ManagedSitesConstants.Scopes.Edit),
@@ -302,9 +281,9 @@ public sealed class ManagedSitePortalController : Controller
     /// <returns>The item screen, carrying what happened.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(string sourceContentItemId, string returnUrl = null)
+    public async Task<IActionResult> Create(string managedSiteCode, string sourceContentItemId, string returnUrl = null)
     {
-        var scope = await ResolveScopeAsync(ManagedSitesConstants.Scopes.Edit);
+        var scope = await ResolveScopeAsync(managedSiteCode, ManagedSitesConstants.Scopes.Edit);
 
         if (scope.Failure is not null)
         {
@@ -315,7 +294,7 @@ public sealed class ManagedSitePortalController : Controller
 
         await ReportAsync(result.Error, S["Your version was created as a draft, starting from the blueprint content."]);
 
-        var back = Back(returnUrl);
+        var back = Back(managedSiteCode, returnUrl);
 
         if (!result.Succeeded)
         {
@@ -348,13 +327,14 @@ public sealed class ManagedSitePortalController : Controller
     /// <remarks>
     /// A caller says where it came from, so creating a version from the list returns to the list and
     /// creating one from an item returns to the item. Only local URLs are honoured: the value arrives
-    /// in the query string, where anyone can put anything, and an unchecked one would make the portal
-    /// bounce people to another site.
+    /// in the query string, where anyone can put anything, and an unchecked one would bounce the editor
+    /// to another site.
     /// </remarks>
+    /// <param name="managedSiteCode">The Managed Site being worked on.</param>
     /// <param name="returnUrl">Where the caller came from.</param>
     /// <returns>A local URL.</returns>
-    private string Back(string returnUrl)
-        => Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Action(nameof(Index));
+    private string Back(string managedSiteCode, string returnUrl)
+        => Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Action(nameof(Index), new { managedSiteCode });
 
     /// <summary>
     /// Publishes the Managed Site's own version of an item, so that visitors receive it.
@@ -365,11 +345,12 @@ public sealed class ManagedSitePortalController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Publish(
+        string managedSiteCode,
         string sourceContentItemId,
         string overrideContentItemId,
         string returnUrl = null)
     {
-        var scope = await ResolveScopeAsync(ManagedSitesConstants.Scopes.Publish);
+        var scope = await ResolveScopeAsync(managedSiteCode, ManagedSitesConstants.Scopes.Publish);
 
         if (scope.Failure is not null)
         {
@@ -384,7 +365,7 @@ public sealed class ManagedSitePortalController : Controller
 
         await ReportAsync(result.Error, S["Your version is now being served on this managed site."]);
 
-        return Redirect(Back(returnUrl));
+        return Redirect(Back(managedSiteCode, returnUrl));
     }
 
     /// <summary>
@@ -394,9 +375,9 @@ public sealed class ManagedSitePortalController : Controller
     /// <returns>The item screen, carrying what happened.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Remove(string sourceContentItemId, string returnUrl = null)
+    public async Task<IActionResult> Remove(string managedSiteCode, string sourceContentItemId, string returnUrl = null)
     {
-        var scope = await ResolveScopeAsync(ManagedSitesConstants.Scopes.Edit);
+        var scope = await ResolveScopeAsync(managedSiteCode, ManagedSitesConstants.Scopes.Edit);
 
         if (scope.Failure is not null)
         {
@@ -412,16 +393,16 @@ public sealed class ManagedSitePortalController : Controller
             await _notifier.WarningAsync(H["There was no version of your own to remove."]);
         }
 
-        return Redirect(Back(returnUrl));
+        return Redirect(Back(managedSiteCode, returnUrl));
     }
 
     /// <summary>
     /// Lists the Managed Site's versions that exist but are not being served.
     /// </summary>
     /// <returns>The list, each entry carrying why it stopped rendering.</returns>
-    public async Task<IActionResult> Suppressed()
+    public async Task<IActionResult> Suppressed(string managedSiteCode)
     {
-        var scope = await ResolveScopeAsync();
+        var scope = await ResolveScopeAsync(managedSiteCode);
 
         if (scope.Failure is not null)
         {
@@ -430,7 +411,7 @@ public sealed class ManagedSitePortalController : Controller
 
         var suppressed = await _overrideService.ListSuppressedAsync(scope.ManagedSite.Code);
 
-        return View(new ManagedSitePortalSuppressedViewModel
+        return View(new ManagedSiteContentSuppressedViewModel
         {
             ManagedSite = scope.ManagedSite,
             Items = [.. suppressed],
@@ -449,9 +430,9 @@ public sealed class ManagedSitePortalController : Controller
     /// <param name="path">The path to open.</param>
     /// <param name="includeDrafts">Whether to ask for unpublished work.</param>
     /// <returns>The preview screen.</returns>
-    public async Task<IActionResult> Preview(string path = null, bool includeDrafts = false)
+    public async Task<IActionResult> Preview(string managedSiteCode, string path = null, bool includeDrafts = false)
     {
-        var scope = await ResolveScopeAsync();
+        var scope = await ResolveScopeAsync(managedSiteCode);
 
         if (scope.Failure is not null)
         {
@@ -466,7 +447,7 @@ public sealed class ManagedSitePortalController : Controller
                 includeDrafts,
                 Request.Host.Port);
 
-        return View(new ManagedSitePortalPreviewViewModel
+        return View(new ManagedSiteContentPreviewViewModel
         {
             ManagedSite = scope.ManagedSite,
             Path = path,
@@ -494,16 +475,21 @@ public sealed class ManagedSitePortalController : Controller
     }
 
     /// <summary>
-    /// Works out which Managed Site this request acts on, and whether the editor may act on it.
+    /// Works out whether the editor may act on the Managed Site the address names.
     /// </summary>
     /// <remarks>
-    /// Resolved once, here, rather than in each action, so that the refusals are the same wherever an
-    /// editor arrives: no permission, no clearance at all, a choice not yet made, or clearance that
-    /// does not reach what this action does.
+    /// Resolved once, here, so the refusals are the same wherever an editor arrives: no permission, a
+    /// Managed Site that does not exist, one they hold no clearance for, or clearance that does not
+    /// reach what this action does.
+    ///
+    /// A Managed Site they hold no clearance for is refused rather than hidden, because they named it:
+    /// there is nothing to hide, and a refusal says what happened.
     /// </remarks>
+    /// <param name="managedSiteCode">The Managed Site the address names.</param>
     /// <param name="requiredScope">What the action needs beyond reading, or nothing when reading is all it does.</param>
     /// <returns>The Managed Site, or the result to return instead.</returns>
     private async Task<(ManagedSite ManagedSite, IActionResult Failure)> ResolveScopeAsync(
+        string managedSiteCode,
         string requiredScope = null)
     {
         if (!await _authorizationService.AuthorizeAsync(User, Permissions.EditManagedSiteContent))
@@ -511,30 +497,22 @@ public sealed class ManagedSitePortalController : Controller
             return (null, Forbid());
         }
 
-        var session = await _sessionService.ResolveAsync(User);
-
-        if (session.Status == ManagedSiteSessionStatus.NoClearance)
+        if (string.IsNullOrEmpty(managedSiteCode))
         {
-            return (null, View("NoClearance"));
+            return (null, RedirectToAction(nameof(Sites)));
         }
-
-        if (session.Status != ManagedSiteSessionStatus.Selected)
-        {
-            // Cleared for several and not yet chosen. Nothing scoped is shown until they do.
-            return (null, RedirectToAction(nameof(Select)));
-        }
-
-        var managedSiteCode = session.Scope.ManagedSiteCode;
 
         if (!await _clearanceService.HasClearanceAsync(User, managedSiteCode, requiredScope))
         {
             return (null, Forbid());
         }
 
-        var managedSite = session.AuthorizedManagedSites
+        // Read from the Managed Sites the clearance service vouches for rather than from the store, so
+        // that a site switched off, or removed since the clearance was granted, is not worked in.
+        var managedSite = (await _clearanceService.GetAuthorizedManagedSitesAsync(User))
             .FirstOrDefault(candidate => string.Equals(candidate.Code, managedSiteCode, StringComparison.Ordinal));
 
-        return managedSite is null ? (null, RedirectToAction(nameof(Select))) : (managedSite, null);
+        return managedSite is null ? (null, NotFound()) : (managedSite, null);
     }
 
     private async Task ReportAsync(ManagedContentOverrideError error, LocalizedString success)

@@ -223,8 +223,8 @@ public sealed class AdminController : Controller
     /// <param name="code">The Managed Site code.</param>
     /// <param name="available">Part of a name to narrow the users without clearance by.</param>
     /// <param name="cleared">Part of a name to narrow the users with clearance by.</param>
-    /// <returns>The security view, or a refusal.</returns>
-    public async Task<IActionResult> Security(string code, string available, string cleared)
+    /// <returns>The access view, or a refusal.</returns>
+    public async Task<IActionResult> Access(string code, string available, string cleared)
     {
         if (!await _authorizationService.AuthorizeAsync(User, Permissions.ManageManagedSites))
         {
@@ -238,7 +238,7 @@ public sealed class AdminController : Controller
             return NotFound();
         }
 
-        return View(await BuildSecurityAsync(managedSite, available, cleared));
+        return View(await BuildAccessAsync(managedSite, available, cleared));
     }
 
     /// <summary>
@@ -275,7 +275,7 @@ public sealed class AdminController : Controller
             await _notifier.WarningAsync(H["That user could not be found."]);
         }
 
-        return RedirectToAction(nameof(Security), new { code, available, cleared });
+        return RedirectToAction(nameof(Access), new { code, available, cleared });
     }
 
     /// <summary>
@@ -310,7 +310,7 @@ public sealed class AdminController : Controller
             await _notifier.WarningAsync(H["That user held no clearance for this managed site."]);
         }
 
-        return RedirectToAction(nameof(Security), new { code, available, cleared });
+        return RedirectToAction(nameof(Access), new { code, available, cleared });
     }
 
     /// <summary>
@@ -351,7 +351,7 @@ public sealed class AdminController : Controller
             await _notifier.WarningAsync(H["That user could not be found."]);
         }
 
-        return RedirectToAction(nameof(Security), new { code, available, cleared });
+        return RedirectToAction(nameof(Access), new { code, available, cleared });
     }
 
     /// <summary>
@@ -379,7 +379,7 @@ public sealed class AdminController : Controller
         }
     }
 
-    private async Task<ManagedSiteSecurityViewModel> BuildSecurityAsync(
+    private async Task<ManagedSiteAccessViewModel> BuildAccessAsync(
         ManagedSite managedSite,
         string available,
         string cleared)
@@ -390,7 +390,7 @@ public sealed class AdminController : Controller
         // user in the tenant.
         var candidates = await _securityService.ListAvailableAsync(managedSite.Code, available, Take);
 
-        return new ManagedSiteSecurityViewModel
+        return new ManagedSiteAccessViewModel
         {
             ManagedSite = managedSite,
             Cleared = await _securityService.ListClearedAsync(managedSite.Code, cleared),

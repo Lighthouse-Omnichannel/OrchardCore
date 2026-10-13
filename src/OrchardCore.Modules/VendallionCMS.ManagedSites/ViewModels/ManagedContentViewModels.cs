@@ -32,7 +32,7 @@ public sealed class ManagedContentListItem
     /// Gets or sets a value indicating whether the item holds child content of its own.
     /// </summary>
     /// <remarks>
-    /// Overriding a container replaces its children, so the portal warns before the editor commits to it.
+    /// Overriding a container replaces its children, so the editor is warned before committing to it.
     /// </remarks>
     public bool IsContainer { get; set; }
 

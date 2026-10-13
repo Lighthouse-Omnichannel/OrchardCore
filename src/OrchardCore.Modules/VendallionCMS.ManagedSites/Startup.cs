@@ -35,7 +35,7 @@ namespace VendallionCMS.ManagedSites;
 /// One feature, registered in one place. The parts below are sections of a single thing rather than
 /// pieces anybody would run without the others: resolving a URL to a Managed Site is pointless without
 /// the content rules that say what it may override, those rules decide nothing without the clearance
-/// that authorizes them, and clearance is granted from the portal. Separating them only offered a way to
+/// that authorizes them, and clearance is granted per Managed Site. Separating them only offered a way to
 /// configure the module into a state where it could not work.
 /// </remarks>
 public sealed class Startup : StartupBase
@@ -131,14 +131,12 @@ public sealed class Startup : StartupBase
         // override content, and on nothing else.
         services.AddScoped<IAuthorizationHandler, ManagedSiteContentAuthorizationHandler>();
 
-        // ---- Admin portal ----
+        // ---- Managed Site content ----
 
-        services.AddScoped<IManagedSiteSessionStore, SiteSettingsManagedSiteSessionStore>();
-        services.AddScoped<IManagedSiteSessionService, ManagedSiteSessionService>();
         services.AddScoped<IManagedSitePreviewService, ManagedSitePreviewService>();
 
         services.AddNavigationProvider<AdminMenu>();
-        services.AddNavigationProvider<AdminPortalMenu>();
+        services.AddNavigationProvider<ManagedSiteContentMenu>();
 
         // ---- Recipes ----
 

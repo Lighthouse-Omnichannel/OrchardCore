@@ -9,7 +9,7 @@
     @if (item.ContainedItemCount > 0)
     {
         <a class="btn btn-secondary btn-sm"
-           asp-action="Contained" asp-route-sourceContentItemId="@item.SourceContentItemId"
+           asp-action="Contained" asp-route-managedSiteCode="@Model.ManagedSiteCode" asp-route-sourceContentItemId="@item.SourceContentItemId"
            aria-label="@T["List what is inside {0}", item.DisplayText]">
             @T["What is inside"]
         </a>
@@ -21,7 +21,7 @@
         {
             @* Creates the version and opens it. The copy an editor is handed is the blueprint content
                until they change it, so the point of creating one is to start. *@
-            <form asp-action="Create" asp-route-sourceContentItemId="@item.SourceContentItemId" method="post">
+            <form asp-action="Create" asp-route-managedSiteCode="@Model.ManagedSiteCode" asp-route-sourceContentItemId="@item.SourceContentItemId" method="post">
                 <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
                 <button type="submit" class="btn btn-primary btn-sm"
                         aria-label="@T["Create your version of {0} and edit it", item.DisplayText]">
@@ -34,7 +34,7 @@
     {
         @if (item.Override.Status != "Published" && Model.CanPublish)
         {
-            <form asp-action="Publish" asp-route-sourceContentItemId="@item.SourceContentItemId" method="post">
+            <form asp-action="Publish" asp-route-managedSiteCode="@Model.ManagedSiteCode" asp-route-sourceContentItemId="@item.SourceContentItemId" method="post">
                 <input type="hidden" name="overrideContentItemId" value="@item.Override.OverrideContentItemId" />
                 <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
                 <button type="submit" class="btn btn-secondary btn-sm"
@@ -46,7 +46,7 @@
 
         @if (Model.CanEdit)
         {
-            <form asp-action="Remove" asp-route-sourceContentItemId="@item.SourceContentItemId" method="post">
+            <form asp-action="Remove" asp-route-managedSiteCode="@Model.ManagedSiteCode" asp-route-sourceContentItemId="@item.SourceContentItemId" method="post">
                 <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
                 <button type="submit" class="btn btn-danger btn-sm"
                         data-url-af="RemoveUrl"

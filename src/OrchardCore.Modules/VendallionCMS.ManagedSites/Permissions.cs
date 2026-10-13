@@ -32,14 +32,15 @@ public sealed class Permissions : IPermissionProvider
         isSecurityCritical: true);
 
     /// <summary>
-    /// Allows editing the content a Managed Site overrides, through the Managed Site Admin Portal.
+    /// Allows editing the content a Managed Site overrides, through its content screens in the admin.
     /// </summary>
     /// <remarks>
-    /// Granted alongside clearance rather than instead of it. This permission opens the portal; which
-    /// Managed Sites it opens onto, and what may be done in each, comes from the holder's clearance.
+    /// Granted alongside clearance rather than instead of it. This permission opens the content
+    /// screens; which Managed Sites they open onto, and what may be done in each, comes from the
+    /// holder's clearance.
     ///
     /// Implied by <see cref="ManageManagedSites" />, because whoever grants clearance can grant it to
-    /// themselves; withholding the portal from them would be a formality rather than a restriction.
+    /// themselves; withholding the screens from them would be a formality rather than a restriction.
     /// </remarks>
     public static readonly Permission EditManagedSiteContent = new(
         "EditManagedSiteContent",

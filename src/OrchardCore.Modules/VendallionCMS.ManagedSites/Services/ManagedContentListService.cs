@@ -12,7 +12,7 @@ namespace VendallionCMS.ManagedSites.Services;
 /// What a Managed Site may customize, and what it has done with it so far.
 /// </summary>
 /// <remarks>
-/// This is the portal's content list, and what it answers is not a query anyone can write against the
+/// This is a Managed Site's content list, and what it answers is not a query anyone can write against the
 /// store: an item's edit scope is read from the item as it stands rather than trusted from the index,
 /// a contained item is found inside the container that holds it, and an item's override comes from the
 /// Managed Site's own content, which cannot be joined to the rest.

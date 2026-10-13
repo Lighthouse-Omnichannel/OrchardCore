@@ -1,11 +1,11 @@
-@model VendallionCMS.ManagedSites.ViewModels.ManagedSitePortalListViewModel
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSiteContentListViewModel
 
 <zone Name="Title"><h1>@RenderTitleSegments(T["Content you can customize"])</h1></zone>
 
 @* Laid out as the content list is, because it is the same job: a filter bar that sticks, a header row
    that counts what is below it, one row an item, and the admin's own pager. An editor who has used the
    content list should not have to learn a second way to read a list. *@
-<form asp-action="Index" method="get">
+<form asp-action="Index" asp-route-managedSiteCode="@Model.ManagedSite.Code" method="get">
     <div class="card text-bg-theme mb-3 position-sticky action-bar">
         <div class="card-body">
             <div class="row gx-3">
@@ -48,7 +48,7 @@
                     <i class="fa-solid fa-sitemap text-secondary" aria-hidden="true"></i>
                     @T["Editing {0}", Model.ManagedSite.Name]
                 </span>
-                <a asp-action="Select" class="ms-2 link-body-emphasis text-decoration-underline">@T["Change"]</a>
+                <a asp-action="Sites" class="ms-2 link-body-emphasis text-decoration-underline">@T["Change"]</a>
             </div>
         </div>
     </li>
@@ -157,6 +157,7 @@
                     <div class="col-lg-auto col-12 d-flex justify-content-end">
                         @await Html.PartialAsync("_RowActions", new VendallionCMS.ManagedSites.ViewModels.ManagedContentRowActionsViewModel
                         {
+                            ManagedSiteCode = Model.ManagedSite.Code,
                             Item = item,
                             CanEdit = Model.CanEdit,
                             CanPublish = Model.CanPublish,

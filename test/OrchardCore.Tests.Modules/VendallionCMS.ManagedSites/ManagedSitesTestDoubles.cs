@@ -51,78 +51,22 @@ public sealed class FakeManagedSiteService : IManagedSiteService
 }
 
 /// <summary>
-/// In-memory active scope store for tests.
+/// Builds the service graph used by clearance tests.
 /// </summary>
-public sealed class InMemoryManagedSiteSessionStore : IManagedSiteSessionStore
+public sealed class ManagedSiteContentTestContext
 {
-    private readonly Dictionary<string, ActiveManagedSiteSessionScope> _scopes = new(StringComparer.Ordinal);
-
-    public int SetCount { get; private set; }
-
-    public int ClearCount { get; private set; }
-
-    public ValueTask<ActiveManagedSiteSessionScope> GetAsync(string userId)
-    {
-        if (string.IsNullOrEmpty(userId))
-        {
-            return ValueTask.FromResult<ActiveManagedSiteSessionScope>(null);
-        }
-
-        return ValueTask.FromResult(_scopes.GetValueOrDefault(userId));
-    }
-
-    public ValueTask SetAsync(ActiveManagedSiteSessionScope scope)
-    {
-        SetCount++;
-        _scopes[scope.UserId] = scope;
-
-        return ValueTask.CompletedTask;
-    }
-
-    public ValueTask ClearAsync(string userId)
-    {
-        ClearCount++;
-        _scopes.Remove(userId);
-
-        return ValueTask.CompletedTask;
-    }
-
-    public void Seed(string userId, string managedSiteCode)
-        => _scopes[userId] = new ActiveManagedSiteSessionScope
-        {
-            UserId = userId,
-            ManagedSiteCode = managedSiteCode,
-            SelectedAt = DateTimeOffset.UnixEpoch,
-        };
-}
-
-/// <summary>
-/// Builds the service graph used by portal session and clearance tests.
-/// </summary>
-public sealed class ManagedSitePortalTestContext
-{
-    public ManagedSitePortalTestContext(params ManagedSite[] managedSites)
+    public ManagedSiteContentTestContext(params ManagedSite[] managedSites)
     {
         ManagedSiteService = new FakeManagedSiteService(managedSites);
-        SessionStore = new InMemoryManagedSiteSessionStore();
         ClearanceService = new ManagedSiteClearanceService(
             new ManagedSiteAuthorizationService(),
             ManagedSiteService,
-            TimeProvider.System);
-        SessionService = new ManagedSiteSessionService(
-            ClearanceService,
-            ManagedSiteService,
-            SessionStore,
             TimeProvider.System);
     }
 
     public FakeManagedSiteService ManagedSiteService { get; }
 
-    public InMemoryManagedSiteSessionStore SessionStore { get; }
-
     public IManagedSiteClearanceService ClearanceService { get; }
-
-    public IManagedSiteSessionService SessionService { get; }
 }
 
 /// <summary>

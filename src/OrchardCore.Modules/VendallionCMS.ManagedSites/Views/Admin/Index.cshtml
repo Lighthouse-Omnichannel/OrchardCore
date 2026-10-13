@@ -56,7 +56,7 @@ else
                     </td>
                     <td>@managedSite.Status</td>
                     <td class="text-end">
-                        <a asp-action="Security" asp-route-code="@managedSite.Code" class="btn btn-sm btn-secondary"
+                        <a asp-action="Access" asp-route-code="@managedSite.Code" class="btn btn-sm btn-secondary"
                            aria-label="@T["Choose who can work on {0}", managedSite.Name]">
                             <i class="fa-solid fa-user-lock" aria-hidden="true"></i> @T["Access"]
                         </a>
