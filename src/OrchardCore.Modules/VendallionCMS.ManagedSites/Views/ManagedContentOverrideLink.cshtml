@@ -16,7 +16,7 @@
 
     @if (Model.IsLinked)
     {
-        <p class="mb-0">
+        <p class="mb-2">
             @T["It replaces"]
             <strong>@(Model.SourceDisplayText ?? Model.SourceContentType ?? Model.SourceContentItemId)</strong>
 
@@ -24,12 +24,12 @@
             {
                 @T["(a section inside another content item)"]
             }
-
-            <a class="ms-2" asp-action="Edit" asp-controller="Admin" asp-area="OrchardCore.Contents"
-               asp-route-contentItemId="@(Model.SourceContainerContentItemId ?? Model.SourceContentItemId)">
-                @T["Open the original"]
-            </a>
         </p>
+
+        <a class="btn btn-sm btn-secondary" asp-action="Edit" asp-controller="Admin" asp-area="OrchardCore.Contents"
+           asp-route-contentItemId="@(Model.SourceContainerContentItemId ?? Model.SourceContentItemId)">
+            <span>@T["Open the original"]</span>
+        </a>
     }
     else
     {

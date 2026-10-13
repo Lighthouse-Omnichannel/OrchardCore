@@ -51,8 +51,9 @@
     <div class="ocat-wrapper">
         <div class="ocat-end-offset">
             <div class="border rounded p-3" role="status">
-                <a href="@Model.PreviewUrl" target="_blank" rel="noopener" class="text-decoration-underline">@Model.PreviewUrl</a>
-                <span class="d-block">@T["Composed as this managed site, and opened in a new tab."]</span>
+                <code class="d-block text-break mb-2">@Model.PreviewUrl</code>
+                <a href="@Model.PreviewUrl" target="_blank" rel="noopener" class="btn btn-primary">@T["Open preview"]</a>
+                <span class="hint d-block mt-2">@T["Composed as this managed site, and opened in a new tab."]</span>
             </div>
         </div>
     </div>
