@@ -34,7 +34,9 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
 
             var row = page.Locator("tr", new PageLocatorOptions { HasText = "Contoso" }).First;
             await Assertions.Expect(row).ToBeVisibleAsync();
-            await Assertions.Expect(row).ToContainTextAsync("contoso");
+            // The list names the managed site and links it to where it answers; the address itself is
+            // in the editor rather than the row.
+            Assert.EndsWith("/contoso", await NameLinkAsync(page, "Contoso"), StringComparison.Ordinal);
 
             // The definition must survive the round trip through site settings, not just the redirect.
             await GotoIndexAsync(page);
@@ -123,7 +125,49 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
         }
     }
 
-    private async Task CreateManagedSiteAsync(IPage page, string name, string urlPrefix)
+    /// <summary>
+    /// Covers the link on a managed site's name, which goes where the site answers.
+    /// </summary>
+    [Fact]
+    public async Task ManagedSite_NameLinksToWhereTheSiteAnswers()
+    {
+        var page = await CreateAuthenticatedPageAsync();
+
+        try
+        {
+            await CreateManagedSiteAsync(page, "Prefixed", "prefixed");
+            await CreateManagedSiteAsync(page, "Hosted", string.Empty, "hosted.example");
+            await CreateManagedSiteAsync(page, "Rootless", string.Empty);
+
+            await GotoIndexAsync(page);
+
+            // A prefix is a path under this site.
+            Assert.EndsWith("/prefixed", await NameLinkAsync(page, "Prefixed"), StringComparison.Ordinal);
+
+            // A host name wins outright, so the link leaves for it rather than using any prefix.
+            Assert.Contains("hosted.example", await NameLinkAsync(page, "Hosted"), StringComparison.Ordinal);
+
+            // Naming neither means the site answers on the tenant's own address, which is not its own
+            // address to link to.
+            Assert.Null(await NameLinkAsync(page, "Rootless"));
+        }
+        finally
+        {
+            await page.CloseAsync();
+        }
+    }
+
+    private static async Task<string> NameLinkAsync(IPage page, string name)
+    {
+        var cell = page.Locator("tbody tr", new PageLocatorOptions { HasText = name }).First
+            .Locator("td")
+            .First
+            .Locator("a");
+
+        return await cell.CountAsync() == 0 ? null : await cell.GetAttributeAsync("href");
+    }
+
+    private async Task CreateManagedSiteAsync(IPage page, string name, string urlPrefix, string hostname = null)
     {
         await GotoIndexAsync(page);
         await page.ClickCreateAsync();
@@ -133,6 +177,11 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
         await page.Locator("#Code").FillAsync(name.ToLowerInvariant().Replace(" ", string.Empty));
         await page.Locator("#Name").FillAsync(name);
         await page.Locator("#UrlPrefix").FillAsync(urlPrefix);
+
+        if (!string.IsNullOrEmpty(hostname))
+        {
+            await page.Locator("#Hostname").FillAsync(hostname);
+        }
 
         // Enabled is the status a new managed site opens with, so it is left alone.
         await page.ClickSaveAsync();

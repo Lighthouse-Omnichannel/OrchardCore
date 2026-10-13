@@ -1,3 +1,4 @@
+@using VendallionCMS.ManagedSites.Services
 @using VendallionCMS.ManagedSites.ViewModels
 @model ManagedSiteIndexViewModel
 
@@ -20,11 +21,8 @@ else
         <table class="table table-hover align-middle">
             <thead>
                 <tr>
-                    <th scope="col">@T["Code"]</th>
                     <th scope="col">@T["Name"]</th>
                     <th scope="col">@T["Status"]</th>
-                    <th scope="col">@T["Host name"]</th>
-                    <th scope="col">@T["URL prefix"]</th>
                     <th scope="col" class="text-end">@T["Actions"]</th>
                 </tr>
             </thead>
@@ -32,32 +30,36 @@ else
             @foreach (var managedSite in Model.ManagedSites)
             {
                 <tr>
-                    <td><code>@managedSite.Code</code></td>
-                    <td>@managedSite.Name</td>
+                    @{
+                        @* Where the managed site answers. A host name wins outright, exactly as it does
+                           when a request is resolved, so a site naming one is reached there and its
+                           prefix is not consulted. A site naming neither answers on the tenant's own
+                           address, which is not its own address to link to. *@
+                        var host = ManagedSiteAddressValidator.SplitHostnames(managedSite.Hostname).FirstOrDefault();
+
+                        var address = !string.IsNullOrEmpty(host)
+                            ? $"{Context.Request.Scheme}://{host}"
+                            : string.IsNullOrEmpty(managedSite.UrlPrefix)
+                                ? null
+                                : $"~/{managedSite.UrlPrefix}";
+                    }
+                    <td>
+                        @if (address is null)
+                        {
+                            @managedSite.Name
+                        }
+                        else
+                        {
+                            <a href="@Url.Content(address)" target="_blank" rel="noopener"
+                               aria-label="@T["Open {0}", managedSite.Name]">@managedSite.Name</a>
+                        }
+                    </td>
                     <td>@managedSite.Status</td>
-                    <td>
-                        @if (string.IsNullOrEmpty(managedSite.Hostname))
-                        {
-                            <span class="text-muted">@T["Every host"]</span>
-                        }
-                        else
-                        {
-                            @managedSite.Hostname
-                        }
-                    </td>
-                    <td>
-                        @if (string.IsNullOrEmpty(managedSite.UrlPrefix))
-                        {
-                            <span class="text-muted">@T["Root"]</span>
-                        }
-                        else
-                        {
-                            @managedSite.UrlPrefix
-                        }
-                    </td>
                     <td class="text-end">
                         <a asp-action="Security" asp-route-code="@managedSite.Code" class="btn btn-sm btn-secondary"
-                           aria-label="@T["Choose who can work on {0}", managedSite.Name]">@T["Security"]</a>
+                           aria-label="@T["Choose who can work on {0}", managedSite.Name]">
+                            <i class="fa-solid fa-user-lock" aria-hidden="true"></i> @T["Access"]
+                        </a>
                         <a asp-action="Edit" asp-route-code="@managedSite.Code" class="btn btn-sm btn-secondary">@T["Edit"]</a>
                         @* RemoveUrl raises the admin confirmation modal; UnsafeUrl posts it with an antiforgery token. *@
                         <a asp-action="Delete" asp-route-code="@managedSite.Code" class="btn btn-sm btn-danger"
