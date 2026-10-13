@@ -1,3 +1,4 @@
+@using VendallionCMS.ManagedSites
 @using VendallionCMS.ManagedSites.Models
 @using VendallionCMS.ManagedSites.ViewModels
 @model ManagedSiteEditViewModel
@@ -7,63 +8,76 @@
     var formAction = Model.IsNew ? "Create" : "Edit";
 }
 
-<zone Name="Title"><h1>@title</h1></zone>
+<zone Name="Title"><h1>@RenderTitleSegments(title)</h1></zone>
 
 <form asp-action="@formAction" asp-route-code="@Model.Code" method="post">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
     @* Asked for once. Everything referring to this managed site refers to it by the code, so the
        editor shows it afterwards but does not offer it. *@
-    <div class="mb-3">
-        <label asp-for="Code" class="form-label">@T["Code"]</label>
-        @if (Model.IsNew)
-        {
-            <input asp-for="Code" class="form-control" autofocus
-                   maxlength="@VendallionCMS.ManagedSites.ManagedSitesConstants.Code.MaximumLength"
-                   aria-describedby="code-hint" />
-            <span asp-validation-for="Code" class="text-danger"></span>
-            <span class="hint" id="code-hint">
-                @T["Lowercase letters and digits, beginning with a letter, up to {0} characters. It cannot be changed later.",
-                    VendallionCMS.ManagedSites.ManagedSitesConstants.Code.MaximumLength]
-            </span>
-        }
-        else
-        {
-            <input class="form-control" value="@Model.Code" readonly aria-describedby="code-hint" />
-            <span class="hint" id="code-hint">@T["Fixed when the managed site was created."]</span>
-        }
+    <div class="ocat-wrapper" asp-validation-class-for="Code">
+        <label asp-for="Code" class="ocat-label@(Model.IsNew ? " ocat-label-required" : "")">@T["Code"]</label>
+        <div class="ocat-end">
+            @if (Model.IsNew)
+            {
+                <input asp-for="Code" class="form-control" autofocus
+                       maxlength="@ManagedSitesConstants.Code.MaximumLength" />
+                <span asp-validation-for="Code"></span>
+                <span class="hint">
+                    @T["Lowercase letters and digits, beginning with a letter, up to {0} characters. It cannot be changed later.",
+                        ManagedSitesConstants.Code.MaximumLength]
+                </span>
+            }
+            else
+            {
+                <input class="form-control" value="@Model.Code" readonly />
+                <span class="hint">@T["Fixed when the managed site was created."]</span>
+            }
+        </div>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="Name" class="form-label">@T["Name"]</label>
-        <input asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
-        <span class="hint">@T["The name must be unique within this site."]</span>
+    <div class="ocat-wrapper" asp-validation-class-for="Name">
+        <label asp-for="Name" class="ocat-label ocat-label-required">@T["Name"]</label>
+        <div class="ocat-end">
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name"></span>
+            <span class="hint">@T["The name must be unique within this site."]</span>
+        </div>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="Status" class="form-label">@T["Status"]</label>
-        <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<ManagedSiteStatus>()"></select>
-        <span class="hint">@T["Only enabled managed sites resolve requests and accept editor changes."]</span>
+    <div class="ocat-wrapper" asp-validation-class-for="Status">
+        <label asp-for="Status" class="ocat-label">@T["Status"]</label>
+        <div class="ocat-end">
+            <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<ManagedSiteStatus>()"></select>
+            <span class="hint">@T["Only enabled managed sites resolve requests and accept editor changes."]</span>
+        </div>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="Hostname" class="form-label">@T["Host name"]</label>
-        <input asp-for="Hostname" class="form-control" placeholder="contoso.com, www.contoso.com" />
-        <span asp-validation-for="Hostname" class="text-danger"></span>
-        <span class="hint">@T["One or more host names, separated by a comma or a space, exactly as a tenant declares its hosts. Leave empty to answer on every host this site serves."]</span>
-        <span class="hint">@T["A host name added here is also added to this site's host names, so the site answers on it."]</span>
+    <div class="ocat-wrapper" asp-validation-class-for="Hostname">
+        <label asp-for="Hostname" class="ocat-label">@T["Host name"]</label>
+        <div class="ocat-end">
+            <input asp-for="Hostname" class="form-control" placeholder="contoso.com, www.contoso.com" />
+            <span asp-validation-for="Hostname"></span>
+            <span class="hint">@T["One or more host names, separated by a comma or a space, exactly as a tenant declares its hosts. Leave empty to answer on every host this site serves."]</span>
+            <span class="hint">@T["A host name added here is also added to this site's host names, so the site answers on it."]</span>
+        </div>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="UrlPrefix" class="form-label">@T["URL prefix"]</label>
-        <input asp-for="UrlPrefix" class="form-control" placeholder="@T["shop"]" />
-        <span asp-validation-for="UrlPrefix" class="text-danger"></span>
-        <span class="hint">@T["A single path prefix, without leading or trailing slashes. Leave empty to answer at the root."]</span>
+    <div class="ocat-wrapper" asp-validation-class-for="UrlPrefix">
+        <label asp-for="UrlPrefix" class="ocat-label">@T["URL prefix"]</label>
+        <div class="ocat-end">
+            <input asp-for="UrlPrefix" class="form-control" placeholder="@T["shop"]" />
+            <span asp-validation-for="UrlPrefix"></span>
+            <span class="hint">@T["A single path prefix, without leading or trailing slashes. Leave empty to answer at the root."]</span>
+        </div>
     </div>
 
-    <div class="mb-3">
-        <button type="submit" class="btn btn-primary save">@T["Save"]</button>
-        <a asp-action="Index" class="btn btn-secondary">@T["Cancel"]</a>
+    @* Where the admin puts an editor's way out of a form: the actions offset under the fields, and
+       Cancel beside them, so leaving without saving does not mean finding the way back. *@
+    <div class="ocat-wrapper edit-item-secondary group">
+        <div class="ocat-end-offset edit-item-actions">
+            <button type="submit" class="btn btn-primary save mb-1">@T["Save"]</button>
+            <a asp-action="Index" class="btn btn-secondary cancel mb-1" role="button">@T["Cancel"]</a>
+        </div>
     </div>
 </form>

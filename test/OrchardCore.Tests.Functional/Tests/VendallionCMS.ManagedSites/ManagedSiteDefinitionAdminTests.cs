@@ -32,7 +32,7 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
 
             await CreateManagedSiteAsync(page, "Contoso", "contoso");
 
-            var row = page.Locator("tr", new PageLocatorOptions { HasText = "Contoso" }).First;
+            var row = Row(page, "Contoso");
             await Assertions.Expect(row).ToBeVisibleAsync();
             // The list names the managed site and links it to where it answers; the address itself is
             // in the editor rather than the row.
@@ -40,7 +40,7 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
 
             // The definition must survive the round trip through site settings, not just the redirect.
             await GotoIndexAsync(page);
-            await Assertions.Expect(page.Locator("tr", new PageLocatorOptions { HasText = "Contoso" }).First)
+            await Assertions.Expect(Row(page, "Contoso"))
                 .ToBeVisibleAsync();
 
             await row.Locator("a:has-text('Edit')").First.ClickAsync();
@@ -53,7 +53,7 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
             await page.ClickSaveAsync();
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-            await Assertions.Expect(page.Locator("tr", new PageLocatorOptions { HasText = "Contoso Renamed" }).First)
+            await Assertions.Expect(Row(page, "Contoso Renamed"))
                 .ToBeVisibleAsync();
         }
         finally
@@ -105,18 +105,19 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
         {
             await CreateManagedSiteAsync(page, "Northwind", "northwind");
 
-            var row = page.Locator("tr", new PageLocatorOptions { HasText = "Northwind" }).First;
+            var row = Row(page, "Northwind");
+            await row.Locator("button.dropdown-toggle").First.ClickAsync();
             await row.Locator("a:has-text('Delete')").First.ClickAsync();
             await page.ClickModalOkAsync();
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-            await Assertions.Expect(page.Locator("tr", new PageLocatorOptions { HasText = "Northwind" }))
+            await Assertions.Expect(page.Locator("li.list-group-item", new PageLocatorOptions { HasText = "Northwind" }))
                 .ToHaveCountAsync(0);
 
             // Deleting must release the URL, otherwise the mapping outlives the Managed Site.
             await CreateManagedSiteAsync(page, "Northwind Reborn", "northwind");
 
-            await Assertions.Expect(page.Locator("tr", new PageLocatorOptions { HasText = "Northwind Reborn" }).First)
+            await Assertions.Expect(Row(page, "Northwind Reborn"))
                 .ToBeVisibleAsync();
         }
         finally
@@ -157,14 +158,14 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
         }
     }
 
+    private static ILocator Row(IPage page, string name)
+        => page.Locator("li.list-group-item", new PageLocatorOptions { HasText = name }).First;
+
     private static async Task<string> NameLinkAsync(IPage page, string name)
     {
-        var cell = page.Locator("tbody tr", new PageLocatorOptions { HasText = name }).First
-            .Locator("td")
-            .First
-            .Locator("a");
+        var link = Row(page, name).Locator(".contentitem a");
 
-        return await cell.CountAsync() == 0 ? null : await cell.GetAttributeAsync("href");
+        return await link.CountAsync() == 0 ? null : await link.GetAttributeAsync("href");
     }
 
     private async Task CreateManagedSiteAsync(IPage page, string name, string urlPrefix, string hostname = null)

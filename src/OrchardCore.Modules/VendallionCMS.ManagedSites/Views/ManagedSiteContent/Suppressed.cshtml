@@ -35,11 +35,13 @@ else
                         <td>@item.SourceContentItemId</td>
                         <td><span class="badge bg-warning text-dark">@item.SuppressionReason</span></td>
                         <td class="text-end">
-                            <a class="btn btn-secondary btn-sm"
-                               asp-action="Edit" asp-controller="Admin" asp-area="OrchardCore.Contents"
-                               asp-route-contentItemId="@item.OverrideContentItemId"
-                               asp-route-returnUrl="@FullRequestPath"
-                               aria-label="@T["Open your version of {0}", item.SourceContentItemId]">@T["Open"]</a>
+                            <div class="actions">
+                                <a class="btn btn-sm btn-primary edit"
+                                   asp-action="Edit" asp-controller="Admin" asp-area="OrchardCore.Contents"
+                                   asp-route-contentItemId="@item.OverrideContentItemId"
+                                   asp-route-returnUrl="@FullRequestPath"
+                                   aria-label="@T["Edit your version of {0}", item.SourceContentItemId]"><span>@T["Edit"]</span></a>
+                            </div>
                         </td>
                     </tr>
                 }

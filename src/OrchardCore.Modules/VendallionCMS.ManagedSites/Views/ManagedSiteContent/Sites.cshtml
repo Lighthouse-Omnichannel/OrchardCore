@@ -2,34 +2,47 @@
 
 <zone Name="Title"><h1>@RenderTitleSegments(T["Choose a managed site"])</h1></zone>
 
-<p class="text-muted">
-    @T["Everything you edit and preview applies to the managed site you open, and to that one only."]
-</p>
+<div class="card text-bg-theme mb-3 position-sticky action-bar">
+    <div class="card-body">
+        <span class="hint mb-0">@T["Everything you edit and preview applies to the managed site you open, and to that one only."]</span>
+    </div>
+</div>
 
 @* Links rather than a form: opening a managed site is going somewhere, and the address says which one,
    so it can be bookmarked, shared and opened twice over. *@
 <ul class="list-group">
+    <li class="list-group-item text-bg-theme">
+        <div class="row gx-3">
+            <div class="col">
+                <span class="text-nowrap">@T.Plural(Model.ManagedSites.Count, "{0} managed site you can work on", "{0} managed sites you can work on")</span>
+            </div>
+        </div>
+    </li>
+
     @foreach (var managedSite in Model.ManagedSites)
     {
         <li class="list-group-item list-group-item-action">
-            <div class="row gx-3 align-items-center">
-                <div class="col">
-                    <a asp-action="Index" asp-route-managedSiteCode="@managedSite.Code"
-                       class="link-body-emphasis text-decoration-underline">
-                        <strong>@managedSite.Name</strong>
-                    </a>
-                    <span class="hint d-block">
-                        @(string.IsNullOrEmpty(managedSite.Hostname)
-                            ? string.IsNullOrEmpty(managedSite.UrlPrefix)
-                                ? T["Answers on this site's own address"]
-                                : T["Answers under /{0}", managedSite.UrlPrefix]
-                            : T["Answers on {0}", managedSite.Hostname])
-                    </span>
+            <div class="row">
+                <div class="col-lg col-12 title d-flex align-items-center">
+                    <div class="summary d-flex flex-column">
+                        <div class="contentitem">
+                            <a asp-action="Index" asp-route-managedSiteCode="@managedSite.Code">@managedSite.Name</a>
+                        </div>
+                        <span class="hint">
+                            @(string.IsNullOrEmpty(managedSite.Hostname)
+                                ? string.IsNullOrEmpty(managedSite.UrlPrefix)
+                                    ? T["Answers on this site's own address"]
+                                    : T["Answers under /{0}", managedSite.UrlPrefix]
+                                : T["Answers on {0}", managedSite.Hostname])
+                        </span>
+                    </div>
                 </div>
-                <div class="col-auto">
-                    <a class="btn btn-primary btn-sm"
-                       asp-action="Index" asp-route-managedSiteCode="@managedSite.Code"
-                       aria-label="@T["Work on {0}", managedSite.Name]">@T["Open"]</a>
+                <div class="col-lg-auto col-12 d-flex justify-content-end">
+                    <div class="actions">
+                        <a class="btn btn-sm btn-primary"
+                           asp-action="Index" asp-route-managedSiteCode="@managedSite.Code"
+                           aria-label="@T["Work on {0}", managedSite.Name]"><span>@T["Open"]</span></a>
+                    </div>
                 </div>
             </div>
         </li>
