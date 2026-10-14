@@ -87,7 +87,7 @@ public sealed class ManagedSiteDefinitionAdminTests : CmsTestBase, IClassFixture
             await Assertions.Expect(page.GetByText("Another managed site already answers on that address.")).ToBeVisibleAsync();
 
             await GotoIndexAsync(page);
-            await Assertions.Expect(page.Locator("tr", new PageLocatorOptions { HasText = "Fabrikam Clone" }))
+            await Assertions.Expect(page.Locator("li.list-group-item", new PageLocatorOptions { HasText = "Fabrikam Clone" }))
                 .ToHaveCountAsync(0);
         }
         finally

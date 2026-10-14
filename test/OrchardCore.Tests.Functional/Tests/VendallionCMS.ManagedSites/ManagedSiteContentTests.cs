@@ -282,7 +282,7 @@ public sealed class ManagedSiteContentTests : CmsTestBase, IClassFixture<CmsSetu
     {
         await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Index");
 
-        var href = await page.Locator("tr", new PageLocatorOptions { HasText = name })
+        var href = await page.Locator("li.list-group-item", new PageLocatorOptions { HasText = name })
             .First
             .Locator("a[href*='ManagedSites/Edit/']")
             .First
