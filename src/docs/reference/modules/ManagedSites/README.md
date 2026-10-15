@@ -158,6 +158,7 @@ Which managed site is being worked on is in the address — `/Admin/ManagedSites
 than remembered. An editor can see which site they are on, link to it, bookmark it, and keep two open at
 once. Naming one decides nothing: the code is checked against their clearance on every request, so a
 bookmark kept after the clearance was withdrawn is refused rather than honoured.
+
 Creating an override copies the blueprint's content, so they change what differs rather than retyping
 the item. Creating and publishing it needs managed-site clearance alone — no permission over the
 tenant's content.
@@ -178,6 +179,22 @@ saying which managed site it belongs to and which item it replaces.
     what renders. A managed site that overrides a page therefore stops seeing its own overrides of that
     page's sections until the page override is removed. This is deliberate — the override stands in for
     the item rather than extending it — but it surprises editors who meet it by accident.
+
+### What a managed site cannot author
+
+Everything a managed site holds answers an item the Site Blueprint placed and put in scope. A managed
+site cannot create content of its own, and cannot change the shape of content: it cannot define a
+content type, attach Managed Content to one, or alter either scope. Those are the blueprint's
+decisions, and an editor holding **Edit Managed Site content** reaches none of them.
+
+The one way a managed site adds something is through a container. The blueprint places a container that
+holds children — a page with sections, a menu with entries — and puts it in the site's edit scope. The
+site overrides that container and supplies its own children in it. What is added that way is still
+inside something the blueprint chose to put there.
+
+That is what keeps the shared case cheap. Sites built on one blueprint differ where somebody decided
+they differ, and a site that could invent structure of its own would stop being a variation of the
+blueprint and start being a site the blueprint cannot describe.
 
 ## How composition works
 
