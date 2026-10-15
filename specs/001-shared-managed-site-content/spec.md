@@ -66,9 +66,10 @@ Lets start with this context, and try to create the spec"
 
 ### Session 2026-10-15
 
-- Q: How is media governed for a Managed Site? → A: Each Managed Site gets a media folder of its own, named by its code, and the Site Blueprint administrator decides which folders its editors see using the platform's own per-folder media permissions. The feature adds a folder convention, not a boundary: nothing managed-site-specific is enforced over media paths.
+- Q: How is media governed for a Managed Site? → A: Each Managed Site has a media folder of its own. Its editors read and write that folder, read the Site Blueprint folders the blueprint administrator grants them, and hold nothing over the folders of Managed Sites they do not work on. The feature supplies the folder and its naming; the grants are the platform's own per-folder media permissions.
+- Q: Is that a real boundary or only a tidy arrangement? → A: A real one, enforced by the platform wherever media authorization is asked, which covers the media library, the media picker and upload alike. Reading a folder is a permission held per folder, and writing outside the caller's own folder needs a permission a Managed Site editor is not given. Nothing relies on a folder being merely hidden from a listing.
+- Q: May a Managed Site editor upload into the Site Blueprint's folders? → A: Not by default. Blueprint folders are granted for reading, so a Managed Site reuses the blueprint's assets without being able to change what every other site sees. A Site Blueprint administrator who wants to grant more can.
 - Q: Does composition apply to media? → A: No. An asset referenced by composed content resolves to the same file whatever Managed Site the request resolved to. A Managed Site that needs a different image overrides the content item that references it.
-- Q: May a Managed Site editor upload into the Site Blueprint's folders? → A: That is the Site Blueprint administrator's decision, made with the platform's media permissions. The feature neither grants it nor refuses it.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -190,7 +191,8 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - Display scope excludes the Site Blueprint context; requests that resolve to no managed site must not render the item.
 - A Managed Site is deleted and later defined again with the same code; it finds the earlier site's assets, because the folder is named by the code and the code is what identifies a Managed Site.
 - A Managed Site's media folder is removed from the media library directly while published content still references assets in it; the references break exactly as they would for any other content, and nothing in this feature repairs them.
-- Two Managed Sites are granted view access to the same folder; both see the same assets, which is the intended behaviour and not a leak.
+- A Site Blueprint administrator deliberately grants two Managed Sites read access to the same folder; both see the same assets, which is a decision rather than a leak.
+- An editor works on more than one Managed Site; they read every folder they are granted, and which folder they may write to must still resolve to exactly one Managed Site.
 
 ## Requirements *(mandatory)*
 
@@ -273,10 +275,14 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - **FR-052**: Each Managed Site MUST have a media folder of its own, for the assets only that site uses.
 - **FR-053**: The folder MUST be named by the Managed Site code, which is fixed for the life of the site, so that the folder an asset lives in never changes under content that references it.
 - **FR-054**: The folder MUST be created when it is first needed rather than when the Managed Site is defined, so a site that stores nothing leaves no empty folder behind.
-- **FR-055**: Which media folders a Managed Site editor may see MUST be decided by the Site Blueprint administrator through the platform's own per-folder media permissions. This feature MUST NOT define a media permission of its own.
-- **FR-056**: The feature MUST NOT enforce a media boundary between Managed Sites. An editor who may browse the media library may see another Managed Site's folder, and two Managed Sites granted the same folder see the same assets.
-- **FR-057**: Media MUST NOT be composed per Managed Site. An asset referenced by content resolves to the same file whichever Managed Site the request resolved to; differing by site is done by overriding the content item that references the asset.
-- **FR-058**: Deleting a Managed Site MUST NOT delete its media folder, because published content may still reference assets in it and the deletion could not be undone.
+- **FR-055**: A Managed Site editor MUST be able to read and write their Managed Site's folder.
+- **FR-056**: A Managed Site editor MUST be able to read the Site Blueprint folders the Site Blueprint administrator grants them, so blueprint assets can be reused without being copied.
+- **FR-057**: A Managed Site editor MUST NOT be granted reading or writing over the folder of a Managed Site they do not work on.
+- **FR-058**: A Managed Site editor MUST NOT be able to write outside their own Managed Site's folder, so one site cannot replace or delete an asset another site or the Site Blueprint is serving.
+- **FR-059**: These MUST be enforced as authorization decisions on the media path, wherever the platform asks one, so the rule holds for the media library, the media picker, direct upload and deletion alike, rather than by hiding a folder from a listing.
+- **FR-060**: The grants MUST be expressed with the platform's own per-folder media permissions. This feature MUST NOT define a media permission of its own.
+- **FR-061**: Media MUST NOT be composed per Managed Site. An asset referenced by content resolves to the same file whichever Managed Site the request resolved to; differing by site is done by overriding the content item that references the asset.
+- **FR-062**: Deleting a Managed Site MUST NOT delete its media folder, because published content may still reference assets in it and the deletion could not be undone.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -321,6 +327,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - **SC-020**: 95% of managed-site administrators can locate an editable item and publish an override in under 3 minutes.
 - **SC-021**: 100% of overridden container items render their override's children and none of the original container's children.
 - **SC-022**: 100% of Managed Sites resolve to exactly one media folder, named by their code, and no two Managed Sites resolve to the same folder.
+- **SC-023**: 100% of attempts by a Managed Site editor to write outside their own Managed Site's folder are refused, whether made through the media library, the media picker, or a direct request.
 
 ## Assumptions
 
@@ -341,9 +348,10 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - A managed site can add content only where the Site Blueprint placed a container item carrying managed content; the managed site overrides that container and supplies its own child items. Standalone managed-site items outside any blueprint-placed container are out of scope for this version.
 - Override content items use the same content type as their source item so editors see a familiar editor and the platform validates content consistently.
 - Managed content is opt-in per content type, so existing sites are unaffected until a blueprint administrator attaches it.
-- Media remains the platform's. Its permissions, folder structure, asset cache and upload rules apply unchanged; Managed Sites add a folder convention on top of them rather than a second media system.
-- The platform's per-folder media permissions are how a Site Blueprint administrator decides which folders a Managed Site editor sees. Without that capability enabled, media permissions are tenant-wide, and an editor granted media access at all sees every folder including other Managed Sites'.
-- A Managed Site's media folder is a place to put things, not a place things are kept safe. Anyone who may read the media library may read it, and an editor cleared for one Managed Site is not thereby prevented from reading another's assets. Assets that must not be seen by another Managed Site's editors do not belong in this tenant.
+- Media remains the platform's. Its permissions, folder structure, asset cache and upload rules apply unchanged; Managed Sites add a folder and its naming on top of them rather than a second media system.
+- The platform's per-folder media capability must be enabled for any of this to hold. Without it, media permissions are tenant-wide: an editor granted media access at all reaches every folder, including other Managed Sites'.
+- Confining writing to one folder is the platform's existing rule about a caller's own folder, so a Managed Site's folder lives where that rule applies.
+- The boundary is only as good as the grants. A Site Blueprint administrator can grant a Managed Site editor more than this feature intends, and nothing here prevents that. What the feature settles is that the grants it arranges do not reach another Managed Site's folder.
 
 ## Out of Scope
 
@@ -351,9 +359,9 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - Partial or field-level merging between original content and override content; an override replaces the item's content.
 - Cross-managed-site inheritance, where one managed site derives content from another.
 - Managed-site authoring of blueprint structure, content type definitions, or managed content scope configuration.
-- Enforcing a media boundary between managed sites: refusing a managed-site editor a media path outside their own folder, or hiding one managed site's assets from another's editors.
 - Per-managed-site substitution of an asset referenced by shared content.
 - Quotas or limits on what a managed site may store.
+- Hiding a published asset's URL from somebody who already holds it. The boundary governs who may browse, upload and delete through the admin, not who may fetch a file whose address is known; securing delivery itself is the platform's own concern.
 
 ## Naming Decisions
 
