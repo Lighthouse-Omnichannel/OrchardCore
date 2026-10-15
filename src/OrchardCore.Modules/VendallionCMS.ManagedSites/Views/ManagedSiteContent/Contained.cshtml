@@ -11,10 +11,22 @@
                 <div class="col">
                     <div class="has-search">
                         <i class="fa-solid fa-search form-control-feedback" aria-hidden="true"></i>
-                        <label asp-for="ContentType" class="visually-hidden">@T["Content type"]</label>
-                        <input asp-for="ContentType" class="form-control" type="search"
-                               placeholder="@T["Filter by content type"]" inputmode="search" />
+                        <label asp-for="DisplayText" class="visually-hidden">@T["Search"]</label>
+                        <input asp-for="DisplayText" class="form-control" type="search"
+                               placeholder="@T["Search"]" inputmode="search" />
                     </div>
+                </div>
+                @* Chosen from what is there rather than typed: an editor who misspells a type name
+                   gets an empty list and nothing saying why. *@
+                <div class="col-auto">
+                    <label asp-for="ContentType" class="visually-hidden">@T["Content type"]</label>
+                    <select asp-for="ContentType" class="form-select">
+                        <option value="">@T["All types"]</option>
+                        @foreach (var contentType in Model.ContentTypes)
+                        {
+                            <option value="@contentType" selected="@(string.Equals(Model.ContentType, contentType, StringComparison.OrdinalIgnoreCase))">@contentType</option>
+                        }
+                    </select>
                 </div>
                 <div class="col-auto">
                     <label asp-for="OverrideStatus" class="visually-hidden">@T["Show"]</label>

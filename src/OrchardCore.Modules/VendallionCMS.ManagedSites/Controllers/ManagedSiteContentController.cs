@@ -90,6 +90,7 @@ public sealed class ManagedSiteContentController : Controller
     /// <summary>
     /// Lists what the active Managed Site may customize.
     /// </summary>
+    /// <param name="displayText">Part of what an item is called, or nothing for all of them.</param>
     /// <param name="contentType">One content type, or nothing for all of them.</param>
     /// <param name="overrideStatus">One override status, or nothing for all of them.</param>
     /// <param name="pagerParameters">Which page to show, and how large.</param>
@@ -97,6 +98,7 @@ public sealed class ManagedSiteContentController : Controller
     [Admin("ManagedSites/Content/{managedSiteCode}", "ManagedSiteContentIndex")]
     public async Task<IActionResult> Index(
         string managedSiteCode,
+        string displayText,
         string contentType,
         string overrideStatus,
         PagerParameters pagerParameters)
@@ -120,11 +122,16 @@ public sealed class ManagedSiteContentController : Controller
 
         var listing = await _listService.ListAsync(
             scope.ManagedSite.Code,
-            new ManagedContentListQuery(contentType, status, pager.Page, pager.PageSize));
+            new ManagedContentListQuery(contentType, status, pager.Page, pager.PageSize, displayText));
 
         // Carried onto the page links, so paging past the first page does not quietly drop the filter
         // the editor is looking through.
         var routeData = new RouteData();
+
+        if (!string.IsNullOrEmpty(displayText))
+        {
+            routeData.Values.TryAdd(nameof(displayText), displayText);
+        }
 
         if (!string.IsNullOrEmpty(contentType))
         {
@@ -145,7 +152,9 @@ public sealed class ManagedSiteContentController : Controller
             TotalCount = listing.TotalCount,
             StartIndex = listing.TotalCount == 0 ? 0 : ((pager.Page - 1) * pager.PageSize) + 1,
             Pager = await _shapeFactory.PagerAsync(pager, listing.TotalCount, routeData),
+            DisplayText = displayText,
             ContentType = contentType,
+            ContentTypes = listing.ContentTypes,
             OverrideStatus = overrideStatus,
         });
     }
@@ -191,6 +200,7 @@ public sealed class ManagedSiteContentController : Controller
     /// rather than beside it.
     /// </remarks>
     /// <param name="sourceContentItemId">The item whose contents to list.</param>
+    /// <param name="displayText">Part of what an item is called, or nothing for all of them.</param>
     /// <param name="contentType">One content type, or nothing for all of them.</param>
     /// <param name="overrideStatus">One override status, or nothing for all of them.</param>
     /// <param name="pagerParameters">Which page to show, and how large.</param>
@@ -198,6 +208,7 @@ public sealed class ManagedSiteContentController : Controller
     public async Task<IActionResult> Contained(
         string managedSiteCode,
         string sourceContentItemId,
+        string displayText,
         string contentType,
         string overrideStatus,
         PagerParameters pagerParameters)
@@ -234,10 +245,15 @@ public sealed class ManagedSiteContentController : Controller
         var listing = await _listService.ListContainedAsync(
             scope.ManagedSite.Code,
             sourceContentItemId,
-            new ManagedContentListQuery(contentType, status, pager.Page, pager.PageSize));
+            new ManagedContentListQuery(contentType, status, pager.Page, pager.PageSize, displayText));
 
         var routeData = new RouteData();
         routeData.Values.TryAdd(nameof(sourceContentItemId), sourceContentItemId);
+
+        if (!string.IsNullOrEmpty(displayText))
+        {
+            routeData.Values.TryAdd(nameof(displayText), displayText);
+        }
 
         if (!string.IsNullOrEmpty(contentType))
         {
@@ -263,7 +279,9 @@ public sealed class ManagedSiteContentController : Controller
             TotalCount = listing.TotalCount,
             StartIndex = listing.TotalCount == 0 ? 0 : ((pager.Page - 1) * pager.PageSize) + 1,
             Pager = await _shapeFactory.PagerAsync(pager, listing.TotalCount, routeData),
+            DisplayText = displayText,
             ContentType = contentType,
+            ContentTypes = listing.ContentTypes,
             OverrideStatus = overrideStatus,
         });
     }

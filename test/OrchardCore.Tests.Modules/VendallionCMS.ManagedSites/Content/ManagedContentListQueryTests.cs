@@ -154,6 +154,79 @@ public class ManagedContentListQueryTests
         Assert.Equal(2, Assert.Single(listing.Items).ContainedItemCount);
     }
 
+    [Fact]
+    public void SearchingMatchesWhatAnItemIsCalled_RatherThanItsType()
+    {
+        var listing = ManagedContentListService.ApplyQuery(
+            [Named("a", "Where we are"), Named("b", "What we do"), Named("c", "Footer note")],
+            new ManagedContentListQuery(DisplayText: "we "));
+
+        Assert.Equal(["a", "b"], listing.Items.Select(item => item.SourceContentItemId));
+        Assert.Equal(2, listing.TotalCount);
+    }
+
+    [Fact]
+    public void SearchingIgnoresCaseAndSurroundingSpace()
+    {
+        // An editor typing into a search box is not spelling an identifier.
+        var listing = ManagedContentListService.ApplyQuery(
+            [Named("a", "Where we are"), Named("b", "Footer note")],
+            new ManagedContentListQuery(DisplayText: "  WHERE  "));
+
+        Assert.Equal(["a"], listing.Items.Select(item => item.SourceContentItemId));
+    }
+
+    [Fact]
+    public void SearchingForTheContainer_FindsWhatIsInsideIt()
+    {
+        // A contained item is called by its container, so a search for the page finds its sections.
+        var listing = ManagedContentListService.ApplyQuery(
+            [Named("a", "Services (Home page)"), Named("b", "Footer note")],
+            new ManagedContentListQuery(DisplayText: "home page"));
+
+        Assert.Equal(["a"], listing.Items.Select(item => item.SourceContentItemId));
+    }
+
+    [Fact]
+    public void SearchingAndChoosingAType_NarrowTogether()
+    {
+        var listing = ManagedContentListService.ApplyQuery(
+            [Typed("a", "Page"), Typed("b", "Section"), Typed("c", "Page")],
+            new ManagedContentListQuery(ContentType: "Page", DisplayText: "c"));
+
+        Assert.Equal(["c"], listing.Items.Select(item => item.SourceContentItemId));
+    }
+
+    [Fact]
+    public void TheTypesOnOffer_AreTheOnesPresent()
+    {
+        var listing = ManagedContentListService.ApplyQuery(
+            [Typed("a", "Page"), Typed("b", "Section"), Typed("c", "Page")],
+            new ManagedContentListQuery());
+
+        Assert.Equal(["Page", "Section"], listing.ContentTypes);
+    }
+
+    [Fact]
+    public void TheTypesOnOffer_SurviveNarrowingToOneOfThem()
+    {
+        // Offering only the chosen type would leave an editor no way back to the rest.
+        var listing = ManagedContentListService.ApplyQuery(
+            [Typed("a", "Page"), Typed("b", "Section")],
+            new ManagedContentListQuery(ContentType: "Page"));
+
+        Assert.Equal(["Page", "Section"], listing.ContentTypes);
+        Assert.Equal(["a"], listing.Items.Select(item => item.SourceContentItemId));
+    }
+
+    private static ManagedContentListItem Named(string id, string displayText)
+    {
+        var item = Item(id);
+        item.DisplayText = displayText;
+
+        return item;
+    }
+
     private static ManagedContentListItem Typed(string id, string contentType)
     {
         var item = Item(id);

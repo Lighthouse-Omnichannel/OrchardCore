@@ -52,6 +52,7 @@ public interface IManagedContentListService
 /// <param name="OverrideStatus">One override status, or <see langword="null" /> for all of them.</param>
 /// <param name="Page">The one-based page number.</param>
 /// <param name="PageSize">How many items a page holds, clamped to between one and two hundred.</param>
+/// <param name="DisplayText">Part of what an item is called, or <see langword="null" /> for all of them.</param>
 /// <remarks>
 /// A record rather than a record struct, so that the defaults named here are the ones an unspecified
 /// query gets. A struct is always constructible with no arguments at all, which would zero every value
@@ -61,7 +62,8 @@ public sealed record ManagedContentListQuery(
     string ContentType = null,
     ManagedContentOverrideStatus? OverrideStatus = null,
     int Page = 1,
-    int PageSize = 50);
+    int PageSize = 50,
+    string DisplayText = null);
 
 /// <summary>
 /// One page of what a Managed Site may customize.
@@ -70,7 +72,17 @@ public sealed record ManagedContentListQuery(
 /// <param name="TotalCount">How many items the page was drawn from, before paging.</param>
 public sealed record ManagedContentListing(
     IReadOnlyList<ManagedContentListItem> Items,
-    int TotalCount);
+    int TotalCount)
+{
+    /// <summary>
+    /// Gets the content types present in what the Managed Site may customize.
+    /// </summary>
+    /// <remarks>
+    /// Taken before the query narrows anything, so choosing a type does not remove every other type
+    /// from the list of types that can be chosen.
+    /// </remarks>
+    public IReadOnlyList<string> ContentTypes { get; init; } = [];
+}
 
 /// <summary>
 /// Lists what a Managed Site may customize.
@@ -200,6 +212,9 @@ public sealed class ManagedContentListService : IManagedContentListService
     /// Content type is narrowed here as well, rather than against the index rows, so that it narrows
     /// what is listed without also narrowing what a container reports holding. Filtering earlier made a
     /// page claim to hold nothing as soon as the list was narrowed to anything but its sections.
+    ///
+    /// Searching matches what an item is called, which for an item stored inside another includes the
+    /// name of the container: a search for a page finds both the page and the sections in it.
     /// </remarks>
     /// <param name="items">Everything the Managed Site may customize.</param>
     /// <param name="query">What to narrow it to, and which page of it.</param>
@@ -208,6 +223,22 @@ public sealed class ManagedContentListService : IManagedContentListService
         IReadOnlyList<ManagedContentListItem> items,
         ManagedContentListQuery query)
     {
+        // Offered before anything is narrowed, so the types on offer stay the same whatever is chosen.
+        var contentTypes = items
+            .Select(item => item.ContentType)
+            .Where(contentType => !string.IsNullOrEmpty(contentType))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(contentType => contentType, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (!string.IsNullOrWhiteSpace(query.DisplayText))
+        {
+            var search = query.DisplayText.Trim();
+
+            items = [.. items.Where(item =>
+                item.DisplayText?.Contains(search, StringComparison.OrdinalIgnoreCase) == true)];
+        }
+
         if (!string.IsNullOrEmpty(query.ContentType))
         {
             items = [.. items.Where(item =>
@@ -222,7 +253,10 @@ public sealed class ManagedContentListService : IManagedContentListService
         var take = Math.Clamp(query.PageSize, 1, 200);
         var skip = Math.Max(query.Page - 1, 0) * take;
 
-        return new ManagedContentListing([.. items.Skip(skip).Take(take)], items.Count);
+        return new ManagedContentListing([.. items.Skip(skip).Take(take)], items.Count)
+        {
+            ContentTypes = contentTypes,
+        };
     }
 
     /// <summary>

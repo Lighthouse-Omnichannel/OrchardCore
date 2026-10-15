@@ -47,7 +47,7 @@ public class ManagedSiteContentAccessTests
     {
         var context = new ContentContext(authorized: false);
 
-        Assert.IsType<ForbidResult>(await context.Controller.Index("sitea", null, null, new PagerParameters()));
+        Assert.IsType<ForbidResult>(await context.Controller.Index("sitea", null, null, null, new PagerParameters()));
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public class ManagedSiteContentAccessTests
         var context = new ContentContext(clearance: []);
 
         Assert.IsType<ForbidResult>(
-            await context.Controller.Index("sitea", null, null, new PagerParameters()));
+            await context.Controller.Index("sitea", null, null, null, new PagerParameters()));
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class ManagedSiteContentAccessTests
             managedSites: [Site("sitea"), Site("siteb")]);
 
         Assert.IsType<ForbidResult>(
-            await context.Controller.Index("siteb", null, null, new PagerParameters()));
+            await context.Controller.Index("siteb", null, null, null, new PagerParameters()));
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class ManagedSiteContentAccessTests
             managedSites: [Site("sitea"), Site("siteb")]);
 
         var result = Assert.IsType<ViewResult>(
-            await context.Controller.Index("siteb", null, null, new PagerParameters()));
+            await context.Controller.Index("siteb", null, null, null, new PagerParameters()));
 
         Assert.Equal("siteb", Assert.IsType<ManagedSiteContentListViewModel>(result.Model).ManagedSite.Code);
     }
@@ -156,7 +156,7 @@ public class ManagedSiteContentAccessTests
         var context = new ContentContext(clearance: ["sitea:edit"]);
         context.WithSource(ManagedContentScope.Selected("siteb"));
 
-        Assert.IsType<NotFoundResult>(await context.Controller.Contained("sitea", "source-item", null, null, new PagerParameters()));
+        Assert.IsType<NotFoundResult>(await context.Controller.Contained("sitea", "source-item", null, null, null, new PagerParameters()));
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public class ManagedSiteContentAccessTests
         // nothing about what the Site Blueprint holds.
         var context = new ContentContext(clearance: ["sitea:edit"]);
 
-        Assert.IsType<NotFoundResult>(await context.Controller.Contained("sitea", "nothing-here", null, null, new PagerParameters()));
+        Assert.IsType<NotFoundResult>(await context.Controller.Contained("sitea", "nothing-here", null, null, null, new PagerParameters()));
     }
 
     [Fact]
@@ -177,7 +177,7 @@ public class ManagedSiteContentAccessTests
         context.WithSource(ManagedContentScope.All());
 
         var result = Assert.IsType<ViewResult>(
-            await context.Controller.Contained("sitea", "source-item", null, null, new PagerParameters()));
+            await context.Controller.Contained("sitea", "source-item", null, null, null, new PagerParameters()));
 
         Assert.Equal("source-item", Assert.IsType<ManagedSiteContentContainedViewModel>(result.Model).SourceContentItemId);
     }
@@ -191,11 +191,11 @@ public class ManagedSiteContentAccessTests
             clearance: ["sitea:edit", "siteb:edit"],
             managedSites: [Site("sitea"), Site("siteb")]);
 
-        Assert.IsType<ViewResult>(await context.Controller.Index("siteb", null, null, new PagerParameters()));
+        Assert.IsType<ViewResult>(await context.Controller.Index("siteb", null, null, null, new PagerParameters()));
 
         context.WithClearance("sitea:edit");
 
-        Assert.IsType<ForbidResult>(await context.Controller.Index("siteb", null, null, new PagerParameters()));
+        Assert.IsType<ForbidResult>(await context.Controller.Index("siteb", null, null, null, new PagerParameters()));
     }
 
     [Fact]
@@ -207,7 +207,7 @@ public class ManagedSiteContentAccessTests
 
         foreach (var result in new[]
         {
-            await context.Controller.Index("sitea", null, null, new PagerParameters()),
+            await context.Controller.Index("sitea", null, null, null, new PagerParameters()),
             await context.Controller.Suppressed("sitea"),
             await context.Controller.Preview("sitea"),
         })
@@ -221,10 +221,10 @@ public class ManagedSiteContentAccessTests
     {
         var context = new ContentContext(authorized: false);
 
-        Assert.IsType<ForbidResult>(await context.Controller.Index("sitea", null, null, new PagerParameters()));
+        Assert.IsType<ForbidResult>(await context.Controller.Index("sitea", null, null, null, new PagerParameters()));
         Assert.IsType<ForbidResult>(await context.Controller.Suppressed("sitea"));
         Assert.IsType<ForbidResult>(await context.Controller.Preview("sitea"));
-        Assert.IsType<ForbidResult>(await context.Controller.Contained("sitea", "source-item", null, null, new PagerParameters()));
+        Assert.IsType<ForbidResult>(await context.Controller.Contained("sitea", "source-item", null, null, null, new PagerParameters()));
         Assert.IsType<ForbidResult>(await context.Controller.Create("sitea", "source-item"));
         Assert.IsType<ForbidResult>(await context.Controller.Remove("sitea", "source-item"));
     }
@@ -274,7 +274,7 @@ public class ManagedSiteContentAccessTests
     {
         var context = new ContentContext(clearance: ["sitea"]);
 
-        var result = Assert.IsType<ViewResult>(await context.Controller.Index("sitea", null, null, new PagerParameters()));
+        var result = Assert.IsType<ViewResult>(await context.Controller.Index("sitea", null, null, null, new PagerParameters()));
 
         Assert.False(Assert.IsType<ManagedSiteContentListViewModel>(result.Model).CanEdit);
     }
@@ -284,7 +284,7 @@ public class ManagedSiteContentAccessTests
     {
         var context = new ContentContext(clearance: ["sitea:edit"]);
 
-        var result = Assert.IsType<ViewResult>(await context.Controller.Index("sitea", null, null, new PagerParameters()));
+        var result = Assert.IsType<ViewResult>(await context.Controller.Index("sitea", null, null, null, new PagerParameters()));
 
         Assert.True(Assert.IsType<ManagedSiteContentListViewModel>(result.Model).CanEdit);
     }
@@ -295,7 +295,7 @@ public class ManagedSiteContentAccessTests
         var context = new ContentContext(clearance: ["sitea:edit"]);
         context.WithSource(ManagedContentScope.All());
 
-        var result = Assert.IsType<ViewResult>(await context.Controller.Index("sitea", null, null, new PagerParameters()));
+        var result = Assert.IsType<ViewResult>(await context.Controller.Index("sitea", null, null, null, new PagerParameters()));
         var model = Assert.IsType<ManagedSiteContentListViewModel>(result.Model);
 
         Assert.True(model.CanEdit);

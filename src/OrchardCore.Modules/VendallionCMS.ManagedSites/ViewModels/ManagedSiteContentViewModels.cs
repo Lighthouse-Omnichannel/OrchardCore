@@ -34,9 +34,23 @@ public class ManagedSiteContentListViewModel
     public int EndIndex => StartIndex == 0 ? 0 : StartIndex + Items.Count - 1;
 
     /// <summary>
+    /// Gets or sets what the list is searched for, if anything.
+    /// </summary>
+    /// <remarks>
+    /// Matched against what an item is called rather than against its type, because that is what an
+    /// editor knows an item by. The type is chosen from what is there instead of typed.
+    /// </remarks>
+    public string DisplayText { get; set; }
+
+    /// <summary>
     /// Gets or sets the content type the list is narrowed to, if any.
     /// </summary>
     public string ContentType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the content types that can be chosen, which are the ones present.
+    /// </summary>
+    public IReadOnlyList<string> ContentTypes { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the override status the list is narrowed to, if any.
