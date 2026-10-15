@@ -70,6 +70,8 @@ Lets start with this context, and try to create the spec"
 - Q: Is that a real boundary or only a tidy arrangement? → A: A real one, enforced by the platform wherever media authorization is asked, which covers the media library, the media picker and upload alike. Reading a folder is a permission held per folder, and writing outside the caller's own folder needs a permission a Managed Site editor is not given. Nothing relies on a folder being merely hidden from a listing.
 - Q: May a Managed Site editor upload into the Site Blueprint's folders? → A: Not by default. Blueprint folders are granted for reading, so a Managed Site reuses the blueprint's assets without being able to change what every other site sees. A Site Blueprint administrator who wants to grant more can.
 - Q: Does composition apply to media? → A: No. An asset referenced by composed content resolves to the same file whatever Managed Site the request resolved to. A Managed Site that needs a different image overrides the content item that references it.
+- Q: Where in the media library does a Managed Site's folder sit? → A: At the root, named by the code. The platform resolves a folder's permission from the first segment of the path, so only a root folder can carry a permission of its own. A folder nested under a shared parent would be governed by the parent's permission and could not be told apart from its siblings.
+- Q: When is the folder created? → A: When the Managed Site is defined. A permission exists only for a folder that exists, so a folder created on first upload could not be granted to anyone before that upload, and the editor who needed it could not make it.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -274,7 +276,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 
 - **FR-052**: Each Managed Site MUST have a media folder of its own, for the assets only that site uses.
 - **FR-053**: The folder MUST be named by the Managed Site code, which is fixed for the life of the site, so that the folder an asset lives in never changes under content that references it.
-- **FR-054**: The folder MUST be created when it is first needed rather than when the Managed Site is defined, so a site that stores nothing leaves no empty folder behind.
+- **FR-054**: The folder MUST sit at the root of the media library and MUST be created when the Managed Site is defined, because a folder carries a permission of its own only when it is a root folder, and only once it exists.
 - **FR-055**: A Managed Site editor MUST be able to read and write their Managed Site's folder.
 - **FR-056**: A Managed Site editor MUST be able to read the Site Blueprint folders the Site Blueprint administrator grants them, so blueprint assets can be reused without being copied.
 - **FR-057**: A Managed Site editor MUST NOT be granted reading or writing over the folder of a Managed Site they do not work on.
@@ -352,6 +354,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - The platform's per-folder media capability must be enabled for any of this to hold. Without it, media permissions are tenant-wide: an editor granted media access at all reaches every folder, including other Managed Sites'.
 - Confining writing to one folder is the platform's existing rule about a caller's own folder, so a Managed Site's folder lives where that rule applies.
 - The boundary is only as good as the grants. A Site Blueprint administrator can grant a Managed Site editor more than this feature intends, and nothing here prevents that. What the feature settles is that the grants it arranges do not reach another Managed Site's folder.
+- The platform's permission to manage media is implied by the permission to manage one's own media, and writing to a folder is authorized by that permission together with the permission to view that folder. Read access to a root folder therefore carries write access to it for anybody who can open the media library at all. Keeping a folder readable but not writable is not something the grants can express, so FR-056 and FR-058 together need the feature to refuse the write, not merely to withhold a grant.
 
 ## Out of Scope
 
