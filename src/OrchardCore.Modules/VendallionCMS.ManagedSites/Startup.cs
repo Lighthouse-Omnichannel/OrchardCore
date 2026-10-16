@@ -131,6 +131,16 @@ public sealed class Startup : StartupBase
         // override content, and on nothing else.
         services.AddScoped<IAuthorizationHandler, ManagedSiteContentAuthorizationHandler>();
 
+        // ---- Media ----
+
+        // FR-052..FR-054: a Managed Site has a media folder of its own, at the root of the library and
+        // named by its code, because only a root folder can carry a permission of its own.
+        services.AddScoped<IManagedSiteMediaFolderService, ManagedSiteMediaFolderService>();
+
+        // FR-058..FR-059: the platform cannot grant a folder for reading without also granting it for
+        // writing, so keeping a Managed Site out of another's assets means refusing the write.
+        services.AddScoped<IAuthorizationHandler, ManagedSiteMediaAuthorizationHandler>();
+
         // ---- Managed Site content ----
 
         services.AddScoped<IManagedSitePreviewService, ManagedSitePreviewService>();

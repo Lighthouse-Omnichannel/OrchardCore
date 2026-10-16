@@ -12,6 +12,7 @@ public sealed partial class ManagedSiteService : IManagedSiteService
     private readonly ISiteService _siteService;
     private readonly IShellUrlSynchronizationService _shellUrlSynchronizationService;
     private readonly IManagedSiteCompositionCacheService _compositionCacheService;
+    private readonly IManagedSiteMediaFolderService _mediaFolderService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedSiteService" /> class.
@@ -21,14 +22,20 @@ public sealed partial class ManagedSiteService : IManagedSiteService
     /// <param name="compositionCacheService">
     /// The composition cache service, or <see langword="null" /> when composition is not being cached.
     /// </param>
+    /// <param name="mediaFolderService">
+    /// The Managed Site media folder service, or <see langword="null" /> when Managed Sites are stored
+    /// without anywhere to keep assets.
+    /// </param>
     public ManagedSiteService(
         ISiteService siteService,
         IShellUrlSynchronizationService shellUrlSynchronizationService,
-        IManagedSiteCompositionCacheService compositionCacheService = null)
+        IManagedSiteCompositionCacheService compositionCacheService = null,
+        IManagedSiteMediaFolderService mediaFolderService = null)
     {
         _siteService = siteService;
         _shellUrlSynchronizationService = shellUrlSynchronizationService;
         _compositionCacheService = compositionCacheService;
+        _mediaFolderService = mediaFolderService;
     }
 
     /// <summary>
@@ -135,6 +142,14 @@ public sealed partial class ManagedSiteService : IManagedSiteService
         site.Put(document);
 
         await _siteService.UpdateSiteSettingsAsync(site);
+
+        // Made here rather than on first upload, because a folder's permission exists only once the
+        // folder does: an editor cannot be granted their own folder before somebody creates it, and
+        // they are the one person who could not create it themselves.
+        if (_mediaFolderService is not null)
+        {
+            await _mediaFolderService.EnsureAsync(managedSite.Code);
+        }
     }
 
     /// <inheritdoc />

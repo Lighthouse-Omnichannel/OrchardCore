@@ -196,6 +196,65 @@ That is what keeps the shared case cheap. Sites built on one blueprint differ wh
 they differ, and a site that could invent structure of its own would stop being a variation of the
 blueprint and start being a site the blueprint cannot describe.
 
+## Media
+
+Every managed site has a folder of its own in the media library, at the root and named by its code, made
+when the site is defined. It is where that site's own assets go.
+
+It is at the root because the platform reads a folder's permission from the first part of a path, so a
+folder nested under a shared parent would be governed by the parent and could not be told apart from its
+siblings. It is made with the site because a permission exists only for a folder that exists: a folder
+made on first upload could be granted to nobody beforehand, and the editor who needed it would be the one
+person unable to make it.
+
+### What an editor may do
+
+| | Read | Write |
+| --- | --- | --- |
+| Their own managed site's folder | Yes | Yes |
+| A Site Blueprint folder they are granted | Yes | No |
+| Another managed site's folder | No | No |
+| A Site Blueprint folder they are not granted | No | No |
+
+Reading is granted per folder, so blueprint assets are shared by granting them and another managed site's
+folder is kept away by not granting it.
+
+Writing needs refusing rather than withholding. The platform's permission to manage media is implied by
+the permission to manage your own, and a write is authorized by that together with permission to view the
+folder being written to — so a grant that lets an editor read a folder would also let them change it.
+Managed Sites refuses a write to any folder but the editor's own, which is what keeps a blueprint folder
+readable without becoming everybody's to rewrite. The refusal is a decision on the path, so it holds for
+the media library, the media picker, upload, move, copy and delete alike.
+
+Two people are not subject to it: whoever may **Manage Managed Sites**, because a rule about managed site
+editors is not about them, and whoever holds **Manage Media For Others**, because granting that is saying
+the library is theirs.
+
+### Setting it up
+
+1. Enable the platform's **Secure Media** feature. Without it, media permissions are tenant-wide and an
+   editor granted media access at all reaches every folder.
+2. Give the managed site editor role **Manage Own Media**. That is what opens the media library, since the
+   permission to manage media is implied by it.
+3. Grant that role **View media content in folder '…'** for each Site Blueprint folder its editors should
+   be able to reuse.
+4. Grant each editor's role the same permission for the folders of the managed sites they work on, and for
+   no others.
+
+### What media does not do
+
+**Media is not composed.** An asset referenced by content resolves to the same file whichever managed site
+the request resolved to. A managed site that needs a different image overrides the content item that
+references it, which is the same mechanism as every other difference between sites.
+
+**A folder outlives its managed site.** Deleting a managed site leaves its folder, because published
+content may still reference what is in it and the deletion could not be undone. A managed site later
+defined again with the same code finds the earlier site's assets, since the code is what identifies a
+site.
+
+**An address already known is still an address.** The rules above govern who may browse, upload and delete
+through the admin. Whether somebody holding an asset's URL can fetch it is the platform's own concern.
+
 ## How composition works
 
 Content is swapped as it loads, before anything renders, so every consumer sees the managed site's
