@@ -38,6 +38,9 @@
         "OrchardCore.Html",
         "OrchardCore.Layers",
         "OrchardCore.Liquid",
+        "OrchardCore.Media",
+        // Without this, media permissions are tenant-wide and every grant below is meaningless.
+        "OrchardCore.Media.Security",
         "OrchardCore.Menu",
         "OrchardCore.Title",
         "OrchardCore.Widgets",
@@ -62,7 +65,28 @@
         {
           "Name": "Managed Site Content Editor",
           "Description": "Edits the content of the managed sites they hold clearance for.",
-          "Permissions": [ "EditManagedSiteContent", "AccessAdminPanel" ]
+          // ManageOwnMediaContent is what opens the media library: the permission to manage media is
+          // implied by it. ViewMediaContent_shared is the one blueprint folder every site may reuse;
+          // reading it is all they get, because writing anywhere but their own folder is refused.
+          "Permissions": [ "EditManagedSiteContent", "AccessAdminPanel", "ManageOwnMediaContent", "ViewMediaContent_shared" ]
+        },
+        // A folder is granted to a role and clearance is granted to a user, so the two are kept in step
+        // by hand. One role per managed site is what lets an editor of two sites hold both folders
+        // without everyone else holding them too.
+        {
+          "Name": "Alpha Assets",
+          "Description": "Reads and writes Alpha's own media folder.",
+          "Permissions": [ "ViewMediaContent_alpha" ]
+        },
+        {
+          "Name": "Beta Assets",
+          "Description": "Reads and writes Beta's own media folder.",
+          "Permissions": [ "ViewMediaContent_beta" ]
+        },
+        {
+          "Name": "Gamma Assets",
+          "Description": "Reads and writes Gamma's own media folder.",
+          "Permissions": [ "ViewMediaContent_gamma" ]
         }
       ]
     },
@@ -165,7 +189,7 @@
         {
           "UserName": "alphaUser",
           "Password": "Password1!",
-          "RoleNames": [ "Managed Site Content Editor" ],
+          "RoleNames": [ "Managed Site Content Editor", "Alpha Assets" ],
           "Grants": [
             { "ManagedSite": "Alpha", "Scopes": [ "edit", "publish", "preview" ] }
           ]
@@ -175,7 +199,8 @@
           // first. A user cleared for one managed site is scoped to it automatically.
           "UserName": "betaUser",
           "Password": "Password1!",
-          "RoleNames": [ "Managed Site Content Editor" ],
+          // Cleared for two managed sites, so holding two sites' folders as well.
+          "RoleNames": [ "Managed Site Content Editor", "Beta Assets", "Gamma Assets" ],
           "Grants": [
             { "ManagedSite": "Beta", "Scopes": [ "edit", "publish", "preview" ] },
             // No scope named: betaUser may read Gamma and change nothing on it.
@@ -185,11 +210,32 @@
         {
           "UserName": "gammaUser",
           "Password": "Password1!",
-          "RoleNames": [ "Managed Site Content Editor" ],
+          "RoleNames": [ "Managed Site Content Editor", "Gamma Assets" ],
           "Grants": [
             { "ManagedSite": "Gamma", "Scopes": [ "edit", "publish", "preview" ] }
           ]
         }
+      ]
+    },
+    {
+      // Assets to try the folder rules against. The managed sites' own folders are made when the sites
+      // are defined, a step above; these put something in each so there is something to see and move.
+      "name": "media",
+      "Files": [
+        {
+          // The Site Blueprint's shared folder. Every editor is granted it for reading, and no editor
+          // can write to it, which is the pair of rules worth seeing work.
+          "TargetPath": "shared/blueprint-mark.png",
+          "Base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+        },
+        {
+          // A blueprint folder nobody is granted. It should not appear for an editor at all.
+          "TargetPath": "restricted/not-for-sites.png",
+          "Base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+        },
+        { "TargetPath": "alpha/alpha-mark.png", "Base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" },
+        { "TargetPath": "beta/beta-mark.png", "Base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" },
+        { "TargetPath": "gamma/gamma-mark.png", "Base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" }
       ]
     },
     {

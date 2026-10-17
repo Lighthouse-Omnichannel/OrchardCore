@@ -241,6 +241,11 @@ the library is theirs.
 4. Grant each editor's role the same permission for the folders of the managed sites they work on, and for
    no others.
 
+A folder is granted to a role and clearance is granted to a user, so the two are kept in step by hand.
+That is why step 4 usually means a role per managed site rather than one role for every editor: an editor
+who works on two managed sites holds two of those roles, and nobody else holds either. The development
+recipe does exactly this, and is the quickest way to see the arrangement working.
+
 ### What media does not do
 
 **Media is not composed.** An asset referenced by content resolves to the same file whichever managed site
@@ -324,13 +329,21 @@ What it provisions:
 
 - Three managed sites, `Alpha`, `Beta` and `Gamma`, on the URL prefixes `/alpha`, `/beta` and `/gamma`.
   Prefixes rather than host names, so there is nothing to add to a host file and draft preview works.
-- A `Managed Site Content Editor` role holding `EditManagedSiteContent` and `AccessAdminPanel` — what an
-  editor needs, and deliberately not the permission to govern managed sites.
+- A `Managed Site Content Editor` role holding `EditManagedSiteContent`, `AccessAdminPanel` and
+  `ManageOwnMediaContent` — what an editor needs, and deliberately not the permission to govern managed
+  sites. It also holds reading on the `shared` folder, which every managed site may reuse.
+- An `Alpha Assets`, `Beta Assets` and `Gamma Assets` role holding one managed site's folder each.
+  `alphaUser` holds the first and `gammaUser` the third; `betaUser` holds the second and the third,
+  because they work on two managed sites. One role for every editor would have handed each of them every
+  folder.
 - Three editors in that role, `alphaUser`, `betaUser` and `gammaUser`, all with the password
   `Password1!`. Each is cleared for the managed site they are named for; `betaUser` is also cleared for
   Gamma, so the screen that offers the choice is reachable without granting clearance first.
 - A home page with three sections, a main menu with two entries, and a footer widget on a layer — one of
   each way content composes.
+- Media folders to try the rules against: `alpha`, `beta` and `gamma`, made when their managed sites are;
+  `shared`, the blueprint folder every editor may read; and `restricted`, a blueprint folder nobody is
+  granted. Each holds one placeholder image, so every grant has something to prove.
 
 The scopes are set so the content list has something to say in each direction:
 
@@ -346,6 +359,11 @@ The scopes are set so the content list has something to say in each direction:
 
 **Managed Sites → Content** goes straight to Alpha for `alphaUser`, because a user cleared for one
 managed site is not being offered a choice. For `betaUser` it asks which managed site to work on.
+
+The media rules show themselves under **Content → Media** as that same `alphaUser`: `alpha` and `shared`
+are there, and `beta`, `gamma` and `restricted` are not. Uploading into `alpha` works and uploading into
+`shared` is refused, which is the pair worth seeing, because no arrangement of grants could have
+expressed it.
 
 !!! warning "For development only"
     The recipe creates accounts with a password written in it. Do not run it anywhere that matters.
