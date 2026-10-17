@@ -32,10 +32,14 @@ public sealed class ManagedSiteMediaTests : CmsTestBase, IClassFixture<CmsSetupF
     [Fact]
     public async Task DevelopmentRecipe_GivesEachManagedSiteAFolderOfItsOwn()
     {
-        var page = await SignedInAsync("alphaUser");
+        // Asked as the administrator, because the whole point of the rules below is that no editor is
+        // shown all of these at once.
+        var page = await Fixture.CreatePageAsync();
 
         try
         {
+            await AuthHelper.LoginAsync(page, $"/{Tenant.Prefix}");
+
             var folders = await ReadRootFoldersAsync(page);
 
             Assert.Contains("alpha", folders);
@@ -147,7 +151,8 @@ public sealed class ManagedSiteMediaTests : CmsTestBase, IClassFixture<CmsSetupF
 
         var body = await response.JsonAsync();
 
-        return [.. body.Value.EnumerateArray()
+        // The endpoint answers with a page of folders rather than a bare list.
+        return [.. body.Value.GetProperty("items").EnumerateArray()
             .Select(entry => entry.GetProperty("name").GetString())];
     }
 

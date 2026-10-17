@@ -314,6 +314,14 @@ restored — no re-authoring.
 | `CapabilityDetached` | Managed Content was detached from the content type |
 | `ManagedSiteDisabled` | The managed site was switched off |
 
+!!! warning "A draftable type that is not versionable unpublishes when a draft is saved"
+    That is the platform's behaviour, not this feature's: a type marked draftable but not versionable
+    keeps one version, so saving a draft of a published item sets that item unpublished. It stops
+    rendering for everybody, leaves the managed site content list, and suppresses any override of it
+    with `SourceUnpublished` — all of which looks like the item vanishing for no reason. Mark the
+    content types a managed site may override **Versionable** as well as Draftable, and a draft sits
+    beside the published version instead of replacing it.
+
 A managed site has two states only, Enabled and Disabled. A disabled one resolves no requests and
 accepts no editor changes; its host names stay on the tenant, so its addresses still answer and serve
 Site Blueprint content rather than failing.

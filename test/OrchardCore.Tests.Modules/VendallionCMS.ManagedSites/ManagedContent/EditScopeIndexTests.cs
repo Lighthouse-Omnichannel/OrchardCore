@@ -66,6 +66,34 @@ public class EditScopeIndexTests
         Assert.Null(ManagedContentEditScopeIndexProvider.BuildRows(page));
     }
 
+    [Fact]
+    public void APublishedItemThatHasSinceBeenDrafted_IsStillOfferedAsPublished()
+    {
+        // Drafting leaves the published version where it was and starts a second one beside it, so the
+        // row describing what is being served must survive somebody beginning to change it.
+        var page = Container("page", isOverride: false);
+        page.Latest = false;
+        page.Published = true;
+
+        var rows = ManagedContentEditScopeIndexProvider.BuildRows(page);
+
+        Assert.All(rows, row => Assert.True(row.Published));
+    }
+
+    [Fact]
+    public void AnItemThatIsOnlyEverADraft_IsOfferedAsUnpublished()
+    {
+        // Nothing is being served for it, so a Managed Site has nothing to answer yet.
+        var page = Container("page", isOverride: false);
+        page.Latest = true;
+        page.Published = false;
+
+        var rows = ManagedContentEditScopeIndexProvider.BuildRows(page);
+
+        Assert.NotEmpty(rows);
+        Assert.All(rows, row => Assert.False(row.Published));
+    }
+
     /// <summary>
     /// Builds a container holding one section the blueprint opened to every Managed Site.
     /// </summary>
