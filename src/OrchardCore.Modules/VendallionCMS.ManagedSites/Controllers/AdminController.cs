@@ -7,7 +7,10 @@ using Microsoft.Extensions.Localization;
 using OrchardCore.Admin;
 using OrchardCore.DisplayManagement.Notify;
 using OrchardCore.Users;
+using OrchardCore.Users.Indexes;
 using OrchardCore.Users.Services;
+using YesSql;
+using ISession = YesSql.ISession;
 using VendallionCMS.ManagedSites.Models;
 using VendallionCMS.ManagedSites.Services;
 using VendallionCMS.ManagedSites.ViewModels;
@@ -24,6 +27,7 @@ public sealed class AdminController : Controller
     private readonly IAuthorizationService _authorizationService;
     private readonly IManagedSiteRoleService _roleService;
     private readonly UserManager<IUser> _userManager;
+    private readonly ISession _session;
     private readonly INotifier _notifier;
 
     internal readonly IStringLocalizer S;
@@ -42,6 +46,7 @@ public sealed class AdminController : Controller
         IAuthorizationService authorizationService,
         IManagedSiteRoleService roleService,
         UserManager<IUser> userManager,
+        ISession session,
         INotifier notifier,
         IStringLocalizer<AdminController> stringLocalizer,
         IHtmlLocalizer<AdminController> htmlLocalizer)
@@ -50,6 +55,7 @@ public sealed class AdminController : Controller
         _authorizationService = authorizationService;
         _roleService = roleService;
         _userManager = userManager;
+        _session = session;
         _notifier = notifier;
         S = stringLocalizer;
         H = htmlLocalizer;
@@ -381,15 +387,22 @@ public sealed class AdminController : Controller
         }
 
         // One more than the screen shows, so it can say the list was cut short without counting every
-        // user in the tenant.
-        var candidates = _userManager.Users
-            .OfType<OrchardCore.Users.Models.User>()
-            .Where(user => string.IsNullOrEmpty(search)
-                || user.NormalizedUserName.Contains(search.ToUpperInvariant())
-                || user.NormalizedEmail.Contains(search.ToUpperInvariant()))
-            .OrderBy(user => user.UserName)
-            .Take(Take * 2)
-            .ToArray()
+        // user in the tenant. Narrowed before paging, because the users already holding the site are
+        // dropped afterwards and paging first would give short pages.
+        var query = _session.Query<OrchardCore.Users.Models.User, UserIndex>();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var normalized = search.Trim().ToUpperInvariant();
+
+            query = query.Where(index =>
+                index.NormalizedUserName.Contains(normalized) || index.NormalizedEmail.Contains(normalized));
+        }
+
+        var candidates = (await query
+            .OrderBy(index => index.NormalizedUserName)
+            .Take((Take * 2) + holders.Count)
+            .ListAsync())
             .Where(user => !holders.Contains(user.UserId))
             .Select(user => new ManagedSiteAccessUser(user.UserId, user.UserName, user.Email))
             .ToArray();
