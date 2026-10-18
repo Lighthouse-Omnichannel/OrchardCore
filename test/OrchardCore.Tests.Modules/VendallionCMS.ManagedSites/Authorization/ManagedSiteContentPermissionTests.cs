@@ -154,7 +154,7 @@ public class ManagedSiteContentPermissionTests
             ManagedSitesTestData.ManagedSite("sitea"),
             ManagedSitesTestData.ManagedSite("siteb"));
 
-        return new ManagedSiteContentAuthorizationHandler(scaffold.ClearanceService);
+        return new ManagedSiteContentAuthorizationHandler(scaffold.ManagedSiteService, scaffold.Services);
     }
 
     private static ContentItem Override(string managedSiteCode)

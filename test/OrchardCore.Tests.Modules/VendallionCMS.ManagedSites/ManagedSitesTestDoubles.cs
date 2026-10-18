@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Microsoft.AspNetCore.Mvc.Localization;
 using System.Globalization;
@@ -58,13 +60,18 @@ public sealed class ManagedSiteContentTestContext
     public ManagedSiteContentTestContext(params ManagedSite[] managedSites)
     {
         ManagedSiteService = new FakeManagedSiteService(managedSites);
-        ClearanceService = new ManagedSiteClearanceService(
-            new ManagedSiteAuthorizationService(),
-            ManagedSiteService,
-            TimeProvider.System);
+
+        // The platform's own authorization, so the implications between a Managed Site's permissions
+        // are the ones that will decide this in production rather than ones a double was told about.
+        Services = ManagedSitesTestAuthorization.Build();
+        ClearanceService = new ManagedSiteClearanceService(ManagedSiteService, Services);
     }
 
     public FakeManagedSiteService ManagedSiteService { get; }
+
+    public IServiceProvider Services { get; }
+
+    public IAuthorizationService AuthorizationService => Services.GetRequiredService<IAuthorizationService>();
 
     public IManagedSiteClearanceService ClearanceService { get; }
 }

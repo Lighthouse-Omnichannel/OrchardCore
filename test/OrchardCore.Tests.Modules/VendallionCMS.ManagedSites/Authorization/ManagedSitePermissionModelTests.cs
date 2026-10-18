@@ -1,6 +1,8 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using OrchardCore.Security.Permissions;
+using VendallionCMS.ManagedSites.Models;
 using Xunit;
 
 namespace VendallionCMS.ManagedSites.Tests.Authorization;
@@ -20,7 +22,9 @@ public class ManagedSitePermissionModelTests
     [Fact]
     public async Task TheFeature_OffersGoverningAndEditingAndNothingElse()
     {
-        var provided = await new Permissions().GetPermissionsAsync();
+        // With no Managed Sites defined there is nothing to generate, so only the two that always
+        // exist are offered.
+        var provided = await Provider().GetPermissionsAsync();
 
         Assert.Equal(
             ["EditManagedSiteContent", "ManageManagedSites"],
@@ -58,11 +62,58 @@ public class ManagedSitePermissionModelTests
     [Fact]
     public async Task TheAdministratorRole_HoldsBoth()
     {
-        var stereotype = Assert.Single(new Permissions().GetDefaultStereotypes());
-        var provided = await new Permissions().GetPermissionsAsync();
+        var stereotype = Assert.Single(Provider().GetDefaultStereotypes());
+        var provided = await Provider().GetPermissionsAsync();
 
         Assert.Equal(
             provided.Select(permission => permission.Name).Order(),
             stereotype.Permissions.Select(permission => permission.Name).Order());
     }
+    [Fact]
+    public async Task EachManagedSite_ContributesItsOwnPermissions()
+    {
+        // This is what puts authority over one Managed Site in the roles screen, the way a media folder
+        // and a content type put theirs there.
+        var provided = await Provider(ManagedSitesTestData.ManagedSite("alpha", name: "Alpha"))
+            .GetPermissionsAsync();
+
+        Assert.Equal(
+            [
+                "EditManagedSiteContent_alpha",
+                "PreviewManagedSiteContent_alpha",
+                "PublishManagedSiteContent_alpha",
+                "ViewManagedSiteContent_alpha",
+            ],
+            provided.Where(permission => permission.Name.EndsWith("_alpha", StringComparison.Ordinal))
+                .Select(permission => permission.Name)
+                .Order());
+    }
+
+    [Fact]
+    public async Task AManagedSitesPermissions_AreGroupedUnderItsName()
+    {
+        var provided = await Provider(ManagedSitesTestData.ManagedSite("alpha", name: "Alpha"))
+            .GetPermissionsAsync();
+
+        Assert.All(
+            provided.Where(permission => permission.Name.EndsWith("_alpha", StringComparison.Ordinal)),
+            permission => Assert.Equal("Managed Site - Alpha", permission.Category));
+    }
+
+    [Fact]
+    public async Task ADisabledManagedSite_KeepsItsPermissions()
+    {
+        // Switching a Managed Site off stops it serving. Dropping its permissions would quietly revoke
+        // authority somebody was granted, and give nobody a way to grant it before switching back on.
+        var provided = await Provider(
+                ManagedSitesTestData.ManagedSite("alpha", status: ManagedSiteStatus.Disabled))
+            .GetPermissionsAsync();
+
+        Assert.Contains(
+            provided,
+            permission => permission.Name == "EditManagedSiteContent_alpha");
+    }
+
+    private static Permissions Provider(params ManagedSite[] managedSites)
+        => new(new FakeManagedSiteService(managedSites));
 }

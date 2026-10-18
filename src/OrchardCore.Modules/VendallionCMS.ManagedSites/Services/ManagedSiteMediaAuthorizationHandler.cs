@@ -81,9 +81,9 @@ public sealed class ManagedSiteMediaAuthorizationHandler : AuthorizationHandler<
             return;
         }
 
-        var clearances = await _clearanceService.GetEffectiveClearancesAsync(context.User);
+        var managedSites = await _clearanceService.GetAuthorizedManagedSitesAsync(context.User);
 
-        if (clearances.Count == 0)
+        if (managedSites.Count == 0)
         {
             return;
         }
@@ -91,8 +91,8 @@ public sealed class ManagedSiteMediaAuthorizationHandler : AuthorizationHandler<
         var folder = _folderService.GetOwningFolder(path);
 
         if (folder is not null
-            && clearances.Any(clearance =>
-                string.Equals(clearance.ManagedSiteCode, folder, StringComparison.OrdinalIgnoreCase)))
+            && managedSites.Any(managedSite =>
+                string.Equals(managedSite.Code, folder, StringComparison.OrdinalIgnoreCase)))
         {
             // Their own Managed Site's folder. Whether they may write in it is still the platform's
             // decision, made from the permissions they hold; this handler only refuses.

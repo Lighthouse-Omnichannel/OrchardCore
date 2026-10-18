@@ -49,14 +49,11 @@ public sealed class Startup : StartupBase
         services.AddDataMigration<ManagedSitesMigrations>();
         services.AddIndexProvider<ManagedContentEditScopeIndexProvider>();
         services.AddIndexProvider<ManagedContentOverrideIndexProvider>();
-        services.AddIndexProvider<ManagedSiteClearanceIndexProvider>();
 
         // ---- Managed sites ----
 
         services.AddScoped<IManagedSiteService, ManagedSiteService>();
-        services.AddScoped<IManagedSiteAuthorizationService, ManagedSiteAuthorizationService>();
         services.AddScoped<IManagedSiteClearanceService, ManagedSiteClearanceService>();
-        services.AddScoped<IManagedSiteSecurityService, ManagedSiteSecurityService>();
         services.AddScoped<IShellUrlSynchronizationService, ShellUrlSynchronizationService>();
 
         // ---- Managed content ----
@@ -124,8 +121,9 @@ public sealed class Startup : StartupBase
 
         // ---- Permissions ----
 
+        // Each defined Managed Site contributes its own permissions here, which is how authority
+        // over one reaches the roles screen and an ordinary recipe step.
         services.AddPermissionProvider<Permissions>();
-        services.AddScoped<IUserClaimsProvider, ManagedSiteClaimsProvider>();
 
         // FR-011a: a Managed Site's clearance authorizes content actions on that Managed Site's own
         // override content, and on nothing else.

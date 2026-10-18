@@ -85,16 +85,16 @@ public class ManagedSiteClearanceAuthorizationTests
     }
 
     [Fact]
-    public async Task GetAuthorizedManagedSites_ClearanceExpired_ExcludesSite()
+    public async Task GetAuthorizedManagedSites_AuthorityOverOne_ReturnsThatOne()
     {
-        var context = new ManagedSiteContentTestContext(ManagedSitesTestData.ManagedSite("sitea"));
+        var context = new ManagedSiteContentTestContext(
+            ManagedSitesTestData.ManagedSite("sitea"),
+            ManagedSitesTestData.ManagedSite("siteb"));
 
-        // The claim format carries no validity window, so an expired clearance is modelled directly.
-        var clearances = await context.ClearanceService.GetEffectiveClearancesAsync(
+        var authorized = await context.ClearanceService.GetAuthorizedManagedSitesAsync(
             ManagedSitesTestData.User("sitea:edit"));
 
-        Assert.Single(clearances);
-        Assert.Equal("sitea", clearances[0].ManagedSiteCode);
+        Assert.Equal(["sitea"], authorized.Select(managedSite => managedSite.Code));
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class ManagedSiteClearanceAuthorizationTests
         var context = new ManagedSiteContentTestContext(ManagedSitesTestData.ManagedSite("sitea"));
 
         var result = await context.ClearanceService.HasClearanceAsync(
-            ManagedSitesTestData.User("sitea:view"),
+            ManagedSitesTestData.User("sitea"),
             "sitea",
             "publish");
 

@@ -108,65 +108,6 @@ public class ManagedSitesRecipeStepTests
         Assert.Equal("beta", Assert.Single(await service.ListAsync()).Code);
     }
 
-    [Fact]
-    public void ClearingAnEditor_NamesTheManagedSiteByItsName()
-    {
-        var settings = new ManagedSiteClearanceSettings();
-
-        ManagedSiteEditorsStep.ApplyGrants(settings, Editor("Alpha", "edit"), Sites(), []);
-
-        var grant = Assert.Single(settings.Grants);
-        Assert.Equal("alphaid", grant.ManagedSiteCode);
-        Assert.Equal(["edit"], grant.Scopes);
-    }
-
-    [Fact]
-    public void AGrantNamingNoAction_IsReadOnly()
-    {
-        // Holding the clearance is what allows reading, so a grant naming no action names no scope.
-        var settings = new ManagedSiteClearanceSettings();
-
-        ManagedSiteEditorsStep.ApplyGrants(settings, Editor("Alpha"), Sites(), []);
-
-        Assert.Empty(Assert.Single(settings.Grants).Scopes);
-    }
-
-    [Fact]
-    public void ClearingAnEditorAgain_StatesTheClearanceRatherThanAccumulatingIt()
-    {
-        var settings = new ManagedSiteClearanceSettings();
-
-        ManagedSiteEditorsStep.ApplyGrants(settings, Editor("Alpha", "edit", "publish"), Sites(), []);
-        ManagedSiteEditorsStep.ApplyGrants(settings, Editor("Alpha", "view"), Sites(), []);
-
-        var grant = Assert.Single(settings.Grants);
-        Assert.Equal(["view"], grant.Scopes);
-    }
-
-    [Fact]
-    public void AGrantNamingNoKnownManagedSite_IsReportedAndNotWritten()
-    {
-        var settings = new ManagedSiteClearanceSettings();
-        var errors = new List<string>();
-
-        ManagedSiteEditorsStep.ApplyGrants(settings, Editor("Nowhere", "edit"), Sites(), errors);
-
-        Assert.Empty(settings.Grants);
-        Assert.Contains("Nowhere", Assert.Single(errors));
-    }
-
-    [Fact]
-    public void ClearanceForOneManagedSite_LeavesAnotherAlone()
-    {
-        var settings = new ManagedSiteClearanceSettings();
-
-        ManagedSiteEditorsStep.ApplyGrants(settings, Editor("Alpha", "edit"), Sites(), []);
-        ManagedSiteEditorsStep.ApplyGrants(settings, Editor("Beta", "publish"), Sites(), []);
-
-        Assert.Equal(2, settings.Grants.Count);
-        Assert.Contains(settings.Grants, grant => grant.ManagedSiteCode == "alphaid");
-        Assert.Contains(settings.Grants, grant => grant.ManagedSiteCode == "beta-id");
-    }
 
     private static async Task<RecipeExecutionContext> RunAsync(FakeManagedSiteService service, JsonObject step)
     {
@@ -185,16 +126,7 @@ public class ManagedSitesRecipeStepTests
             ["ManagedSites"] = JsonSerializer.SerializeToNode(managedSites),
         };
 
-    private static ManagedSiteEditorEntry Editor(string managedSite, params string[] scopes)
-        => new()
-        {
-            UserName = "alphaUser",
-            Grants = [new ManagedSiteGrantEntry { ManagedSite = managedSite, Scopes = scopes }],
-        };
 
-    private static IReadOnlyList<ManagedSite> Sites()
-        => [ManagedSitesTestData.ManagedSite("alphaid", name: "Alpha"),
-            ManagedSitesTestData.ManagedSite("beta-id", name: "Beta")];
 
     private sealed class SequentialIdGenerator : IIdGenerator
     {

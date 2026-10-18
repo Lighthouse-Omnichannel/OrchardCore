@@ -31,7 +31,6 @@ public sealed class ManagedSitesMigrations : DataMigration
     {
         await AddManagedContentPartAsync();
         await AddManagedContentOverridesAsync();
-        await AddManagedSiteClearanceIndexAsync();
 
         return 5;
     }
@@ -89,7 +88,6 @@ public sealed class ManagedSitesMigrations : DataMigration
     /// <returns>The current schema version.</returns>
     public async Task<int> UpdateFrom4Async()
     {
-        await AddManagedSiteClearanceIndexAsync();
 
         return 5;
     }
@@ -120,20 +118,6 @@ public sealed class ManagedSitesMigrations : DataMigration
                 "Published"));
     }
 
-    private async Task AddManagedSiteClearanceIndexAsync()
-    {
-        await SchemaBuilder.CreateMapIndexTableAsync<ManagedSiteClearanceIndex>(table => table
-            .Column<string>("ManagedSiteCode", column => column.WithLength(ManagedSitesConstants.Code.MaximumLength))
-            .Column<string>("UserId", column => column.WithLength(26))
-            .Column<string>("NormalizedUserName", column => column.WithLength(255)));
-
-        await SchemaBuilder.AlterIndexTableAsync<ManagedSiteClearanceIndex>(table => table
-            .CreateIndex(
-                "IDX_ManagedSiteClearanceIndex_ManagedSiteCode",
-                "DocumentId",
-                "ManagedSiteCode",
-                "NormalizedUserName"));
-    }
 
     private async Task AddManagedContentOverridesAsync()
     {

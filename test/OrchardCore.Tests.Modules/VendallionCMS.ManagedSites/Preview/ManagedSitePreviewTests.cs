@@ -239,9 +239,8 @@ public class ManagedSitePreviewTests
         services.AddSingleton(managedSites);
         services.AddSingleton<IHttpContextAccessor>(new HttpContextAccessor { HttpContext = httpContext });
         services.AddSingleton<IManagedSiteClearanceService>(new ManagedSiteClearanceService(
-            new ManagedSiteAuthorizationService(),
             managedSites,
-            TimeProvider.System));
+            ManagedSitesTestAuthorization.Build()));
 
         return services.BuildServiceProvider();
     }

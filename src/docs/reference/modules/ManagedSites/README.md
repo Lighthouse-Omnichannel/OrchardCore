@@ -14,79 +14,86 @@ cheap: adding a managed site costs an address and a row, not a site.
 ## Enabling the feature
 
 One feature, `Vendallion Managed Sites`, in `Content Management`. Enabling it brings the whole module:
-the Managed Content part and the scopes, URL resolution, the permissions and clearance, the content screens,
+the Managed Content part and the scopes, URL resolution, the permissions a managed site generates, the content screens,
 and the composition that serves a managed site its own content.
 
 There is deliberately no way to enable part of it. Resolving a URL to a managed site decides nothing
-without the content rules that say what it may override, those rules authorize nothing without clearance,
-and clearance is granted from the managed site — so every subset short of the whole is a configuration in which
+without the content rules that say what it may override, those rules authorize nothing without somebody
+holding authority over the site — so every subset short of the whole is a configuration in which
 the module cannot do its job.
 
 ## Permissions
 
-There are two, and the line between them is the point.
+Two permissions always exist, and the line between them is the point.
 
-**Manage Managed Sites** governs: defining the managed sites, deciding which blueprint content they may
-override, and granting people clearance to them. It is security critical, because clearance decides who
-may change a managed site's content.
+**Manage Managed Sites** governs: defining the managed sites and deciding which blueprint content they
+may override. It is security critical, because whoever holds it decides what every managed site is.
 
-**Edit Managed Site content** opens the content screens. Which managed sites they open onto, and what may be done
-in each, comes from the holder's clearance rather than from the permission.
+**Edit Managed Site content** opens the content screens, the way **Manage Media** opens the media
+library. It says nothing about *which* managed sites: that comes from the permissions below.
 
-All three ways of widening your own reach — defining a new managed site, putting more content in scope,
-granting clearance — sit on the governing side. An editor holding only the second permission cannot
-reach any of them. The second is implied by the first, because whoever grants clearance can grant it to
-themselves and withholding the content screens from them would be a formality.
+Both ways of widening your own reach — defining a new managed site and putting more content in scope —
+sit on the governing side, and an editor holding only the second permission reaches neither. The second
+is implied by the first, because whoever decides what a managed site is can give themselves the screens
+anyway.
 
 The screens are in the admin, so an editor also needs `AccessAdminPanel`.
 
-## Clearance
+## Authority over one managed site
 
-Clearance is granted per user, per managed site, from **Access** on the managed site's row in the
-managed sites list. The screen has two lists — the users who can work on the site and the users who
-cannot — and either can be searched, so a tenant with more users than fit on a screen is worked through
-by narrowing rather than by scrolling. Granting it needs **Manage Managed Sites**, the same permission
-as defining the site: deciding who may work on a site is the same kind of decision as deciding what the
-site is.
+Every managed site generates four permissions of its own, named after its code, exactly as every media
+folder generates one and every content type generates its own set. They appear in **Security → Roles**
+grouped under the managed site's name, and they are granted like any other permission.
 
-The grant is stored on the user, which is what it is — a grant to a person, read when their principal is
-built — but it is administered from the site, because the question an administrator arrives with is who
-may work on this site, and answering that one user at a time meant opening every user to find out.
-
-**Holding clearance is permission to read.** There is no scope for reading: a user given access to a
-managed site can see its content, and a scope says what they may do beyond that.
-
-| Scope | Allows, on top of reading |
+| Permission | Allows |
 | --- | --- |
-| `edit` | Changing the managed site's content |
-| `publish` | Publishing it |
-| `preview` | Seeing unpublished work, in the admin and through a preview link |
+| `ViewManagedSiteContent_alpha` | Open Alpha and read its content |
+| `EditManagedSiteContent_alpha` | Change Alpha's content |
+| `PublishManagedSiteContent_alpha` | Publish it |
+| `PreviewManagedSiteContent_alpha` | See unpublished work, in the admin and through a preview link |
 
-A user given access starts with none of them, which is read-only, and the row is where each is ticked.
-Clearing them all is a real answer rather than a refusal — the holder reads the site and changes
-nothing — and taking the access away is how to say they should not see it at all.
+**Reading is the floor.** Publishing implies editing, and editing or previewing implies reading, so a
+role granting any of them can see the site. A role granting only the first reads the site and changes
+nothing, which is a real answer rather than a half-granted one.
 
-Clearance arriving as a signed claim from an external issuer follows the same rule: `site-a` grants
-reading, `site-a:edit,publish` grants those two as well, and `site-a:*` grants every scope.
+All four are also implied by **Manage Managed Sites**, for the same reason the content screens are:
+whoever decides what a managed site is could grant themselves authority over it, so withholding it
+would be a formality. It is also how the platform treats media, where viewing every folder implies
+viewing each one.
 
-A user cleared for exactly one managed site goes straight to it. A user cleared for several is offered
-the choice, and opening one takes them to its own address. Managed sites they hold no clearance for are
-not listed, and naming one is refused.
+### Why a role per managed site
+
+Permissions are held by roles, so "who may work on Alpha" is answered by a role that grants Alpha's
+permissions, and an editor who works on two managed sites holds two such roles. That is more
+bookkeeping than ticking a box against a person would be, and it buys two things worth more:
+
+- **One grant covers the site and its folder.** A managed site's media folder is also a permission
+  (`ViewMediaContent_alpha`), so a single role carries both. When the two were granted by different
+  mechanisms nothing kept them in step, and an editor could change Alpha's content without seeing
+  Alpha's images.
+- **It is the screen administrators already use.** Nothing to learn, nothing bespoke to provision, and
+  a recipe grants them with an ordinary `Roles` step.
+
+An identity from an external issuer reaches a managed site the same way: the platform maps it to a role
+at sign-in, and the role carries the permissions.
+
+An editor holding exactly one managed site goes straight to it. One holding several is offered the
+choice, and opening one takes them to its own address. Managed sites they hold nothing for are not
+listed, and naming one in the address is refused.
 
 ## The code
 
 Every managed site has a **code**, chosen when it is created and fixed from then on. It is lowercase
 letters and digits, beginning with a letter, up to 50 characters: `alpha`, `contoso`, `shop2`.
 
-Everything that refers to a managed site refers to it by the code — the clearance a user holds, the rows
+Everything that refers to a managed site refers to it by the code — the permissions it generates, the rows
 recording which items the site may override and what it has overridden, and the address of its own
 admin screens. That is why it cannot be changed: changing it would detach all
 of that at once. The editor shows it after creation but does not offer it.
 
 It is chosen rather than generated because people read it. It names the site in a URL
-(`/Admin/ManagedSites/Content/alpha`), in a recipe, and in a signed clearance claim — and a claim packs
-the code and its scopes into one value separated by colons and commas, which is why punctuation is
-refused rather than escaped.
+(`/Admin/ManagedSites/Content/alpha`), in a recipe, and in the name of every permission the site
+generates (`EditManagedSiteContent_alpha`), which is why punctuation is refused rather than escaped.
 
 A recipe must declare one. The later steps of the same recipe name the managed site by it, and a second
 run finds the same site again by it, so a declaration without a code is reported and skipped rather than
@@ -156,11 +163,11 @@ one and offers the choice when they hold several, and sees the items whose edit 
 
 Which managed site is being worked on is in the address — `/Admin/ManagedSites/Content/alpha` — rather
 than remembered. An editor can see which site they are on, link to it, bookmark it, and keep two open at
-once. Naming one decides nothing: the code is checked against their clearance on every request, so a
-bookmark kept after the clearance was withdrawn is refused rather than honoured.
+once. Naming one decides nothing: the code is checked against what the editor holds on every request,
+so a bookmark kept after the role was taken away is refused rather than honoured.
 
 Creating an override copies the blueprint's content, so they change what differs rather than retyping
-the item. Creating and publishing it needs managed-site clearance alone — no permission over the
+the item. Creating and publishing it needs that managed site's own permissions alone — nothing over the
 tenant's content.
 
 The copy deliberately does **not** inherit:
@@ -241,10 +248,9 @@ the library is theirs.
 4. Grant each editor's role the same permission for the folders of the managed sites they work on, and for
    no others.
 
-A folder is granted to a role and clearance is granted to a user, so the two are kept in step by hand.
-That is why step 4 usually means a role per managed site rather than one role for every editor: an editor
-who works on two managed sites holds two of those roles, and nobody else holds either. The development
-recipe does exactly this, and is the quickest way to see the arrangement working.
+A managed site's folder and its content are both permissions, so one role per managed site carries both
+and an editor who works on two holds two such roles. The development recipe does exactly this, and is
+the quickest way to see the arrangement working.
 
 ### What media does not do
 
@@ -289,7 +295,7 @@ itself is served at.
 A preview link is built from the managed site's own address, so the preview is composed by the
 pipeline that serves the site rather than by a separate renderer and cannot drift from what visitors
 receive. Asking for unpublished work adds a query value; asking is not being granted, and the request is
-honoured only for a caller holding `preview` clearance for the managed site the address resolves to. The
+honoured only for a caller holding `PreviewManagedSiteContent_` for the managed site the address resolves to. The
 same link shared with anyone else shows published content.
 
 Previewing a disabled managed site is refused rather than showing Site Blueprint content under its name.
@@ -340,13 +346,15 @@ What it provisions:
 - A `Managed Site Content Editor` role holding `EditManagedSiteContent`, `AccessAdminPanel` and
   `ManageOwnMediaContent` — what an editor needs, and deliberately not the permission to govern managed
   sites. It also holds reading on the `shared` folder, which every managed site may reuse.
-- An `Alpha Assets`, `Beta Assets` and `Gamma Assets` role holding one managed site's folder each.
-  `alphaUser` holds the first and `gammaUser` the third; `betaUser` holds the second and the third,
-  because they work on two managed sites. One role for every editor would have handed each of them every
-  folder.
-- Three editors in that role, `alphaUser`, `betaUser` and `gammaUser`, all with the password
-  `Password1!`. Each is cleared for the managed site they are named for; `betaUser` is also cleared for
-  Gamma, so the screen that offers the choice is reachable without granting clearance first.
+- An `Alpha Editors`, `Beta Editors` and `Gamma Editors` role, each holding one managed site's content
+  permissions **and** that site's media folder — the single grant that covers both. A `Gamma Readers`
+  role holds only `ViewManagedSiteContent_gamma` and Gamma's folder, which is what reading a managed
+  site without being able to change it looks like.
+- Four users, all with the password `Password1!`: `alphaUser` and `gammaUser` hold the editing role for
+  the site they are named for; `betaUser` holds Beta's editing role and Gamma's reading role, so the
+  screen that offers the choice is reachable and the difference between editing and reading is visible
+  on one account; `strandedUser` holds only the gate, which is what somebody looks like before anybody
+  gives them a site.
 - A home page with three sections, a main menu with two entries, and a footer widget on a layer — one of
   each way content composes.
 - Media folders to try the rules against: `alpha`, `beta` and `gamma`, made when their managed sites are;

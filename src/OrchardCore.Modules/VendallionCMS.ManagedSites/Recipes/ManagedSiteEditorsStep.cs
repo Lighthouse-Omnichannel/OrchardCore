@@ -13,7 +13,7 @@ using VendallionCMS.ManagedSites.Services;
 namespace VendallionCMS.ManagedSites.Recipes;
 
 /// <summary>
-/// Grants users clearance to Managed Sites from a recipe, creating them when they do not exist.
+/// Creates the users a recipe declares, in the roles it names, when they do not exist already.
 /// </summary>
 /// <remarks>
 /// Clearance is stored as a section on the user, and the platform's <c>Users</c> step copies only the
@@ -85,61 +85,10 @@ public sealed class ManagedSiteEditorsStep : NamedRecipeStepHandler
                 continue;
             }
 
-            var settings = user.GetOrCreate<ManagedSiteClearanceSettings>();
-
-            ApplyGrants(settings, editor, managedSites, context.Errors);
-
-            user.Put(settings);
-
             await _userManager.UpdateAsync(user);
         }
     }
 
-    /// <summary>
-    /// Writes the Managed Sites an editor is cleared for onto their clearance.
-    /// </summary>
-    /// <remarks>
-    /// Replaces the grant for a Managed Site rather than adding beside it, so running a recipe again
-    /// states what the clearance is rather than accumulating what it has ever been.
-    /// </remarks>
-    /// <param name="settings">The editor's clearance, which is modified in place.</param>
-    /// <param name="editor">The editor the recipe declares.</param>
-    /// <param name="managedSites">The Managed Sites that exist, to resolve names against.</param>
-    /// <param name="errors">Where a grant naming no known Managed Site is reported.</param>
-    internal static void ApplyGrants(
-        ManagedSiteClearanceSettings settings,
-        ManagedSiteEditorEntry editor,
-        IReadOnlyList<ManagedSite> managedSites,
-        IList<string> errors)
-    {
-        foreach (var grant in editor.Grants ?? [])
-        {
-            var managedSite = managedSites.FirstOrDefault(candidate =>
-                string.Equals(candidate.Name, grant.ManagedSite?.Trim(), StringComparison.OrdinalIgnoreCase));
-
-            if (managedSite is null)
-            {
-                errors.Add(
-                    $"'{editor.UserName}' was not cleared for '{grant.ManagedSite}', which no Managed Site is named.");
-
-                continue;
-            }
-
-            settings.Grants.RemoveAll(existing =>
-                string.Equals(existing.ManagedSiteCode, managedSite.Code, StringComparison.Ordinal));
-
-            settings.Grants.Add(new ManagedSiteClearanceGrant
-            {
-                ManagedSiteCode = managedSite.Code,
-
-                // A grant naming no action is view only, which is what the clearance editor records for
-                // a Managed Site selected with nothing ticked.
-                Scopes = grant.Scopes is { Length: > 0 }
-                    ? [.. grant.Scopes]
-                    : [],
-            });
-        }
-    }
 
     private async Task<User> FindOrCreateAsync(ManagedSiteEditorEntry editor, RecipeExecutionContext context)
     {

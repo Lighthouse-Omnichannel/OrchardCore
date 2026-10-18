@@ -1,5 +1,6 @@
 using OrchardCore;
 using OrchardCore.Security.Permissions;
+using VendallionCMS.ManagedSites.Services;
 
 namespace VendallionCMS.ManagedSites;
 
@@ -35,9 +36,9 @@ public sealed class Permissions : IPermissionProvider
     /// Allows editing the content a Managed Site overrides, through its content screens in the admin.
     /// </summary>
     /// <remarks>
-    /// Granted alongside clearance rather than instead of it. This permission opens the content
-    /// screens; which Managed Sites they open onto, and what may be done in each, comes from the
-    /// holder's clearance.
+    /// Opens the content screens and nothing more. Which Managed Sites they open onto, and what may be
+    /// done in each, comes from the permissions generated per Managed Site, exactly as the media
+    /// library is opened by one permission and its folders decided by others.
     ///
     /// Implied by <see cref="ManageManagedSites" />, because whoever grants clearance can grant it to
     /// themselves; withholding the screens from them would be a formality rather than a restriction.
@@ -47,14 +48,49 @@ public sealed class Permissions : IPermissionProvider
         "Edit Managed Site content",
         [ManageManagedSites]);
 
-    private readonly IEnumerable<Permission> _allPermissions =
+    private static readonly Permission[] _allPermissions =
     [
         ManageManagedSites,
         EditManagedSiteContent,
     ];
 
+    private readonly IManagedSiteService _managedSiteService;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Permissions" /> class.
+    /// </summary>
+    /// <param name="managedSiteService">The Managed Site definition service.</param>
+    public Permissions(IManagedSiteService managedSiteService)
+    {
+        _managedSiteService = managedSiteService;
+    }
+
     /// <inheritdoc />
-    public Task<IEnumerable<Permission>> GetPermissionsAsync() => Task.FromResult(_allPermissions);
+    /// <remarks>
+    /// The defined Managed Sites are listed so each contributes its own permissions, which is how they
+    /// reach the roles screen without anybody registering them one at a time. Disabled Managed Sites
+    /// are included: a site that is switched off still has content somebody may be given authority over
+    /// before it is switched back on, and dropping its permissions would quietly revoke them.
+    /// </remarks>
+    public async Task<IEnumerable<Permission>> GetPermissionsAsync()
+    {
+        var managedSites = await _managedSiteService.ListAsync();
+
+        if (managedSites.Count == 0)
+        {
+            return _allPermissions;
+        }
+
+        var permissions = new List<Permission>(_allPermissions);
+
+        foreach (var managedSite in managedSites)
+        {
+            permissions.AddRange(
+                ManagedSiteContentPermissions.ForManagedSite(managedSite.Code, managedSite.Name));
+        }
+
+        return permissions;
+    }
 
     /// <inheritdoc />
     public IEnumerable<PermissionStereotype> GetDefaultStereotypes() =>

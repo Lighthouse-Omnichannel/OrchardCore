@@ -64,29 +64,36 @@
       "Roles": [
         {
           "Name": "Managed Site Content Editor",
-          "Description": "Edits the content of the managed sites they hold clearance for.",
-          // ManageOwnMediaContent is what opens the media library: the permission to manage media is
-          // implied by it. ViewMediaContent_shared is the one blueprint folder every site may reuse;
-          // reading it is all they get, because writing anywhere but their own folder is refused.
+          "Description": "Opens the managed site content screens and the media library.",
+          // The gate, held by every editor: it opens the screens the way ManageMedia opens the media
+          // library. Which managed sites are behind it comes from the roles below. ViewMediaContent_shared
+          // is the one blueprint folder every managed site may reuse, for reading only.
           "Permissions": [ "EditManagedSiteContent", "AccessAdminPanel", "ManageOwnMediaContent", "ViewMediaContent_shared" ]
         },
-        // A folder is granted to a role and clearance is granted to a user, so the two are kept in step
-        // by hand. One role per managed site is what lets an editor of two sites hold both folders
-        // without everyone else holding them too.
+        // One role per managed site, holding that site's content and that site's folder together. This
+        // is the whole point of generating a permission per managed site: a single grant covers both,
+        // and an editor of two sites holds two of these rather than being tracked in two systems.
         {
-          "Name": "Alpha Assets",
-          "Description": "Reads and writes Alpha's own media folder.",
-          "Permissions": [ "ViewMediaContent_alpha" ]
+          "Name": "Alpha Editors",
+          "Description": "Works on Alpha.",
+          "Permissions": [ "EditManagedSiteContent_alpha", "PublishManagedSiteContent_alpha", "PreviewManagedSiteContent_alpha", "ViewMediaContent_alpha" ]
         },
         {
-          "Name": "Beta Assets",
-          "Description": "Reads and writes Beta's own media folder.",
-          "Permissions": [ "ViewMediaContent_beta" ]
+          "Name": "Beta Editors",
+          "Description": "Works on Beta.",
+          "Permissions": [ "EditManagedSiteContent_beta", "PublishManagedSiteContent_beta", "PreviewManagedSiteContent_beta", "ViewMediaContent_beta" ]
         },
         {
-          "Name": "Gamma Assets",
-          "Description": "Reads and writes Gamma's own media folder.",
-          "Permissions": [ "ViewMediaContent_gamma" ]
+          "Name": "Gamma Editors",
+          "Description": "Works on Gamma.",
+          "Permissions": [ "EditManagedSiteContent_gamma", "PublishManagedSiteContent_gamma", "PreviewManagedSiteContent_gamma", "ViewMediaContent_gamma" ]
+        },
+        // Reading and nothing else. Viewing is the floor every other authority implies, so a role can
+        // hold it alone to let somebody look at a managed site without changing it.
+        {
+          "Name": "Gamma Readers",
+          "Description": "Reads Gamma without changing it.",
+          "Permissions": [ "ViewManagedSiteContent_gamma", "ViewMediaContent_gamma" ]
         }
       ]
     },
@@ -189,31 +196,27 @@
         {
           "UserName": "alphaUser",
           "Password": "Password1!",
-          "RoleNames": [ "Managed Site Content Editor", "Alpha Assets" ],
-          "Grants": [
-            { "ManagedSite": "Alpha", "Scopes": [ "edit", "publish", "preview" ] }
-          ]
+          "RoleNames": [ "Managed Site Content Editor", "Alpha Editors" ]
         },
         {
-          // Cleared for two, so the screen that offers the choice is reachable without editing a user
-          // first. A user cleared for one managed site is scoped to it automatically.
+          // Authorized for two managed sites, so the screen that offers the choice is reachable
+          // without editing anybody first. Gamma is read-only for them, which is what holding the
+          // reading role and not the editing one means.
           "UserName": "betaUser",
           "Password": "Password1!",
-          // Cleared for two managed sites, so holding two sites' folders as well.
-          "RoleNames": [ "Managed Site Content Editor", "Beta Assets", "Gamma Assets" ],
-          "Grants": [
-            { "ManagedSite": "Beta", "Scopes": [ "edit", "publish", "preview" ] },
-            // No scope named: betaUser may read Gamma and change nothing on it.
-            { "ManagedSite": "Gamma", "Scopes": [] }
-          ]
+          "RoleNames": [ "Managed Site Content Editor", "Beta Editors", "Gamma Readers" ]
         },
         {
           "UserName": "gammaUser",
           "Password": "Password1!",
-          "RoleNames": [ "Managed Site Content Editor", "Gamma Assets" ],
-          "Grants": [
-            { "ManagedSite": "Gamma", "Scopes": [ "edit", "publish", "preview" ] }
-          ]
+          "RoleNames": [ "Managed Site Content Editor", "Gamma Editors" ]
+        },
+        {
+          // The screens and no managed site behind them, which is what somebody looks like before
+          // anybody gives them a site to work on.
+          "UserName": "strandedUser",
+          "Password": "Password1!",
+          "RoleNames": [ "Managed Site Content Editor" ]
         }
       ]
     },

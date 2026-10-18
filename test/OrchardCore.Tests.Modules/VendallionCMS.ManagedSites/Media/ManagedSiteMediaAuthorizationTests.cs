@@ -10,6 +10,7 @@ using OrchardCore.Media;
 using OrchardCore.Security;
 using OrchardCore.Security.Permissions;
 using VendallionCMS.ManagedSites.Models;
+using VendallionCMS.ManagedSites.Models;
 using VendallionCMS.ManagedSites.Services;
 using Xunit;
 
@@ -177,22 +178,25 @@ public class ManagedSiteMediaAuthorizationTests
     }
 
     /// <summary>
-    /// Reads clearance from the principal, which is where the real service reads it from too.
+    /// Answers which Managed Sites the principal may work on, from the permissions it holds.
     /// </summary>
     private sealed class StubClearanceService : IManagedSiteClearanceService
     {
-        public ValueTask<IReadOnlyList<ManagedSiteClearance>> GetEffectiveClearancesAsync(ClaimsPrincipal user)
-        {
-            var clearances = user
-                .FindAll(ManagedSiteAuthorizationService.ManagedSiteClaimType)
-                .Select(claim => new ManagedSiteClearance { ManagedSiteCode = claim.Value.Split(':')[0] })
-                .ToArray();
-
-            return ValueTask.FromResult<IReadOnlyList<ManagedSiteClearance>>(clearances);
-        }
+        private static readonly string[] s_codes = ["alpha", "beta"];
 
         public ValueTask<IReadOnlyList<ManagedSite>> GetAuthorizedManagedSitesAsync(ClaimsPrincipal user)
-            => ValueTask.FromResult<IReadOnlyList<ManagedSite>>([]);
+        {
+            var held = user.FindAll(Permission.ClaimType).Select(claim => claim.Value).ToHashSet(StringComparer.Ordinal);
+
+            var managedSites = s_codes
+                .Where(code => held.Contains(ManagedSiteContentPermissions.For(code, scope: null).Name)
+                    || ManagedSitesConstants.Scopes.All.Any(scope =>
+                        held.Contains(ManagedSiteContentPermissions.For(code, scope).Name)))
+                .Select(code => ManagedSitesTestData.ManagedSite(code))
+                .ToArray();
+
+            return ValueTask.FromResult<IReadOnlyList<ManagedSite>>(managedSites);
+        }
 
         public ValueTask<bool> HasClearanceAsync(ClaimsPrincipal user, string managedSiteCode, string scope)
             => ValueTask.FromResult(false);

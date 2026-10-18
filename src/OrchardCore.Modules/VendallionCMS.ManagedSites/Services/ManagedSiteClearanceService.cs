@@ -1,153 +1,124 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection;
 using VendallionCMS.ManagedSites.Models;
 
 namespace VendallionCMS.ManagedSites.Services;
 
 /// <summary>
-/// Resolves the Managed Sites a user may operate on from signed authorization claims and scopes.
+/// Answers which Managed Sites a user may work on, and what they may do in each.
 /// </summary>
 public interface IManagedSiteClearanceService
 {
     /// <summary>
-    /// Gets the effective clearances carried by the user principal.
-    /// </summary>
-    /// <param name="user">The user principal to evaluate.</param>
-    /// <returns>Clearances that are currently effective, ordered by Managed Site identifier.</returns>
-    ValueTask<IReadOnlyList<ManagedSiteClearance>> GetEffectiveClearancesAsync(ClaimsPrincipal user);
-
-    /// <summary>
-    /// Gets the Managed Sites the user is authorized to manage.
+    /// Gets the Managed Sites the user is authorized to work on.
     /// </summary>
     /// <remarks>
-    /// Only Managed Sites that exist under the active Site Blueprint and are enabled are returned,
-    /// so clearance for a removed or disabled Managed Site never reaches the content screens.
+    /// Only Managed Sites that exist under the active Site Blueprint and are enabled are returned, so
+    /// a permission for a removed or disabled Managed Site never reaches the content screens.
     /// </remarks>
     /// <param name="user">The user principal to evaluate.</param>
     /// <returns>The authorized Managed Sites, ordered by name.</returns>
     ValueTask<IReadOnlyList<ManagedSite>> GetAuthorizedManagedSitesAsync(ClaimsPrincipal user);
 
     /// <summary>
-    /// Determines whether the user holds effective clearance for a Managed Site and scope.
+    /// Determines whether the user holds the authority a scope needs over one Managed Site.
     /// </summary>
     /// <param name="user">The user principal to evaluate.</param>
-    /// <param name="managedSiteCode">The Managed Site identifier.</param>
-    /// <param name="scope">The requested action scope, or <see langword="null" /> for any scope.</param>
-    /// <returns><see langword="true" /> when the user holds effective clearance; otherwise, <see langword="false" />.</returns>
+    /// <param name="managedSiteCode">The Managed Site code.</param>
+    /// <param name="scope">The requested action scope, or <see langword="null" /> for reading.</param>
+    /// <returns><see langword="true" /> when the user holds it; otherwise, <see langword="false" />.</returns>
     ValueTask<bool> HasClearanceAsync(ClaimsPrincipal user, string managedSiteCode, string scope);
 }
 
 /// <summary>
-/// Extracts Managed Site clearance from token claims and reconciles it with Managed Site definitions.
+/// Reads authority over a Managed Site from the permissions its own generated permissions carry.
 /// </summary>
+/// <remarks>
+/// Everything here is a question for the platform's authorization service, asked about a permission
+/// naming one Managed Site. Nothing is stored against the user by this feature, so a role change takes
+/// effect the way every other role change does.
+///
+/// The authorization service is resolved late. Handlers this feature registers consult this service,
+/// and this service consults the authorization service that owns them, so taking it as a constructor
+/// dependency would be a cycle. Asking it about a Managed Site permission does not re-enter those
+/// handlers, because each of them answers a different permission and returns at once.
+/// </remarks>
 public sealed class ManagedSiteClearanceService : IManagedSiteClearanceService
 {
-    private readonly IManagedSiteAuthorizationService _authorizationService;
     private readonly IManagedSiteService _managedSiteService;
-    private readonly TimeProvider _timeProvider;
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedSiteClearanceService" /> class.
     /// </summary>
-    /// <param name="authorizationService">The claim-based authorization service.</param>
     /// <param name="managedSiteService">The Managed Site definition service.</param>
-    /// <param name="timeProvider">The time provider used to evaluate clearance validity windows.</param>
+    /// <param name="serviceProvider">The service provider the authorization service is read from.</param>
     public ManagedSiteClearanceService(
-        IManagedSiteAuthorizationService authorizationService,
         IManagedSiteService managedSiteService,
-        TimeProvider timeProvider)
+        IServiceProvider serviceProvider)
     {
-        _authorizationService = authorizationService;
         _managedSiteService = managedSiteService;
-        _timeProvider = timeProvider;
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<ManagedSiteClearance>> GetEffectiveClearancesAsync(ClaimsPrincipal user)
-    {
-        var clearances = await _authorizationService.GetClearancesAsync(user);
-        if (clearances.Count == 0)
-        {
-            return [];
-        }
-
-        var now = _timeProvider.GetUtcNow();
-
-        return clearances
-            .Where(clearance => IsEffective(clearance, now))
-            .GroupBy(clearance => clearance.ManagedSiteCode, StringComparer.Ordinal)
-            .Select(group => group.First())
-            .OrderBy(clearance => clearance.ManagedSiteCode, StringComparer.Ordinal)
-            .ToArray();
+        _serviceProvider = serviceProvider;
     }
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<ManagedSite>> GetAuthorizedManagedSitesAsync(ClaimsPrincipal user)
     {
-        var clearances = await GetEffectiveClearancesAsync(user);
-        if (clearances.Count == 0)
+        var managedSites = await _managedSiteService.ListAsync();
+
+        if (managedSites.Count == 0)
         {
             return [];
         }
 
-        var clearedIds = clearances
-            .Select(clearance => clearance.ManagedSiteCode)
-            .ToHashSet(StringComparer.Ordinal);
+        var authorizationService = _serviceProvider.GetService<IAuthorizationService>();
 
-        var managedSites = await _managedSiteService.ListAsync();
+        if (authorizationService is null)
+        {
+            return [];
+        }
 
-        return managedSites
-            .Where(managedSite => clearedIds.Contains(managedSite.Code))
-            .Where(managedSite => managedSite.Status == ManagedSiteStatus.Enabled)
-            .OrderBy(managedSite => managedSite.Name, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        var authorized = new List<ManagedSite>();
+
+        foreach (var managedSite in managedSites)
+        {
+            if (managedSite.Status != ManagedSiteStatus.Enabled)
+            {
+                continue;
+            }
+
+            var permission = ManagedSiteContentPermissions.For(managedSite.Code, scope: null);
+
+            if (permission is not null && await authorizationService.AuthorizeAsync(user, permission))
+            {
+                authorized.Add(managedSite);
+            }
+        }
+
+        return [.. authorized.OrderBy(managedSite => managedSite.Name, StringComparer.OrdinalIgnoreCase)];
     }
 
     /// <inheritdoc />
     public async ValueTask<bool> HasClearanceAsync(ClaimsPrincipal user, string managedSiteCode, string scope)
     {
-        if (string.IsNullOrWhiteSpace(managedSiteCode))
+        var permission = ManagedSiteContentPermissions.For(managedSiteCode, scope);
+
+        if (permission is null)
         {
             return false;
         }
 
-        var clearances = await GetEffectiveClearancesAsync(user);
+        var managedSite = await _managedSiteService.GetAsync(managedSiteCode);
 
-        return clearances.Any(clearance =>
-            string.Equals(clearance.ManagedSiteCode, managedSiteCode, StringComparison.Ordinal)
-            && HasScope(clearance, scope));
+        if (managedSite is null || managedSite.Status != ManagedSiteStatus.Enabled)
+        {
+            return false;
+        }
+
+        var authorizationService = _serviceProvider.GetService<IAuthorizationService>();
+
+        return authorizationService is not null
+            && await authorizationService.AuthorizeAsync(user, permission);
     }
-
-    private static bool IsEffective(ManagedSiteClearance clearance, DateTimeOffset now)
-    {
-        if (string.IsNullOrEmpty(clearance.ManagedSiteCode))
-        {
-            return false;
-        }
-
-        if (clearance.EffectiveFrom.HasValue && clearance.EffectiveFrom.Value > now)
-        {
-            return false;
-        }
-
-        return !clearance.EffectiveTo.HasValue || clearance.EffectiveTo.Value > now;
-    }
-
-    /// <summary>
-    /// Determines whether a clearance carries a scope.
-    /// </summary>
-    /// <remarks>
-    /// Asking for no scope asks only whether the clearance exists, which is what reading a Managed
-    /// Site's content takes: holding clearance for a site is permission to read it, and a scope says
-    /// what the holder may do beyond reading.
-    ///
-    /// The wildcard is honoured for clearance arriving as a signed claim from an external issuer that
-    /// means every scope. Nothing here writes one.
-    /// </remarks>
-    /// <param name="clearance">The clearance.</param>
-    /// <param name="scope">The scope being asked for, or nothing to ask only that it exists.</param>
-    /// <returns><see langword="true" /> when the clearance carries the scope.</returns>
-    private static bool HasScope(ManagedSiteClearance clearance, string scope)
-        => string.IsNullOrWhiteSpace(scope)
-            || clearance.Scopes.Contains(scope)
-            || clearance.Scopes.Contains("*");
 }

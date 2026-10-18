@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection;
 using OrchardCore.ContentManagement;
 using OrchardCore.Contents;
 using OrchardCore.Security;
@@ -7,23 +8,28 @@ using VendallionCMS.ManagedSites.Models;
 namespace VendallionCMS.ManagedSites.Services;
 
 /// <summary>
-/// Lets a Managed Site's clearance authorize content actions on that Managed Site's own override content.
+/// Lets a Managed Site's own permissions authorize content actions on that Managed Site's content.
 /// </summary>
 /// <remarks>
 /// Without this, authoring an override would require tenant-wide content permissions for its content
 /// type, and anyone holding those could equally change Site Blueprint content and every other Managed
-/// Site's overrides. FR-011 forbids exactly that, so clearance has to be a content authorization
-/// decision rather than something only the content endpoints consult.
+/// Site's overrides. FR-011 forbids exactly that, so authority over a Managed Site has to be a content
+/// authorization decision rather than something only the content endpoints consult.
+///
+/// The shape is the platform's own: take the content permission being asked for, work out which
+/// authority over this Managed Site would answer it, and ask the authorization service again for that.
+/// It is what <c>ContentTypeAuthorizationHandler</c> does with a content type, and what the media
+/// handlers do with a folder.
 ///
 /// The handler only ever grants. It succeeds for content a Managed Site owns and stays silent for
-/// everything else, so it can widen what a cleared editor may do and can never narrow what anyone else
-/// already had. Content that is not an override is never touched, which is what keeps Site Blueprint
-/// content and other Managed Sites out of reach.
+/// everything else, so it can widen what an authorized editor may do and can never narrow what anyone
+/// else already had. Content that is not an override is never touched, which is what keeps Site
+/// Blueprint content and other Managed Sites out of reach.
 /// </remarks>
 public sealed class ManagedSiteContentAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {
     /// <summary>
-    /// The clearance scope each content permission corresponds to.
+    /// The scope each content permission corresponds to.
     /// </summary>
     /// <remarks>
     /// Deleting is grouped with editing: an editor who may replace the content of their override may
@@ -31,7 +37,7 @@ public sealed class ManagedSiteContentAuthorizationHandler : AuthorizationHandle
     /// </remarks>
     private static readonly Dictionary<string, string> _scopesByPermission = new(StringComparer.Ordinal)
     {
-        // Reading asks for no scope: holding clearance for the Managed Site is what allows it.
+        // Reading asks for no scope: authority over the Managed Site at all is what allows it.
         [CommonPermissions.ViewContent.Name] = null,
         [CommonPermissions.ViewOwnContent.Name] = null,
         [CommonPermissions.ListContent.Name] = null,
@@ -47,15 +53,23 @@ public sealed class ManagedSiteContentAuthorizationHandler : AuthorizationHandle
         [CommonPermissions.PreviewOwnContent.Name] = ManagedSitesConstants.Scopes.Preview,
     };
 
-    private readonly IManagedSiteClearanceService _clearanceService;
+    private readonly IManagedSiteService _managedSiteService;
+    private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedSiteContentAuthorizationHandler" /> class.
     /// </summary>
-    /// <param name="clearanceService">The Managed Site clearance service.</param>
-    public ManagedSiteContentAuthorizationHandler(IManagedSiteClearanceService clearanceService)
+    /// <param name="managedSiteService">The Managed Site definition service.</param>
+    /// <param name="serviceProvider">
+    /// The service provider the authorization service is read from, late, because asking it for a
+    /// decision from inside a handler it owns would otherwise be a cycle.
+    /// </param>
+    public ManagedSiteContentAuthorizationHandler(
+        IManagedSiteService managedSiteService,
+        IServiceProvider serviceProvider)
     {
-        _clearanceService = clearanceService;
+        _managedSiteService = managedSiteService;
+        _serviceProvider = serviceProvider;
     }
 
     /// <inheritdoc />
@@ -82,7 +96,27 @@ public sealed class ManagedSiteContentAuthorizationHandler : AuthorizationHandle
             return;
         }
 
-        if (await _clearanceService.HasClearanceAsync(context.User, part.ManagedSiteCode, scope))
+        var permission = ManagedSiteContentPermissions.For(part.ManagedSiteCode, scope);
+
+        if (permission is null)
+        {
+            return;
+        }
+
+        // A Managed Site that has been removed or switched off authorizes nothing, however its
+        // permissions were granted. Its content is kept rather than served, so reaching it through a
+        // permission nobody got round to revoking would be the one way back in.
+        var managedSite = await _managedSiteService.GetAsync(part.ManagedSiteCode);
+
+        if (managedSite is null || managedSite.Status != ManagedSiteStatus.Enabled)
+        {
+            return;
+        }
+
+        var authorizationService = _serviceProvider.GetService<IAuthorizationService>();
+
+        if (authorizationService is not null
+            && await authorizationService.AuthorizeAsync(context.User, permission))
         {
             context.Succeed(requirement);
         }
@@ -102,9 +136,9 @@ public sealed class ManagedSiteContentAuthorizationHandler : AuthorizationHandle
             return true;
         }
 
-        // Content permissions also appear per content type, as EditContent_Article. The clearance a
-        // Managed Site holds is over its own content whatever type that content happens to be, so the
-        // type half carries no decision here.
+        // Content permissions also appear per content type, as EditContent_Article. The authority a
+        // Managed Site editor holds is over that Managed Site's content whatever type it happens to be,
+        // so the type half carries no decision here.
         var separator = permissionName.IndexOf('_');
 
         return separator > 0

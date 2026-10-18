@@ -17,9 +17,9 @@ two scopes, clearance, preview, and what happens when an override stops renderin
 ## Feature
 
 One feature, `VendallionCMS.ManagedSites`: the Managed Content part and the scopes, URL resolution and
-tenant host name synchronization, the two permissions and the clearance that carries them, the Managed
-Site's content screens, and the composition that puts a Managed Site's own content in front of the Site
-Blueprint's. `Startup.cs` registers them in that order, under a heading each.
+tenant host name synchronization, the permissions each Managed Site generates for itself, the Managed
+Site's content screens and media folder, and the composition that puts a Managed Site's own content in
+front of the Site Blueprint's. `Startup.cs` registers them in that order, under a heading each.
 
 ## Developing
 
