@@ -135,6 +135,11 @@ public sealed class Startup : StartupBase
         // named by its code, because only a root folder can carry a permission of its own.
         services.AddScoped<IManagedSiteMediaFolderService, ManagedSiteMediaFolderService>();
 
+        // A role per Managed Site, made with the site, holding everything one person needs to work on
+        // it. Permissions are held by roles, so without this nobody could be given a Managed Site
+        // without assembling one first.
+        services.AddScoped<IManagedSiteRoleService, ManagedSiteRoleService>();
+
         // FR-058..FR-059: the platform cannot grant a folder for reading without also granting it for
         // writing, so keeping a Managed Site out of another's assets means refusing the write.
         services.AddScoped<IAuthorizationHandler, ManagedSiteMediaAuthorizationHandler>();

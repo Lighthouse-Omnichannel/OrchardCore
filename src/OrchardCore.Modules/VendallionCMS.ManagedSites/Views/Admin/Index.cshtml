@@ -81,6 +81,11 @@
                         <div class="actions">
                             <a asp-action="Edit" asp-route-code="@managedSite.Code" class="btn btn-sm btn-primary edit"><span>@T["Edit"]</span></a>
 
+                            <a asp-action="Access" asp-route-code="@managedSite.Code" class="btn btn-sm btn-secondary"
+                               aria-label="@T["Choose who can work on {0}", managedSite.Name]">
+                                <i class="fa-solid fa-user-lock" aria-hidden="true"></i> <span>@T["Access"]</span>
+                            </a>
+
                             <div class="btn-group" title="@T["Actions"]">
                                 <button type="button" class="btn btn-sm btn-secondary dropdown-toggle actions" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     <span>@T["Actions"]</span>

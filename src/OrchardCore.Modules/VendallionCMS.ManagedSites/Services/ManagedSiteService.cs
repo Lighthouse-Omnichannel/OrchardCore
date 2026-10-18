@@ -13,6 +13,7 @@ public sealed partial class ManagedSiteService : IManagedSiteService
     private readonly IShellUrlSynchronizationService _shellUrlSynchronizationService;
     private readonly IManagedSiteCompositionCacheService _compositionCacheService;
     private readonly IManagedSiteMediaFolderService _mediaFolderService;
+    private readonly IManagedSiteRoleService _roleService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ManagedSiteService" /> class.
@@ -26,16 +27,21 @@ public sealed partial class ManagedSiteService : IManagedSiteService
     /// The Managed Site media folder service, or <see langword="null" /> when Managed Sites are stored
     /// without anywhere to keep assets.
     /// </param>
+    /// <param name="roleService">
+    /// The Managed Site role service, or <see langword="null" /> when nothing is to be granted.
+    /// </param>
     public ManagedSiteService(
         ISiteService siteService,
         IShellUrlSynchronizationService shellUrlSynchronizationService,
         IManagedSiteCompositionCacheService compositionCacheService = null,
-        IManagedSiteMediaFolderService mediaFolderService = null)
+        IManagedSiteMediaFolderService mediaFolderService = null,
+        IManagedSiteRoleService roleService = null)
     {
         _siteService = siteService;
         _shellUrlSynchronizationService = shellUrlSynchronizationService;
         _compositionCacheService = compositionCacheService;
         _mediaFolderService = mediaFolderService;
+        _roleService = roleService;
     }
 
     /// <summary>
@@ -149,6 +155,13 @@ public sealed partial class ManagedSiteService : IManagedSiteService
         if (_mediaFolderService is not null)
         {
             await _mediaFolderService.EnsureAsync(managedSite.Code);
+        }
+
+        // And a role that carries this Managed Site, so giving somebody the site is adding them to it
+        // rather than assembling permissions by hand. Made once; an administrator owns it afterwards.
+        if (_roleService is not null)
+        {
+            await _roleService.EnsureEditorRoleAsync(managedSite);
         }
     }
 

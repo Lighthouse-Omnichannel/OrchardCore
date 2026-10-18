@@ -64,29 +64,11 @@
       "Roles": [
         {
           "Name": "Managed Site Content Editor",
-          "Description": "Opens the managed site content screens and the media library.",
-          // The gate, held by every editor: it opens the screens the way ManageMedia opens the media
-          // library. Which managed sites are behind it comes from the roles below. ViewMediaContent_shared
-          // is the one blueprint folder every managed site may reuse, for reading only.
+          "Description": "Opens the managed site content screens, and reads the blueprint's shared folder.",
+          // Each managed site makes its own role when it is defined -- Alpha Editor, Beta Editor,
+          // Gamma Editor -- holding everything one person needs to work on that site. This role adds
+          // what is not per-site: the one blueprint folder every managed site may reuse, for reading.
           "Permissions": [ "EditManagedSiteContent", "AccessAdminPanel", "ManageOwnMediaContent", "ViewMediaContent_shared" ]
-        },
-        // One role per managed site, holding that site's content and that site's folder together. This
-        // is the whole point of generating a permission per managed site: a single grant covers both,
-        // and an editor of two sites holds two of these rather than being tracked in two systems.
-        {
-          "Name": "Alpha Editors",
-          "Description": "Works on Alpha.",
-          "Permissions": [ "EditManagedSiteContent_alpha", "PublishManagedSiteContent_alpha", "PreviewManagedSiteContent_alpha", "ViewMediaContent_alpha" ]
-        },
-        {
-          "Name": "Beta Editors",
-          "Description": "Works on Beta.",
-          "Permissions": [ "EditManagedSiteContent_beta", "PublishManagedSiteContent_beta", "PreviewManagedSiteContent_beta", "ViewMediaContent_beta" ]
-        },
-        {
-          "Name": "Gamma Editors",
-          "Description": "Works on Gamma.",
-          "Permissions": [ "EditManagedSiteContent_gamma", "PublishManagedSiteContent_gamma", "PreviewManagedSiteContent_gamma", "ViewMediaContent_gamma" ]
         },
         // Reading and nothing else. Viewing is the floor every other authority implies, so a role can
         // hold it alone to let somebody look at a managed site without changing it.
@@ -196,7 +178,7 @@
         {
           "UserName": "alphaUser",
           "Password": "Password1!",
-          "RoleNames": [ "Managed Site Content Editor", "Alpha Editors" ]
+          "RoleNames": [ "Managed Site Content Editor", "Alpha Editor" ]
         },
         {
           // Authorized for two managed sites, so the screen that offers the choice is reachable
@@ -204,12 +186,12 @@
           // reading role and not the editing one means.
           "UserName": "betaUser",
           "Password": "Password1!",
-          "RoleNames": [ "Managed Site Content Editor", "Beta Editors", "Gamma Readers" ]
+          "RoleNames": [ "Managed Site Content Editor", "Beta Editor", "Gamma Readers" ]
         },
         {
           "UserName": "gammaUser",
           "Password": "Password1!",
-          "RoleNames": [ "Managed Site Content Editor", "Gamma Editors" ]
+          "RoleNames": [ "Managed Site Content Editor", "Gamma Editor" ]
         },
         {
           // The screens and no managed site behind them, which is what somebody looks like before

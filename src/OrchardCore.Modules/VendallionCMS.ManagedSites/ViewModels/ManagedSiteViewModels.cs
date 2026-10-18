@@ -78,3 +78,68 @@ public class ManagedSiteEditViewModel
         UrlPrefix = managedSite.UrlPrefix,
     };
 }
+
+/// <summary>
+/// Who may work on one Managed Site, and who could be given leave to.
+/// </summary>
+/// <remarks>
+/// Authority over a Managed Site is a permission, and permissions are held by roles, so this screen is
+/// about roles. It is still reached from the Managed Site, because the question an administrator
+/// arrives with is who may work on this site, and the roles screen answers the other question.
+/// </remarks>
+public sealed class ManagedSiteAccessViewModel
+{
+    /// <summary>
+    /// Gets or sets the Managed Site whose access is being administered.
+    /// </summary>
+    public ManagedSite ManagedSite { get; set; }
+
+    /// <summary>
+    /// Gets or sets the name of the role created with the Managed Site, which giving access adds to.
+    /// </summary>
+    public string EditorRoleName { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether that role still exists.
+    /// </summary>
+    public bool EditorRoleExists { get; set; }
+
+    /// <summary>
+    /// Gets or sets the roles carrying this Managed Site, and who is in each.
+    /// </summary>
+    public IReadOnlyList<ManagedSiteAccessRole> Roles { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the users holding none of those roles, who could be given one.
+    /// </summary>
+    public IReadOnlyList<ManagedSiteAccessUser> Available { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets whether more users matched than are listed.
+    /// </summary>
+    public bool MoreAvailable { get; set; }
+
+    /// <summary>
+    /// Gets or sets what the users who could be given access are narrowed by.
+    /// </summary>
+    public string Search { get; set; }
+}
+
+/// <summary>
+/// One role carrying a Managed Site, and the users in it.
+/// </summary>
+/// <param name="Name">The role name.</param>
+/// <param name="IsEditorRole">Whether this is the role created with the Managed Site.</param>
+/// <param name="Users">The users holding it.</param>
+public sealed record ManagedSiteAccessRole(
+    string Name,
+    bool IsEditorRole,
+    IReadOnlyList<ManagedSiteAccessUser> Users);
+
+/// <summary>
+/// One user, as this screen shows them.
+/// </summary>
+/// <param name="UserId">The user identifier.</param>
+/// <param name="UserName">The user name.</param>
+/// <param name="Email">The email address, if any.</param>
+public sealed record ManagedSiteAccessUser(string UserId, string UserName, string Email);

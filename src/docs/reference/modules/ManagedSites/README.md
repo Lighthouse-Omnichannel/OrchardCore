@@ -61,21 +61,50 @@ whoever decides what a managed site is could grant themselves authority over it,
 would be a formality. It is also how the platform treats media, where viewing every folder implies
 viewing each one.
 
-### Why a role per managed site
+### The role made with the site
 
-Permissions are held by roles, so "who may work on Alpha" is answered by a role that grants Alpha's
-permissions, and an editor who works on two managed sites holds two such roles. That is more
-bookkeeping than ticking a box against a person would be, and it buys two things worth more:
+Permissions are held by roles, so somebody has to assemble a role before anybody can be given a managed
+site. Assembling it is the same every time, so defining a managed site called **Alpha** creates a role
+called **Alpha Editor** holding everything one person needs to work on it:
 
-- **One grant covers the site and its folder.** A managed site's media folder is also a permission
-  (`ViewMediaContent_alpha`), so a single role carries both. When the two were granted by different
-  mechanisms nothing kept them in step, and an editor could change Alpha's content without seeing
-  Alpha's images.
-- **It is the screen administrators already use.** Nothing to learn, nothing bespoke to provision, and
-  a recipe grants them with an ordinary `Roles` step.
+| | |
+| --- | --- |
+| `AccessAdminPanel` | The screens are in the admin |
+| `EditManagedSiteContent` | Opens the managed site content screens |
+| `EditManagedSiteContent_alpha`, `PublishManagedSiteContent_alpha`, `PreviewManagedSiteContent_alpha` | Authority over Alpha |
+| `ManageOwnMediaContent`, `ViewMediaContent_alpha` | Opens the media library, on Alpha's folder |
+
+**One grant covers the site and its folder**, which is the point of making both of them permissions.
+When content and media were granted by different mechanisms nothing kept them in step, and an editor
+could change Alpha's content without being able to see Alpha's images.
+
+The role is an ordinary role from then on. It is not owned or rewritten: widen it, narrow it, rename it
+or delete it, and nothing here will argue. Wanting a reader who cannot change anything, or a publisher
+who cannot edit, is a role you make yourself from the four permissions above — the grades are not fixed
+because a managed site is not obliged to have the same ones as the next.
 
 An identity from an external issuer reaches a managed site the same way: the platform maps it to a role
 at sign-in, and the role carries the permissions.
+
+### Giving somebody access
+
+**Access** on the managed site's row lists the roles that carry this site and who holds each, and gives
+access by adding somebody to the role made with the site. It is reached from the managed site because
+that is the question an administrator arrives with; **Security → Roles** answers the other one, and
+answering this from there meant opening every role to find out which carried this site.
+
+Roles are found by the permissions they hold rather than by their name, so a role assembled by hand
+appears there exactly as the one made with the site does.
+
+Governing managed sites is not authority over the tenant's users, so the screen also asks the platform
+whether the caller may assign that particular role. It cannot hand out a role that **Security → Users**
+would refuse them.
+
+!!! note "Every role costs five permissions elsewhere"
+    OrchardCore generates five user-management permissions for each role in a tenant — assign, edit,
+    delete, list and manage users in it — so a tenant with many managed sites has a long list under
+    **Users**. That is the platform's doing rather than this feature's, and it is the reason a managed
+    site is given one role rather than a set of graded ones.
 
 An editor holding exactly one managed site goes straight to it. One holding several is offered the
 choice, and opening one takes them to its own address. Managed sites they hold nothing for are not
@@ -248,9 +277,9 @@ the library is theirs.
 4. Grant each editor's role the same permission for the folders of the managed sites they work on, and for
    no others.
 
-A managed site's folder and its content are both permissions, so one role per managed site carries both
-and an editor who works on two holds two such roles. The development recipe does exactly this, and is
-the quickest way to see the arrangement working.
+Steps 2 and 4 are already done for a managed site's own folder: the role made with the site holds
+`ManageOwnMediaContent` and that site's folder. What is left is step 3, the blueprint folders its
+editors should be able to reuse. The development recipe puts those on one shared role.
 
 ### What media does not do
 
@@ -346,10 +375,11 @@ What it provisions:
 - A `Managed Site Content Editor` role holding `EditManagedSiteContent`, `AccessAdminPanel` and
   `ManageOwnMediaContent` — what an editor needs, and deliberately not the permission to govern managed
   sites. It also holds reading on the `shared` folder, which every managed site may reuse.
-- An `Alpha Editors`, `Beta Editors` and `Gamma Editors` role, each holding one managed site's content
-  permissions **and** that site's media folder — the single grant that covers both. A `Gamma Readers`
-  role holds only `ViewManagedSiteContent_gamma` and Gamma's folder, which is what reading a managed
-  site without being able to change it looks like.
+- An `Alpha Editor`, `Beta Editor` and `Gamma Editor` role — not declared by the recipe, but made by
+  each managed site as it is defined, holding that site's content permissions **and** its media folder.
+- A `Gamma Readers` role the recipe does declare, holding only `ViewManagedSiteContent_gamma` and
+  Gamma's folder, which is what reading a managed site without being able to change it looks like and
+  how a grade this feature does not make is made by hand.
 - Four users, all with the password `Password1!`: `alphaUser` and `gammaUser` hold the editing role for
   the site they are named for; `betaUser` holds Beta's editing role and Gamma's reading role, so the
   screen that offers the choice is reachable and the difference between editing and reading is visible

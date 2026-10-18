@@ -1,0 +1,146 @@
+@model VendallionCMS.ManagedSites.ViewModels.ManagedSiteAccessViewModel
+
+<zone Name="Title">
+    <h1>@RenderTitleSegments(T["Who can work on {0}", Model.ManagedSite.Name])</h1>
+</zone>
+
+<div class="ocat-wrapper">
+    <div class="ocat-end-offset">
+        <p class="hint">
+            @T["Working on a managed site is a permission, and permissions are held by roles, so this is a list of roles. A role is made for each managed site when it is defined; giving somebody access adds them to it."]
+        </p>
+    </div>
+</div>
+
+<div class="row g-3">
+    @* Who holds the site. Found by the permissions a role carries rather than by its name, so a role
+       assembled by hand counts here exactly as much as the one made with the site. *@
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <strong>@T["Roles that carry this managed site"]</strong>
+            </div>
+            <div class="card-body">
+                @if (Model.Roles.Count == 0)
+                {
+                    <p class="text-muted mb-0">
+                        @T["No role carries this managed site yet. Giving somebody access below makes the one it was defined with."]
+                    </p>
+                }
+                else
+                {
+                    @foreach (var role in Model.Roles)
+                    {
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>@role.Name</strong>
+                                @if (role.IsEditorRole)
+                                {
+                                    <span class="badge ta-badge fw-normal" data-bs-toggle="tooltip"
+                                          title="@T["Made with this managed site. Giving access adds to this one."]">
+                                        <i class="fa-solid fa-sitemap text-secondary" aria-hidden="true"></i>
+                                        @T["This site's own role"]
+                                    </span>
+                                }
+                            </div>
+
+                            @if (role.Users.Count == 0)
+                            {
+                                <span class="hint d-block">@T["Nobody holds it."]</span>
+                            }
+                            else
+                            {
+                                <ul class="list-group mt-2">
+                                    @foreach (var user in role.Users)
+                                    {
+                                        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                                            <span>
+                                                @user.UserName
+                                                @if (!string.IsNullOrEmpty(user.Email))
+                                                {
+                                                    <span class="hint d-block">@user.Email</span>
+                                                }
+                                            </span>
+                                            <a class="btn btn-sm btn-danger" role="button"
+                                               asp-action="TakeAccess" asp-route-code="@Model.ManagedSite.Code"
+                                               asp-route-userId="@user.UserId" asp-route-roleName="@role.Name"
+                                               asp-route-search="@Model.Search"
+                                               data-url-af="UnsafeUrl RemoveUrl"
+                                               data-title="@T["Take away access"]"
+                                               data-message="@T["{0} will be taken out of {1} and will no longer work on this managed site through it. Are you sure?", user.UserName, role.Name]"
+                                               data-ok-text="@T["Ok"]"
+                                               data-cancel-text="@T["Cancel"]"
+                                               aria-label="@T["Take {0} out of {1}", user.UserName, role.Name]">@T["Take away"]</a>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <strong>@T["Give somebody access"]</strong>
+            </div>
+            <div class="card-body">
+                <form asp-action="Access" asp-route-code="@Model.ManagedSite.Code" method="get" class="mb-3">
+                    <div class="input-group">
+                        <label for="search" class="visually-hidden">@T["Search users"]</label>
+                        <input type="search" id="search" name="search" value="@Model.Search"
+                               class="form-control" placeholder="@T["Search by name or email"]" />
+                        <button type="submit" class="btn btn-secondary">@T["Search"]</button>
+                    </div>
+                </form>
+
+                @if (Model.Available.Count == 0)
+                {
+                    <p class="text-muted mb-0">
+                        @(string.IsNullOrEmpty(Model.Search)
+                            ? T["Everybody already holds a role that carries this managed site."]
+                            : T["No user without one matches that."])
+                    </p>
+                }
+                else
+                {
+                    <span class="hint d-block mb-2">@T["Adds them to {0}.", Model.EditorRoleName]</span>
+
+                    <ul class="list-group">
+                        @foreach (var user in Model.Available)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                                <span>
+                                    @user.UserName
+                                    @if (!string.IsNullOrEmpty(user.Email))
+                                    {
+                                        <span class="hint d-block">@user.Email</span>
+                                    }
+                                </span>
+                                <a class="btn btn-sm btn-primary" role="button"
+                                   asp-action="GiveAccess" asp-route-code="@Model.ManagedSite.Code"
+                                   asp-route-userId="@user.UserId" asp-route-search="@Model.Search"
+                                   data-url-af="UnsafeUrl"
+                                   aria-label="@T["Give {0} access to this managed site", user.UserName]">@T["Give access"]</a>
+                            </li>
+                        }
+                    </ul>
+
+                    @if (Model.MoreAvailable)
+                    {
+                        <p class="hint mt-2 mb-0">@T["More users match than are shown. Search to narrow the list."]</p>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="ocat-wrapper mt-3">
+    <div class="ocat-end-offset">
+        <a class="btn btn-secondary cancel" role="button" asp-action="Index">@T["Cancel"]</a>
+    </div>
+</div>

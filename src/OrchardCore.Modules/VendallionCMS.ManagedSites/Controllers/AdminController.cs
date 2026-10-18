@@ -22,6 +22,8 @@ public sealed class AdminController : Controller
 {
     private readonly IManagedSiteService _managedSiteService;
     private readonly IAuthorizationService _authorizationService;
+    private readonly IManagedSiteRoleService _roleService;
+    private readonly UserManager<IUser> _userManager;
     private readonly INotifier _notifier;
 
     internal readonly IStringLocalizer S;
@@ -38,12 +40,16 @@ public sealed class AdminController : Controller
     public AdminController(
         IManagedSiteService managedSiteService,
         IAuthorizationService authorizationService,
+        IManagedSiteRoleService roleService,
+        UserManager<IUser> userManager,
         INotifier notifier,
         IStringLocalizer<AdminController> stringLocalizer,
         IHtmlLocalizer<AdminController> htmlLocalizer)
     {
         _managedSiteService = managedSiteService;
         _authorizationService = authorizationService;
+        _roleService = roleService;
+        _userManager = userManager;
         _notifier = notifier;
         S = stringLocalizer;
         H = htmlLocalizer;
@@ -195,6 +201,210 @@ public sealed class AdminController : Controller
         await _notifier.SuccessAsync(H["Managed site deleted successfully."]);
 
         return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>
+    /// Shows who may work on a Managed Site, and lets that be changed.
+    /// </summary>
+    /// <remarks>
+    /// Authority over a Managed Site is a permission and permissions are held by roles, so this screen
+    /// is about roles. It is reached from the Managed Site because that is the question an
+    /// administrator arrives with; the roles screen answers the other one, and answering this from
+    /// there meant opening every role to find out which carried this site.
+    ///
+    /// Giving somebody access adds them to the role made with the Managed Site. Taking it away removes
+    /// them from the role it is in. Neither is anything the roles screen could not also do.
+    /// </remarks>
+    /// <param name="code">The Managed Site code.</param>
+    /// <param name="search">Part of a name to narrow the users who could be given access by.</param>
+    /// <returns>The access view, or a refusal.</returns>
+    public async Task<IActionResult> Access(string code, string search)
+    {
+        if (!await _authorizationService.AuthorizeAsync(User, Permissions.ManageManagedSites))
+        {
+            return Forbid();
+        }
+
+        var managedSite = await _managedSiteService.GetAsync(code);
+
+        if (managedSite is null)
+        {
+            return NotFound();
+        }
+
+        return View(await BuildAccessAsync(managedSite, search));
+    }
+
+    /// <summary>
+    /// Adds a user to the role made with the Managed Site.
+    /// </summary>
+    /// <param name="code">The Managed Site code.</param>
+    /// <param name="userId">The user to give it to.</param>
+    /// <param name="search">The search the administrator had.</param>
+    /// <returns>The access screen, carrying what happened.</returns>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> GiveAccess(string code, string userId, string search)
+    {
+        var refusal = await RefuseUnlessGoverningAsync(code);
+
+        if (refusal is not null)
+        {
+            return refusal;
+        }
+
+        var managedSite = await _managedSiteService.GetAsync(code);
+        var roleName = _roleService.GetEditorRoleName(managedSite);
+
+        // Made when the Managed Site was defined, but an administrator may have removed it since.
+        await _roleService.EnsureEditorRoleAsync(managedSite);
+
+        if (!await CanAssignAsync(roleName))
+        {
+            return Forbid();
+        }
+
+        if (await _userManager.FindByIdAsync(userId) is { } user)
+        {
+            await _userManager.AddToRoleAsync(user, roleName);
+            await _userManager.UpdateSecurityStampAsync(user);
+
+            await _notifier.SuccessAsync(H["{0} can now work on this managed site.", await _userManager.GetUserNameAsync(user)]);
+        }
+        else
+        {
+            await _notifier.WarningAsync(H["That user could not be found."]);
+        }
+
+        return RedirectToAction(nameof(Access), new { code, search });
+    }
+
+    /// <summary>
+    /// Removes a user from one of the roles carrying the Managed Site.
+    /// </summary>
+    /// <param name="code">The Managed Site code.</param>
+    /// <param name="userId">The user to take it from.</param>
+    /// <param name="roleName">The role to take them out of.</param>
+    /// <param name="search">The search the administrator had.</param>
+    /// <returns>The access screen, carrying what happened.</returns>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TakeAccess(string code, string userId, string roleName, string search)
+    {
+        var refusal = await RefuseUnlessGoverningAsync(code);
+
+        if (refusal is not null)
+        {
+            return refusal;
+        }
+
+        if (!await CanAssignAsync(roleName))
+        {
+            return Forbid();
+        }
+
+        if (await _userManager.FindByIdAsync(userId) is { } user)
+        {
+            await _userManager.RemoveFromRoleAsync(user, roleName);
+
+            // The role is gone from their principal only once it is rebuilt, and an open session keeps
+            // the one it signed in with until something moves the stamp.
+            await _userManager.UpdateSecurityStampAsync(user);
+
+            await _notifier.SuccessAsync(H["{0} no longer holds {1}.", await _userManager.GetUserNameAsync(user), roleName]);
+        }
+
+        return RedirectToAction(nameof(Access), new { code, search });
+    }
+
+    /// <summary>
+    /// Refuses anybody who may not govern Managed Sites, or a Managed Site that is not there.
+    /// </summary>
+    /// <param name="code">The Managed Site code.</param>
+    /// <returns>The refusal, or <see langword="null" /> when there is none.</returns>
+    private async Task<IActionResult> RefuseUnlessGoverningAsync(string code)
+    {
+        if (!await _authorizationService.AuthorizeAsync(User, Permissions.ManageManagedSites))
+        {
+            return Forbid();
+        }
+
+        return await _managedSiteService.GetAsync(code) is null ? NotFound() : null;
+    }
+
+    /// <summary>
+    /// Answers whether the caller may put people into one role.
+    /// </summary>
+    /// <remarks>
+    /// Governing Managed Sites is not authority over the tenant's users. Assigning a role is the
+    /// platform's decision, asked here so that this screen cannot hand out a role its own permission
+    /// screen would refuse.
+    /// </remarks>
+    /// <param name="roleName">The role.</param>
+    /// <returns><see langword="true" /> when the caller may assign it.</returns>
+    private async Task<bool> CanAssignAsync(string roleName)
+        => !string.IsNullOrEmpty(roleName)
+            && await _authorizationService.AuthorizeAsync(
+                User,
+                UsersPermissions.CreateAssignRoleToUsersPermission(roleName));
+
+    /// <summary>
+    /// Reads who carries the Managed Site, and who could be given it.
+    /// </summary>
+    private async Task<ManagedSiteAccessViewModel> BuildAccessAsync(ManagedSite managedSite, string search)
+    {
+        const int Take = 25;
+
+        var roleNames = await _roleService.ListCarryingRolesAsync(managedSite);
+        var editorRoleName = _roleService.GetEditorRoleName(managedSite);
+
+        var roles = new List<ManagedSiteAccessRole>();
+        var holders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var roleName in roleNames)
+        {
+            var users = (await _userManager.GetUsersInRoleAsync(roleName))
+                .OfType<OrchardCore.Users.Models.User>()
+                .OrderBy(user => user.UserName, StringComparer.OrdinalIgnoreCase)
+                .Select(user => new ManagedSiteAccessUser(user.UserId, user.UserName, user.Email))
+                .ToArray();
+
+            foreach (var user in users)
+            {
+                holders.Add(user.UserId);
+            }
+
+            roles.Add(new ManagedSiteAccessRole(
+                roleName,
+                string.Equals(roleName, editorRoleName, StringComparison.OrdinalIgnoreCase),
+                users));
+        }
+
+        // One more than the screen shows, so it can say the list was cut short without counting every
+        // user in the tenant.
+        var candidates = _userManager.Users
+            .OfType<OrchardCore.Users.Models.User>()
+            .Where(user => string.IsNullOrEmpty(search)
+                || user.NormalizedUserName.Contains(search.ToUpperInvariant())
+                || user.NormalizedEmail.Contains(search.ToUpperInvariant()))
+            .OrderBy(user => user.UserName)
+            .Take(Take * 2)
+            .ToArray()
+            .Where(user => !holders.Contains(user.UserId))
+            .Select(user => new ManagedSiteAccessUser(user.UserId, user.UserName, user.Email))
+            .ToArray();
+
+        return new ManagedSiteAccessViewModel
+        {
+            ManagedSite = managedSite,
+            EditorRoleName = editorRoleName,
+            EditorRoleExists = roleNames.Any(name =>
+                string.Equals(name, editorRoleName, StringComparison.OrdinalIgnoreCase)),
+            Roles = roles,
+            Available = [.. candidates.Take(Take)],
+            MoreAvailable = candidates.Length > Take,
+            Search = search,
+        };
     }
 
     private async Task<bool> TrySaveAsync(ManagedSiteEditViewModel model)
