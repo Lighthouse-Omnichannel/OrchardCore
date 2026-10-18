@@ -166,11 +166,13 @@ inverse — "what may this role do". If the per-site view is worth keeping, it c
 a list of the roles holding `ViewManagedSiteContent_{code}` and their members, but it would report rather
 than grant.
 
-**External signed clearance stops working, and that is a spec change.** The specification assumes
-clearance can arrive from an external issuer as a signed claim, including the `alpha:*` wildcard
-(`spec.md`, Assumptions). Permissions come from roles, so an external issuer would have to be mapped to
-roles at sign-in instead. This is the one decision that has to be made before any code is written,
-because it is a capability being removed, not a refactor.
+**External clearance moves to role mapping — decided, 2026-10-18.** The specification assumed clearance
+could arrive from an external issuer as a signed claim, including the `alpha:*` wildcard. It now maps to
+a role instead: an external identity reaches a Managed Site by being given the role that holds that
+Managed Site's permissions. The platform already does this at sign-in through
+`IExternalLoginEventHandler`, with `ScriptExternalLoginEventHandler` driving it from
+`SyncPropertiesScript`, so no mechanism has to be built here. The spec's assumption and FR-017 were
+updated to match.
 
 **Tests move rather than disappear.** The clearance tests become permission tests; the handler tests keep
 their shape, since the handler keeps its shape.
@@ -188,7 +190,8 @@ administrators already use for everything else. The spec's own wording — "mana
 permissions so only authorized users can manage that managed site's content" (FR-005) — describes
 permissions more closely than it describes claims.
 
-Settle the external-issuer question first. Everything else is mechanical.
+The external-issuer question is settled: role mapping, using the platform's own sign-in hook. Everything
+else is mechanical.
 
 A hybrid — keeping clearance claims and adding dynamic permissions that are honoured as well — is worth
 naming only to rule out: two sources of truth for one decision is the problem being fixed, not a safer

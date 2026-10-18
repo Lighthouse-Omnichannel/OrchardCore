@@ -73,6 +73,11 @@ Lets start with this context, and try to create the spec"
 - Q: Where in the media library does a Managed Site's folder sit? → A: At the root, named by the code. The platform resolves a folder's permission from the first segment of the path, so only a root folder can carry a permission of its own. A folder nested under a shared parent would be governed by the parent's permission and could not be told apart from its siblings.
 - Q: When is the folder created? → A: When the Managed Site is defined. A permission exists only for a folder that exists, so a folder created on first upload could not be granted to anyone before that upload, and the editor who needed it could not make it.
 
+### Session 2026-10-18
+
+- Q: How is a user allowed to work on one Managed Site rather than another? → A: By permissions held per Managed Site, generated the way the platform generates a permission per media folder and per content type, and granted to roles. This replaces clearance recorded on each user and carried as a claim, so that a Managed Site's content and its media folder are reached by one grant rather than by two mechanisms that have to be kept in step by hand.
+- Q: What becomes of clearance arriving from an external issuer? → A: It maps to a role. The platform already does this at sign-in, so an external identity reaches a Managed Site by being given the role that holds that Managed Site's permissions, rather than by carrying a clearance claim this feature reads.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Manage Site Blueprint Content (Priority: P1)
@@ -182,7 +187,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - A managed site is disabled or no longer accessible to editors; existing blueprint content delivery must continue without regression.
 - Blueprint content for a URL exists, but no override exists for the matched managed site; the response should render the original blueprint content.
 - A managed-site editor loses access while edits are in progress; unauthorized updates must not be applied.
-- A user's token contains no managed-site clearance claims; the Managed Site Admin Portal must deny managed-site editing access.
+- A user holds no permission for any Managed Site; the Managed Site content screens must deny managed-site editing access rather than show an empty list.
 - A user's managed-site clearance changes during an active session; subsequent privileged actions must honor the updated clearance before content changes are accepted.
 - A managed site is removed from an item's edit scope after it published an override; the override must stop rendering but remain administratively reviewable and recoverable.
 - A managed site that holds an override is removed from an item's display scope, which per FR-028a means it also leaves the edit scope; the item must not render for that managed site and the override must remain recoverable.
@@ -222,7 +227,8 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - **FR-014**: The Managed Site Admin Portal MUST be an OrchardCore admin surface rendered on the server, so that it inherits the admin's authentication, antiforgery, navigation, localization, and accessibility rather than restating them.
 - **FR-015**: The Managed Site Admin Portal MUST authenticate users before allowing access to content management functions.
 - **FR-016**: The Managed Site Admin Portal MUST use platform content services for managed-site content updates and page preview operations.
-- **FR-017**: The system MUST maintain managed-site clearances per user from signed authorization claims and scopes and expose only authorized managed sites to that user in the portal.
+- **FR-017**: The system MUST decide which Managed Sites a user may work on, and what they may do in each, from permissions generated per Managed Site and granted through roles, and MUST expose only the authorized Managed Sites to that user.
+- **FR-017a**: Those permissions MUST be generated the way the platform generates one per media folder and per content type, so that they appear in the roles screen, are granted by an ordinary recipe step, and carry their implications through the platform's own permission graph.
 - **FR-018**: If a user has clearance to more than one managed site, the user MUST select one managed site as the active scope for the current session before performing content actions.
 - **FR-019**: If a user has clearance to exactly one managed site, the system MUST automatically set that managed site as the active scope for the session.
 - **FR-020**: Content edits and preview actions initiated from the Managed Site Admin Portal MUST execute only against the active managed site selected for the session.
@@ -338,7 +344,7 @@ As a managed-site administrator, I can discover every content item I am allowed 
 - A tenant is a Site Blueprint precisely when the Managed Sites feature is enabled on it, so there is no stored blueprint record and a Managed Site carries no blueprint identifier.
 - The Managed Site Admin Portal is a browser-based authoring experience used exclusively by managed-site editors and administrators.
 - Platform content services required for content edit and page preview operations are available to the Managed Site Admin Portal under authenticated access.
-- Managed-site clearance is provided to the portal through signed authorization claims and scopes.
+- A user's authority over a Managed Site is a permission held by one of their roles, read through the platform's own authorization service. An external issuer reaches it by that identity being given the role, which the platform maps at sign-in, rather than by this feature reading a claim of its own.
 - Public page rendering resolves Managed Site context from the incoming URL; optional Managed Site scope metadata is used only by administrative service requests as consistency metadata.
 - Site blueprint content and managed-site overrides use existing content lifecycle states (draft/published) and are composed from published versions.
 - URL matching uses the same canonical request URL interpretation already used by the site.
