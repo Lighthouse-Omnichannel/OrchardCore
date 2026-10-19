@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using OrchardCore.Security;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -113,6 +115,82 @@ public class ManagedSitePermissionModelTests
             provided,
             permission => permission.Name == "EditManagedSiteContent_alpha");
     }
+
+    [Theory]
+    [InlineData("edit")]
+    [InlineData("publish")]
+    [InlineData("preview")]
+    public void AnyAuthorityOverAManagedSite_GrantsReadingIt(string scope)
+    {
+        // Reading is the floor rather than a scope of its own: whatever somebody may do to a Managed
+        // Site, they may see it. A role granting only editing that could not open the site would be
+        // unusable, and one that had to be granted reading alongside would be a trap.
+        Assert.True(Grants(scope, reaches: null));
+    }
+
+    [Fact]
+    public void PublishingAManagedSite_GrantsEditingIt()
+    {
+        // Publishing somebody else's draft without being able to change it is not a job anyone has.
+        Assert.True(Grants("publish", reaches: "edit"));
+    }
+
+    [Fact]
+    public void EditingAManagedSite_DoesNotGrantPublishingIt()
+    {
+        // The line that makes publishing worth granting separately.
+        Assert.False(Grants("edit", reaches: "publish"));
+    }
+
+    [Fact]
+    public void EditingAManagedSite_DoesNotGrantPreviewingIt()
+    {
+        // Somebody may be trusted to draft a change without being handed the link that shows
+        // unpublished work on the live address.
+        Assert.False(Grants("edit", reaches: "preview"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("edit")]
+    [InlineData("publish")]
+    [InlineData("preview")]
+    public void GoverningManagedSites_GrantsEveryAuthorityOverEachOne(string scope)
+    {
+        // Whoever decides what a Managed Site is could grant themselves authority over it, so
+        // withholding it would be a formality.
+        Assert.True(Granted(
+            ManagedSiteContentPermissions.For("alpha", scope),
+            holding: Permissions.ManageManagedSites.Name));
+    }
+
+    [Fact]
+    public void AuthorityOverOneManagedSite_ReachesNoOther()
+    {
+        Assert.False(Granted(
+            ManagedSiteContentPermissions.For("beta", scope: null),
+            holding: ManagedSiteContentPermissions.For("alpha", "publish").Name));
+    }
+
+    /// <summary>
+    /// Answers whether holding one scope over a Managed Site reaches another.
+    /// </summary>
+    /// <param name="held">The scope actually granted.</param>
+    /// <param name="reaches">The scope asked about, or <see langword="null" /> for reading.</param>
+    /// <returns>Whether the platform grants it.</returns>
+    private static bool Grants(string held, string reaches)
+        => Granted(
+            ManagedSiteContentPermissions.For("alpha", reaches),
+            holding: ManagedSiteContentPermissions.For("alpha", held).Name);
+
+    /// <summary>
+    /// Asks the platform's own granting service, so the implication graph is the one that will decide
+    /// this in production rather than one restated here.
+    /// </summary>
+    private static bool Granted(Permission permission, string holding)
+        => new DefaultPermissionGrantingService().IsGranted(
+            new PermissionRequirement(permission),
+            [new Claim(Permission.ClaimType, holding)]);
 
     private static Permissions Provider(params ManagedSite[] managedSites)
         => new(new FakeManagedSiteService(managedSites));
