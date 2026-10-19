@@ -44,6 +44,12 @@ public interface IManagedSiteRoleService
     IReadOnlyList<string> GetEditorPermissions(ManagedSite managedSite);
 
     /// <summary>
+    /// Lists every role in the tenant, by name.
+    /// </summary>
+    /// <returns>The role names.</returns>
+    ValueTask<IReadOnlyList<string>> ListAllRoleNamesAsync();
+
+    /// <summary>
     /// Lists the roles that carry a Managed Site, whichever of its permissions they hold.
     /// </summary>
     /// <remarks>
@@ -111,6 +117,19 @@ public sealed class ManagedSiteRoleService : IManagedSiteRoleService
             MediaPermissions.ManageOwnMedia.Name,
             $"ViewMediaContent_{folder}",
         ];
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<IReadOnlyList<string>> ListAllRoleNamesAsync()
+    {
+        var roleService = _serviceProvider.GetService<IRoleService>();
+
+        if (roleService is null)
+        {
+            return [];
+        }
+
+        return [.. (await roleService.GetRolesAsync()).Select(role => role.RoleName)];
     }
 
     /// <inheritdoc />

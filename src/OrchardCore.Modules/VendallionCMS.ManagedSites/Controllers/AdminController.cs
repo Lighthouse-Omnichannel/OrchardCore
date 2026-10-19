@@ -238,6 +238,13 @@ public sealed class AdminController : Controller
             return NotFound();
         }
 
+        // Made here rather than when the button is pressed. A role is written to the roles document for
+        // update, and reading the roles back -- which is what assigning one does -- reads the cached
+        // copy, which is not refreshed until the scope commits. Creating and assigning in one request
+        // therefore cannot work, so the screen makes the role a request earlier than it is needed.
+        // This also carries a Managed Site defined before the feature made roles for them.
+        await _roleService.EnsureEditorRoleAsync(managedSite);
+
         return View(await BuildAccessAsync(managedSite, search));
     }
 
@@ -277,15 +284,21 @@ public sealed class AdminController : Controller
             return Forbid();
         }
 
-        if (string.Equals(roleName, editorRoleName, StringComparison.OrdinalIgnoreCase))
-        {
-            // Made when the Managed Site was defined, but an administrator may have removed it since.
-            await _roleService.EnsureEditorRoleAsync(managedSite);
-        }
-
         if (!await CanAssignAsync(roleName))
         {
             return Forbid();
+        }
+
+        // Somebody may have deleted it between the screen being drawn and this being pressed. Assigning
+        // a role that is not there throws, and the role cannot be made and used in one request, so this
+        // says so and makes it ready for the next press rather than failing.
+        if (!await RoleExistsAsync(roleName))
+        {
+            await _roleService.EnsureEditorRoleAsync(managedSite);
+
+            await _notifier.WarningAsync(H["{0} was missing and has been created. Give access again.", roleName]);
+
+            return RedirectToAction(nameof(Access), new { code, search });
         }
 
         if (await _userManager.FindByIdAsync(userId) is { } user)
@@ -388,6 +401,15 @@ public sealed class AdminController : Controller
 
         return [.. names.OrderBy(name => name, StringComparer.OrdinalIgnoreCase)];
     }
+
+    /// <summary>
+    /// Answers whether a role is there to be assigned.
+    /// </summary>
+    /// <param name="roleName">The role.</param>
+    /// <returns><see langword="true" /> when it exists.</returns>
+    private async Task<bool> RoleExistsAsync(string roleName)
+        => (await _roleService.ListAllRoleNamesAsync())
+            .Contains(roleName, StringComparer.OrdinalIgnoreCase);
 
     private async Task<bool> CanAssignAsync(string roleName)
         => !string.IsNullOrEmpty(roleName)

@@ -294,6 +294,56 @@ public sealed class ManagedSiteAccessTests : CmsTestBase, IClassFixture<CmsSetup
         }
     }
 
+    /// <summary>
+    /// A managed site whose role is not there can still be given to somebody.
+    /// </summary>
+    /// <remarks>
+    /// This is the state every managed site defined before the feature made roles for them is in, and
+    /// the state a deleted role puts one back into. It is worth its own test because the obvious
+    /// implementation cannot work: a role is written to the roles document for update while reading
+    /// the roles back reads the cached copy, which is not refreshed until the scope commits, so making
+    /// the role and assigning it in one request throws "Role does not exist".
+    /// </remarks>
+    [Fact]
+    public async Task GivingAccess_WhenTheSitesRoleWasDeleted_StillWorks()
+    {
+        var page = await AdministratorAsync();
+
+        try
+        {
+            await DeleteRoleAsync(page, "Beta Editor");
+
+            // Drawing the screen is what makes it again, a request before anybody presses anything.
+            await GotoAccessAsync(page, "beta");
+
+            var candidate = page.Locator("li.list-group-item",
+                new PageLocatorOptions { HasText = "strandedUser" }).First;
+
+            await candidate.GetByRole(AriaRole.Button).First.ClickAsync();
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+            await Assertions.Expect(page.GetByText("now holds Beta Editor")).ToBeVisibleAsync();
+        }
+        finally
+        {
+            await page.CloseAsync();
+        }
+    }
+
+    /// <summary>
+    /// Removes a role through the platform's own screen, as an administrator would.
+    /// </summary>
+    private async Task DeleteRoleAsync(IPage page, string roleName)
+    {
+        await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/Roles/Index");
+
+        var row = page.Locator("li.list-group-item", new PageLocatorOptions { HasText = roleName }).First;
+
+        await row.Locator("a:has-text('Delete')").First.ClickAsync();
+        await page.ClickModalOkAsync();
+        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
     private Task GotoAccessAsync(IPage page, string managedSiteCode)
         => page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Access/{managedSiteCode}");
 
