@@ -110,6 +110,16 @@ public sealed class ManagedSiteAccessViewModel
     public IReadOnlyList<ManagedSiteAccessRole> Roles { get; set; } = [];
 
     /// <summary>
+    /// Gets or sets the roles somebody may be added to from this screen.
+    /// </summary>
+    /// <remarks>
+    /// The roles carrying this Managed Site, and the one made with it even when nobody holds it yet.
+    /// Nothing else: a screen that could add somebody to any role at all would be a way around the
+    /// permission that governs assigning roles.
+    /// </remarks>
+    public IReadOnlyList<string> AssignableRoleNames { get; set; } = [];
+
+    /// <summary>
     /// Gets or sets the users holding none of those roles, who could be given one.
     /// </summary>
     public IReadOnlyList<ManagedSiteAccessUser> Available { get; set; } = [];

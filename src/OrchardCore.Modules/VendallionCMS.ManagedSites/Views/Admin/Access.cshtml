@@ -7,13 +7,94 @@
 <div class="ocat-wrapper">
     <div class="ocat-end-offset">
         <p class="hint">
-            @T["Working on a managed site is a permission, and permissions are held by roles, so this is a list of roles. A role is made for each managed site when it is defined; giving somebody access adds them to it."]
+            @T["Working on a managed site is a permission, and permissions are held by roles, so somebody is given this site by being put in a role that carries it. A role is made for each managed site when it is defined."]
         </p>
     </div>
 </div>
 
 <div class="row g-3">
-    @* Who holds the site. Found by the permissions a role carries rather than by its name, so a role
+    @* People first, because the question an administrator arrives with is who, and the role is how. *@
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <strong>@T["Give somebody access"]</strong>
+            </div>
+            <div class="card-body">
+                @* Its own form, and a sibling of the one below: a form inside a form is dropped by the
+                   browser, and the search is a GET while giving access is a POST. *@
+                <form asp-action="Access" asp-route-code="@Model.ManagedSite.Code" method="get" class="mb-3">
+                    <div class="input-group">
+                        <label for="search" class="visually-hidden">@T["Search users"]</label>
+                        <input type="search" id="search" name="search" value="@Model.Search"
+                               class="form-control" placeholder="@T["Search by name or email"]" />
+                        <button type="submit" class="btn btn-secondary">@T["Search"]</button>
+                    </div>
+                </form>
+
+                @if (Model.Available.Count == 0)
+                {
+                    <p class="text-muted mb-0">
+                        @(string.IsNullOrEmpty(Model.Search)
+                            ? T["Everybody already holds a role that carries this managed site."]
+                            : T["No user without one matches that."])
+                    </p>
+                }
+                else
+                {
+                    <form asp-action="GiveAccess" asp-route-code="@Model.ManagedSite.Code" method="post">
+                        <input type="hidden" name="search" value="@Model.Search" />
+
+                        @if (Model.AssignableRoleNames.Count > 1)
+                        {
+                            @* More than one role carries this site, so which one to put them in is a
+                               decision rather than a default. *@
+                            <div class="mb-3">
+                                <label for="roleName" class="form-label">@T["Add them to"]</label>
+                                <select id="roleName" name="roleName" class="form-select">
+                                    @foreach (var roleName in Model.AssignableRoleNames)
+                                    {
+                                        <option value="@roleName" selected="@(string.Equals(roleName, Model.EditorRoleName, StringComparison.OrdinalIgnoreCase))">@roleName</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        else
+                        {
+                            <input type="hidden" name="roleName" value="@Model.EditorRoleName" />
+                            <span class="hint d-block mb-2">@T["Adds them to {0}.", Model.EditorRoleName]</span>
+                        }
+
+                        <ul class="list-group">
+                            @foreach (var user in Model.Available)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                                    <span>
+                                        @user.UserName
+                                        @if (!string.IsNullOrEmpty(user.Email))
+                                        {
+                                            <span class="hint d-block">@user.Email</span>
+                                        }
+                                    </span>
+                                    @* The user travels on the button so the role chosen above travels
+                                       with them, which an anchor could not carry. *@
+                                    <button type="submit" name="userId" value="@user.UserId"
+                                            class="btn btn-sm btn-primary"
+                                            aria-label="@T["Give {0} access to this managed site", user.UserName]">@T["Give access"]</button>
+                                </li>
+                            }
+                        </ul>
+                    </form>
+
+                    @if (Model.MoreAvailable)
+                    {
+                        <p class="hint mt-2 mb-0">@T["More users match than are shown. Search to narrow the list."]</p>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    @* What carries the site. Found by the permissions a role holds rather than by its name, so a role
        assembled by hand counts here exactly as much as the one made with the site. *@
     <div class="col-lg-6">
         <div class="card h-100">
@@ -24,7 +105,7 @@
                 @if (Model.Roles.Count == 0)
                 {
                     <p class="text-muted mb-0">
-                        @T["No role carries this managed site yet. Giving somebody access below makes the one it was defined with."]
+                        @T["No role carries this managed site yet. Giving somebody access makes the one it was defined with."]
                     </p>
                 }
                 else
@@ -37,7 +118,7 @@
                                 @if (role.IsEditorRole)
                                 {
                                     <span class="badge ta-badge fw-normal" data-bs-toggle="tooltip"
-                                          title="@T["Made with this managed site. Giving access adds to this one."]">
+                                          title="@T["Made with this managed site."]">
                                         <i class="fa-solid fa-sitemap text-secondary" aria-hidden="true"></i>
                                         @T["This site's own role"]
                                     </span>
@@ -76,62 +157,6 @@
                                 </ul>
                             }
                         </div>
-                    }
-                }
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-6">
-        <div class="card h-100">
-            <div class="card-header">
-                <strong>@T["Give somebody access"]</strong>
-            </div>
-            <div class="card-body">
-                <form asp-action="Access" asp-route-code="@Model.ManagedSite.Code" method="get" class="mb-3">
-                    <div class="input-group">
-                        <label for="search" class="visually-hidden">@T["Search users"]</label>
-                        <input type="search" id="search" name="search" value="@Model.Search"
-                               class="form-control" placeholder="@T["Search by name or email"]" />
-                        <button type="submit" class="btn btn-secondary">@T["Search"]</button>
-                    </div>
-                </form>
-
-                @if (Model.Available.Count == 0)
-                {
-                    <p class="text-muted mb-0">
-                        @(string.IsNullOrEmpty(Model.Search)
-                            ? T["Everybody already holds a role that carries this managed site."]
-                            : T["No user without one matches that."])
-                    </p>
-                }
-                else
-                {
-                    <span class="hint d-block mb-2">@T["Adds them to {0}.", Model.EditorRoleName]</span>
-
-                    <ul class="list-group">
-                        @foreach (var user in Model.Available)
-                        {
-                            <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
-                                <span>
-                                    @user.UserName
-                                    @if (!string.IsNullOrEmpty(user.Email))
-                                    {
-                                        <span class="hint d-block">@user.Email</span>
-                                    }
-                                </span>
-                                <a class="btn btn-sm btn-primary" role="button"
-                                   asp-action="GiveAccess" asp-route-code="@Model.ManagedSite.Code"
-                                   asp-route-userId="@user.UserId" asp-route-search="@Model.Search"
-                                   data-url-af="UnsafeUrl"
-                                   aria-label="@T["Give {0} access to this managed site", user.UserName]">@T["Give access"]</a>
-                            </li>
-                        }
-                    </ul>
-
-                    @if (Model.MoreAvailable)
-                    {
-                        <p class="hint mt-2 mb-0">@T["More users match than are shown. Search to narrow the list."]</p>
                     }
                 }
             </div>

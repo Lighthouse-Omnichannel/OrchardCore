@@ -250,7 +250,7 @@ public sealed class AdminController : Controller
     /// <returns>The access screen, carrying what happened.</returns>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> GiveAccess(string code, string userId, string search)
+    public async Task<IActionResult> GiveAccess(string code, string userId, string roleName, string search)
     {
         var refusal = await RefuseUnlessGoverningAsync(code);
 
@@ -260,10 +260,28 @@ public sealed class AdminController : Controller
         }
 
         var managedSite = await _managedSiteService.GetAsync(code);
-        var roleName = _roleService.GetEditorRoleName(managedSite);
+        var editorRoleName = _roleService.GetEditorRoleName(managedSite);
 
-        // Made when the Managed Site was defined, but an administrator may have removed it since.
-        await _roleService.EnsureEditorRoleAsync(managedSite);
+        // Which role to add them to arrives from the form, so it is checked against the ones this
+        // Managed Site actually offers. Without that, this screen would add anybody to any role named
+        // in a request, which is the permission that governs assigning roles gone round rather than
+        // asked.
+        var assignable = await AssignableRoleNamesAsync(managedSite);
+
+        if (string.IsNullOrEmpty(roleName))
+        {
+            roleName = editorRoleName;
+        }
+        else if (!assignable.Contains(roleName, StringComparer.OrdinalIgnoreCase))
+        {
+            return Forbid();
+        }
+
+        if (string.Equals(roleName, editorRoleName, StringComparison.OrdinalIgnoreCase))
+        {
+            // Made when the Managed Site was defined, but an administrator may have removed it since.
+            await _roleService.EnsureEditorRoleAsync(managedSite);
+        }
 
         if (!await CanAssignAsync(roleName))
         {
@@ -275,7 +293,7 @@ public sealed class AdminController : Controller
             await _userManager.AddToRoleAsync(user, roleName);
             await _userManager.UpdateSecurityStampAsync(user);
 
-            await _notifier.SuccessAsync(H["{0} can now work on this managed site.", await _userManager.GetUserNameAsync(user)]);
+            await _notifier.SuccessAsync(H["{0} now holds {1} and can work on this managed site.", await _userManager.GetUserNameAsync(user), roleName]);
         }
         else
         {
@@ -348,6 +366,29 @@ public sealed class AdminController : Controller
     /// </remarks>
     /// <param name="roleName">The role.</param>
     /// <returns><see langword="true" /> when the caller may assign it.</returns>
+    /// <summary>
+    /// Lists the roles this screen may add somebody to.
+    /// </summary>
+    /// <remarks>
+    /// The roles already carrying the Managed Site, and the one made with it even when nobody holds it
+    /// yet, so the screen still works on a Managed Site whose role was deleted.
+    /// </remarks>
+    /// <param name="managedSite">The Managed Site.</param>
+    /// <returns>The role names, ordered, without repeats.</returns>
+    private async Task<IReadOnlyList<string>> AssignableRoleNamesAsync(ManagedSite managedSite)
+    {
+        var names = new List<string>(await _roleService.ListCarryingRolesAsync(managedSite));
+        var editorRoleName = _roleService.GetEditorRoleName(managedSite);
+
+        if (editorRoleName is not null
+            && !names.Contains(editorRoleName, StringComparer.OrdinalIgnoreCase))
+        {
+            names.Add(editorRoleName);
+        }
+
+        return [.. names.OrderBy(name => name, StringComparer.OrdinalIgnoreCase)];
+    }
+
     private async Task<bool> CanAssignAsync(string roleName)
         => !string.IsNullOrEmpty(roleName)
             && await _authorizationService.AuthorizeAsync(
@@ -413,6 +454,7 @@ public sealed class AdminController : Controller
             EditorRoleName = editorRoleName,
             EditorRoleExists = roleNames.Any(name =>
                 string.Equals(name, editorRoleName, StringComparison.OrdinalIgnoreCase)),
+            AssignableRoleNames = await AssignableRoleNamesAsync(managedSite),
             Roles = roles,
             Available = [.. candidates.Take(Take)],
             MoreAvailable = candidates.Length > Take,

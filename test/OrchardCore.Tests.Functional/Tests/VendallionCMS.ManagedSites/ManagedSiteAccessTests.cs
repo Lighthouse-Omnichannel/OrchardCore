@@ -108,7 +108,6 @@ public sealed class ManagedSiteAccessTests : CmsTestBase, IClassFixture<CmsSetup
 
             await Assertions.Expect(candidate).ToBeVisibleAsync();
 
-            // The admin writes a btn anchor with role="button", so that is what it is exposed as.
             await candidate.GetByRole(AriaRole.Button,
                 new LocatorGetByRoleOptions { Name = "Give strandedUser access to this managed site" })
                 .ClickAsync();
@@ -171,6 +170,121 @@ public sealed class ManagedSiteAccessTests : CmsTestBase, IClassFixture<CmsSetup
             var response = await page.APIRequest.GetAsync(
                 $"{Fixture.BaseUrl}/{Tenant.Prefix}/Admin/ManagedSites/Access/alpha",
                 new APIRequestContextOptions { MaxRedirects = 0 });
+
+            Assert.NotEqual(200, response.Status);
+        }
+        finally
+        {
+            await page.CloseAsync();
+        }
+    }
+
+    /// <summary>
+    /// One role carrying the site is not a choice, so the screen does not ask.
+    /// </summary>
+    [Fact]
+    public async Task TheAccessScreen_WhenOneRoleCarriesTheSite_DoesNotAskWhich()
+    {
+        var page = await AdministratorAsync();
+
+        try
+        {
+            await GotoAccessAsync(page, "alpha");
+
+            await Assertions.Expect(page.Locator("#roleName")).ToHaveCountAsync(0);
+            await Assertions.Expect(page.GetByText("Adds them to Alpha Editor")).ToBeVisibleAsync();
+        }
+        finally
+        {
+            await page.CloseAsync();
+        }
+    }
+
+    /// <summary>
+    /// Several carrying it is a decision, so the screen asks before it acts.
+    /// </summary>
+    [Fact]
+    public async Task TheAccessScreen_WhenSeveralRolesCarryTheSite_AsksWhich()
+    {
+        var page = await AdministratorAsync();
+
+        try
+        {
+            // Gamma is carried by the role made with it and by the reading role the recipe declares.
+            await GotoAccessAsync(page, "gamma");
+
+            var options = await page.Locator("#roleName option").AllTextContentsAsync();
+
+            Assert.Contains("Gamma Editor", options.Select(option => option.Trim()));
+            Assert.Contains("Gamma Readers", options.Select(option => option.Trim()));
+        }
+        finally
+        {
+            await page.CloseAsync();
+        }
+    }
+
+    /// <summary>
+    /// Giving access puts somebody in the role that was chosen, not always the site's own.
+    /// </summary>
+    [Fact]
+    public async Task GivingAccess_UsesTheRoleThatWasChosen()
+    {
+        var page = await AdministratorAsync();
+
+        try
+        {
+            await GotoAccessAsync(page, "gamma");
+
+            await page.Locator("#roleName").SelectOptionAsync("Gamma Readers");
+
+            var candidate = page.Locator("li.list-group-item",
+                new PageLocatorOptions { HasText = "alphaUser" }).First;
+
+            await candidate.GetByRole(AriaRole.Button).First.ClickAsync();
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+            await Assertions.Expect(page.GetByText("now holds Gamma Readers")).ToBeVisibleAsync();
+        }
+        finally
+        {
+            await page.CloseAsync();
+        }
+    }
+
+    /// <summary>
+    /// The role arrives from a form, so a role that does not carry the site is refused.
+    /// </summary>
+    /// <remarks>
+    /// Without this the screen would add anybody to any role named in a request, which is the
+    /// permission governing role assignment gone round rather than asked. The form is tampered with
+    /// here because that is what an attacker would do; the page itself never offers the option.
+    /// </remarks>
+    [Fact]
+    public async Task GivingAccess_ToARoleThatDoesNotCarryTheSite_IsRefused()
+    {
+        var page = await AdministratorAsync();
+
+        try
+        {
+            await GotoAccessAsync(page, "gamma");
+
+            await page.EvaluateAsync(
+                @"() => {
+                    const select = document.querySelector('#roleName');
+                    const option = document.createElement('option');
+                    option.value = 'Administrator';
+                    option.textContent = 'Administrator';
+                    select.appendChild(option);
+                    select.value = 'Administrator';
+                }");
+
+            var candidate = page.Locator("li.list-group-item",
+                new PageLocatorOptions { HasText = "alphaUser" }).First;
+
+            var response = await page.RunAndWaitForResponseAsync(
+                async () => await candidate.GetByRole(AriaRole.Button).First.ClickAsync(),
+                response => response.Url.Contains("GiveAccess", StringComparison.OrdinalIgnoreCase));
 
             Assert.NotEqual(200, response.Status);
         }
