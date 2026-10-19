@@ -14,9 +14,13 @@ namespace VendallionCMS.ManagedSites;
 /// carried by the platform's own permission graph.
 ///
 /// The implications run from the larger authority to the smaller, as they do for content types:
-/// publishing a Managed Site's content implies editing it, and either implies reading it. Reading is
-/// the floor rather than a scope of its own, which is the rule the earlier clearance model expressed by
-/// granting no scope at all.
+/// publishing a Managed Site's content implies editing it, editing implies previewing it, and all of
+/// them imply reading it. Reading is the floor rather than a scope of its own, which is the rule the
+/// earlier clearance model expressed by granting no scope at all.
+///
+/// Only previewing runs one way on its own. An editor writes the drafts, so withholding the preview of
+/// their own unpublished work would withhold nothing; but somebody can be shown unpublished work
+/// without being handed the ability to change it.
 ///
 /// Every one of them is also implied by governing Managed Sites, for the same reason the content
 /// screens are: whoever may grant authority over a Managed Site can grant it to themselves, so
@@ -34,24 +38,26 @@ public static class ManagedSiteContentPermissions
         [Permissions.ManageManagedSites]);
 
     /// <summary>
-    /// Allows seeing one Managed Site's unpublished work.
-    /// </summary>
-    /// <remarks>
-    /// Not implied by editing: somebody may be trusted to draft a change without being handed the
-    /// preview link that shows unpublished work on the live address.
-    /// </remarks>
-    public static readonly Permission PreviewManagedSiteContent = new(
-        "PreviewManagedSiteContent_{0}",
-        "Preview the unpublished content of managed site '{0}'",
-        [Permissions.ManageManagedSites]);
-
-    /// <summary>
     /// Allows changing one Managed Site's own content.
     /// </summary>
     public static readonly Permission EditManagedSiteContent = new(
         "EditManagedSiteContent_{0}",
         "Edit the content of managed site '{0}'",
         [PublishManagedSiteContent]);
+
+    /// <summary>
+    /// Allows seeing one Managed Site's unpublished work.
+    /// </summary>
+    /// <remarks>
+    /// Implied by editing, because an editor writes the drafts: they already read them in the content
+    /// editor, and showing the same content composed on the Managed Site's own address discloses
+    /// nothing they could not already see. It does not run the other way, so somebody can be shown
+    /// unpublished work without being able to change it.
+    /// </remarks>
+    public static readonly Permission PreviewManagedSiteContent = new(
+        "PreviewManagedSiteContent_{0}",
+        "Preview the unpublished content of managed site '{0}'",
+        [EditManagedSiteContent]);
 
     /// <summary>
     /// Allows reading one Managed Site's content, which is the least any authority over it carries.

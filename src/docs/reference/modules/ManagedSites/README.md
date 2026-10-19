@@ -52,9 +52,14 @@ grouped under the managed site's name, and they are granted like any other permi
 | `PublishManagedSiteContent_alpha` | Publish it |
 | `PreviewManagedSiteContent_alpha` | See unpublished work, in the admin and through a preview link |
 
-**Reading is the floor.** Publishing implies editing, and editing or previewing implies reading, so a
-role granting any of them can see the site. A role granting only the first reads the site and changes
-nothing, which is a real answer rather than a half-granted one.
+**Reading is the floor.** Publishing implies editing, editing implies previewing, and all of them imply
+reading, so a role granting any one can see the site. A role granting only the first reads the site and
+changes nothing, which is a real answer rather than a half-granted one.
+
+**Previewing runs one way.** An editor writes the drafts and already reads them in the content editor,
+so editing carries previewing: withholding the preview of their own unpublished work would withhold
+nothing. It does not run back the other way, so somebody can be shown unpublished work — a reviewer, a
+client signing off — without being handed the ability to change it.
 
 All four are also implied by **Manage Managed Sites**, for the same reason the content screens are:
 whoever decides what a managed site is could grant themselves authority over it, so withholding it
@@ -324,8 +329,8 @@ itself is served at.
 A preview link is built from the managed site's own address, so the preview is composed by the
 pipeline that serves the site rather than by a separate renderer and cannot drift from what visitors
 receive. Asking for unpublished work adds a query value; asking is not being granted, and the request is
-honoured only for a caller holding `PreviewManagedSiteContent_` for the managed site the address resolves to. The
-same link shared with anyone else shows published content.
+honoured only for a caller who may preview that managed site, which an editor of it may. The same link
+shared with anyone else shows published content.
 
 Previewing a disabled managed site is refused rather than showing Site Blueprint content under its name.
 

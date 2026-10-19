@@ -141,10 +141,21 @@ public class ManagedSitePreviewTests
     }
 
     [Fact]
-    public async Task PreviewingWithoutPreviewClearance_ShowsOnlyWhatIsPublished()
+    public async Task PreviewingWithEditingAuthority_ShowsUnpublishedWork()
     {
-        // Edit clearance is not preview clearance, and neither is typing the query value.
-        var page = await ComposeAsync(previewRequested: true, clearance: "costis:view,edit");
+        // An editor writes the drafts and reads them in the content editor already, so editing a
+        // Managed Site carries previewing it.
+        var page = await ComposeAsync(previewRequested: true, clearance: "costis:edit");
+
+        Assert.Equal("Draft in progress", TitleOfFirstSection(page));
+    }
+
+    [Fact]
+    public async Task PreviewingWithReadingAlone_ShowsOnlyWhatIsPublished()
+    {
+        // Authority to read a Managed Site is not authority to see what it has not published, and
+        // neither is typing the query value.
+        var page = await ComposeAsync(previewRequested: true, clearance: "costis");
 
         Assert.Equal("Published", TitleOfFirstSection(page));
     }

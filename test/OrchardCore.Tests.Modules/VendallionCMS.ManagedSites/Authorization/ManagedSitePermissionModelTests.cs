@@ -143,12 +143,24 @@ public class ManagedSitePermissionModelTests
     }
 
     [Fact]
-    public void EditingAManagedSite_DoesNotGrantPreviewingIt()
+    public void EditingAManagedSite_GrantsPreviewingIt()
     {
-        // Somebody may be trusted to draft a change without being handed the link that shows
-        // unpublished work on the live address.
-        Assert.False(Grants("edit", reaches: "preview"));
+        // An editor writes the drafts and already reads them in the content editor, so withholding the
+        // preview of their own unpublished work would withhold nothing.
+        Assert.True(Grants("edit", reaches: "preview"));
     }
+
+    [Fact]
+    public void PreviewingAManagedSite_DoesNotGrantEditingIt()
+    {
+        // It runs one way only: somebody can be shown unpublished work without being handed the
+        // ability to change it.
+        Assert.False(Grants("preview", reaches: "edit"));
+    }
+
+    [Fact]
+    public void PreviewingAManagedSite_DoesNotGrantPublishingIt()
+        => Assert.False(Grants("preview", reaches: "publish"));
 
     [Theory]
     [InlineData(null)]
