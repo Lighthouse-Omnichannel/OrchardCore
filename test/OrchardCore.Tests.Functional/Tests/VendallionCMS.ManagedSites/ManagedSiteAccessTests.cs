@@ -59,8 +59,8 @@ public sealed class ManagedSiteAccessTests : CmsTestBase, IClassFixture<CmsSetup
         {
             await GotoAccessAsync(page, "alpha");
 
-            await Assertions.Expect(page.GetByText("Alpha Editor").First).ToBeVisibleAsync();
-            await Assertions.Expect(page.GetByText("alphaUser").First).ToBeVisibleAsync();
+            await Assertions.Expect(RolesCard(page).GetByText("Alpha Editor").First).ToBeVisibleAsync();
+            await Assertions.Expect(RolesCard(page).GetByText("alphaUser").First).ToBeVisibleAsync();
         }
         finally
         {
@@ -81,8 +81,8 @@ public sealed class ManagedSiteAccessTests : CmsTestBase, IClassFixture<CmsSetup
             // The recipe declares this one itself, holding only Gamma's reading permission.
             await GotoAccessAsync(page, "gamma");
 
-            await Assertions.Expect(page.GetByText("Gamma Readers").First).ToBeVisibleAsync();
-            await Assertions.Expect(page.GetByText("betaUser").First).ToBeVisibleAsync();
+            await Assertions.Expect(RolesCard(page).GetByText("Gamma Readers").First).ToBeVisibleAsync();
+            await Assertions.Expect(RolesCard(page).GetByText("betaUser").First).ToBeVisibleAsync();
         }
         finally
         {
@@ -113,7 +113,7 @@ public sealed class ManagedSiteAccessTests : CmsTestBase, IClassFixture<CmsSetup
                 .ClickAsync();
             await administrator.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-            await Assertions.Expect(administrator.GetByText("can now work on this managed site").First)
+            await Assertions.Expect(administrator.GetByText("now holds Alpha Editor").First)
                 .ToBeVisibleAsync();
 
             // And it is real: they reach Alpha, which they could not before.
@@ -337,12 +337,19 @@ public sealed class ManagedSiteAccessTests : CmsTestBase, IClassFixture<CmsSetup
     {
         await page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/Roles/Index");
 
-        var row = page.Locator("li.list-group-item", new PageLocatorOptions { HasText = roleName }).First;
+        var row = page.Locator($"li.list-group-item[data-filter-value='{roleName}']").First;
 
+        await row.Locator("button.dropdown-toggle").First.ClickAsync();
         await row.Locator("a:has-text('Delete')").First.ClickAsync();
         await page.ClickModalOkAsync();
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
     }
+
+    /// <summary>
+    /// The card listing what carries the managed site, as opposed to the picker opposite it.
+    /// </summary>
+    private static ILocator RolesCard(IPage page)
+        => page.Locator(".card", new PageLocatorOptions { HasText = "Roles that carry this managed site" }).First;
 
     private Task GotoAccessAsync(IPage page, string managedSiteCode)
         => page.GotoAndAssertOkAsync($"/{Tenant.Prefix}/Admin/ManagedSites/Access/{managedSiteCode}");
